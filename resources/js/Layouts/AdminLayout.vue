@@ -115,6 +115,15 @@
           Subjects
         </SidebarLink>
 
+        <SidebarLink :href="route('admin.settings.categories')" :active="isActive('/admin/settings/categories')">
+          <template #icon>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/>
+            </svg>
+          </template>
+          Categories
+        </SidebarLink>
+
         <SidebarLink :href="route('admin.settings.classes')" :active="isActive('/admin/settings/classes')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

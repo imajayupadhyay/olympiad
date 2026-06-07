@@ -7,7 +7,7 @@
         <span class="bg-primary/10 text-primary text-sm font-semibold px-3 py-1.5 rounded-lg font-number">
           {{ total.toLocaleString() }} Questions
         </span>
-        <span v-if="filters.subject_id || filters.class_level_id || filters.difficulty || filters.search"
+        <span v-if="filters.subject_id || filters.class_level_id || filters.question_category_id || filters.difficulty || filters.search"
               class="bg-accent/10 text-accent text-xs font-semibold px-2.5 py-1.5 rounded-lg">
           Filtered
         </span>
@@ -25,7 +25,7 @@
 
     <!-- Filters -->
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
         <!-- Search -->
         <div class="lg:col-span-2 relative">
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -44,6 +44,13 @@
         <select v-model="form.subject_id" class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-gray-50 text-text-main">
           <option value="">All Subjects</option>
           <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.icon }} {{ s.name }}</option>
+        </select>
+
+        <select v-model="form.question_category_id" class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-gray-50 text-text-main">
+          <option value="">All Categories</option>
+          <option v-for="category in categoryOptions" :key="category.id" :value="category.id">
+            {{ optionPrefix(category.depth) }} {{ category.path }}
+          </option>
         </select>
 
         <!-- Class (from DB) -->
@@ -139,6 +146,9 @@
                   <p class="text-text-main font-medium line-clamp-2 leading-snug text-xs">{{ stripHtml(q.question_text) }}</p>
                   <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
                     <span v-if="q.topic" class="text-text-muted text-[10px]">{{ q.topic }}</span>
+                    <span v-if="q.question_category" class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent/10 text-accent">
+                      {{ q.question_category.name }}
+                    </span>
                     <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded"
                           :class="q.question_type === 'multiple' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'">
                       {{ q.question_type === 'multiple' ? 'Multi' : 'Single' }}
@@ -238,13 +248,14 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
   questions:    Object,
   subjects:     Array,
+  categories:   Array,
   classLevels:  Array,
   difficulties: Object,
   filters:      Object,
@@ -254,25 +265,39 @@ const props = defineProps({
 const form = ref({
   search:         props.filters.search          || '',
   subject_id:     props.filters.subject_id      || '',
+  question_category_id: props.filters.question_category_id || '',
   class_level_id: props.filters.class_level_id  || '',
   difficulty:     props.filters.difficulty      || '',
   question_type:  props.filters.question_type   || '',
 });
 
+const categoryOptions = computed(() => (props.categories || []).filter((category) => {
+  if (!category.is_active) return false;
+
+  return !form.value.subject_id || Number(category.subject_id) === Number(form.value.subject_id);
+}));
+
 const hasFilters = computed(() =>
-  form.value.search || form.value.subject_id || form.value.class_level_id ||
+  form.value.search || form.value.subject_id || form.value.question_category_id || form.value.class_level_id ||
   form.value.difficulty || form.value.question_type
 );
+
+watch(() => form.value.subject_id, () => {
+  if (form.value.question_category_id && !categoryOptions.value.some((category) => Number(category.id) === Number(form.value.question_category_id))) {
+    form.value.question_category_id = '';
+  }
+});
 
 const applyFilters = () => {
   router.get(route('admin.questions.index'), form.value, { preserveState: true, replace: true });
 };
 
 const clearFilters = () => {
-  form.value = { search: '', subject_id: '', class_level_id: '', difficulty: '', question_type: '' };
+  form.value = { search: '', subject_id: '', question_category_id: '', class_level_id: '', difficulty: '', question_type: '' };
   applyFilters();
 };
 
+const optionPrefix = (depth) => ''.padStart(depth * 2, '-');
 
 const difficultyClass = (d) => ({
   easy:   'bg-green-100 text-green-700',

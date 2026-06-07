@@ -171,6 +171,21 @@
                 <p v-if="form.errors.subject_id" class="text-danger text-xs mt-1">{{ form.errors.subject_id }}</p>
               </div>
 
+              <!-- Category -->
+              <div>
+                <label class="block text-xs font-semibold text-text-muted mb-1.5">Category / Topic</label>
+                <select v-model="form.question_category_id"
+                        :disabled="!form.subject_id"
+                        class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white transition-colors disabled:bg-gray-50 disabled:text-text-muted"
+                        :class="form.errors.question_category_id ? 'border-danger' : 'border-gray-200'">
+                  <option value="">Uncategorized</option>
+                  <option v-for="category in categoryOptions" :key="category.id" :value="category.id">
+                    {{ optionPrefix(category.depth) }} {{ category.path }}
+                  </option>
+                </select>
+                <p v-if="form.errors.question_category_id" class="text-danger text-xs mt-1">{{ form.errors.question_category_id }}</p>
+              </div>
+
               <!-- Class -->
               <div>
                 <label class="block text-xs font-semibold text-text-muted mb-1.5">Class Level *</label>
@@ -263,13 +278,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import RichTextEditor from '@/Components/Admin/RichTextEditor.vue';
 
-defineProps({
+const props = defineProps({
   subjects:     Array,
+  categories:   Array,
   classLevels:  Array,
   difficulties: Object,
   types:        Object,
@@ -287,6 +303,7 @@ const difficultyActive = {
 const blankForm = () => useForm({
   subject_id:      '',
   class_level_id:  '',
+  question_category_id: '',
   difficulty:      'medium',
   question_type:   'single',
   topic:           '',
@@ -303,6 +320,18 @@ const blankForm = () => useForm({
 });
 
 let form = blankForm();
+
+const categoryOptions = computed(() => (props.categories || []).filter((category) =>
+  category.is_active && Number(category.subject_id) === Number(form.subject_id),
+));
+
+watch(() => form.subject_id, () => {
+  if (form.question_category_id && !categoryOptions.value.some((category) => Number(category.id) === Number(form.question_category_id))) {
+    form.question_category_id = '';
+  }
+});
+
+const optionPrefix = (depth) => ''.padStart(depth * 2, '-');
 
 const isCorrect = (opt) => form.correct_options.includes(opt);
 

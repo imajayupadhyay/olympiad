@@ -52,6 +52,10 @@ class SubjectController extends Controller
 
     public function destroy(Subject $subject)
     {
+        if ($subject->questionCategories()->count() > 0) {
+            return back()->with('error', "Cannot delete \"{$subject->name}\" — it has categories linked to it.");
+        }
+
         if ($subject->questions()->count() > 0) {
             return back()->with('error', "Cannot delete \"{$subject->name}\" — it has questions linked to it.");
         }

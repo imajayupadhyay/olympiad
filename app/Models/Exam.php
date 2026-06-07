@@ -11,6 +11,7 @@ class Exam extends Model
     protected $fillable = [
         'subject_id',
         'class_level_id',
+        'question_category_id',
         'name',
         'slug',
         'exam_code',
@@ -60,6 +61,11 @@ class Exam extends Model
     public function classLevel(): BelongsTo
     {
         return $this->belongsTo(ClassLevel::class);
+    }
+
+    public function questionCategory(): BelongsTo
+    {
+        return $this->belongsTo(QuestionCategory::class);
     }
 
     public function questions(): BelongsToMany

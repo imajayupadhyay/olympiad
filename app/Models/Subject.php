@@ -16,6 +16,11 @@ class Subject extends Model
         return $this->hasMany(Question::class);
     }
 
+    public function questionCategories(): HasMany
+    {
+        return $this->hasMany(QuestionCategory::class)->orderBy('sort_order')->orderBy('name');
+    }
+
     public function exams(): HasMany
     {
         return $this->hasMany(Exam::class);

@@ -39,7 +39,7 @@
                 <p v-if="form.errors.description" class="text-danger text-xs mt-1">{{ form.errors.description }}</p>
               </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div>
                   <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Subject *</label>
                   <select v-model="form.subject_id"
@@ -51,6 +51,20 @@
                     </option>
                   </select>
                   <p v-if="form.errors.subject_id" class="text-danger text-xs mt-1">{{ form.errors.subject_id }}</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Category Scope</label>
+                  <select v-model="form.question_category_id"
+                          :disabled="!form.subject_id"
+                          class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white disabled:bg-gray-50 disabled:text-text-muted"
+                          :class="form.errors.question_category_id ? 'border-danger' : 'border-gray-200'">
+                    <option value="">Whole subject</option>
+                    <option v-for="category in categoryOptions" :key="category.id" :value="category.id">
+                      {{ optionPrefix(category.depth) }} {{ category.path }}{{ category.is_active ? '' : ' (inactive)' }}
+                    </option>
+                  </select>
+                  <p v-if="form.errors.question_category_id" class="text-danger text-xs mt-1">{{ form.errors.question_category_id }}</p>
                 </div>
 
                 <div>
@@ -177,7 +191,7 @@
             </div>
 
             <div class="p-5 border-b border-gray-100">
-              <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
                 <div class="md:col-span-2 relative">
                   <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -190,6 +204,14 @@
                         class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-gray-50">
                   <option value="">All Difficulties</option>
                   <option v-for="(label, key) in difficulties" :key="key" :value="key">{{ label }}</option>
+                </select>
+                <select v-model="questionFilter.category_id"
+                        :disabled="!form.subject_id"
+                        class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-gray-50 disabled:text-text-muted">
+                  <option value="">All Categories</option>
+                  <option v-for="category in categoryOptions" :key="category.id" :value="category.id">
+                    {{ optionPrefix(category.depth) }} {{ category.path }}{{ category.is_active ? '' : ' (inactive)' }}
+                  </option>
                 </select>
                 <button type="button" :disabled="!canLoadQuestions || isLoadingQuestions" @click="loadQuestions"
                         class="bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary-light transition-colors disabled:opacity-50">
@@ -238,6 +260,9 @@
                     <p class="text-text-main text-sm font-medium leading-snug line-clamp-2">{{ stripHtml(question.question_text) }}</p>
                     <div class="flex items-center gap-1.5 flex-wrap mt-2">
                       <span v-if="question.topic" class="text-[10px] text-text-muted bg-gray-100 px-2 py-0.5 rounded">{{ question.topic }}</span>
+                      <span v-if="question.question_category" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-accent/10 text-accent">
+                        {{ question.question_category.name }}
+                      </span>
                       <span class="text-[10px] font-semibold px-2 py-0.5 rounded" :class="difficultyClass(question.difficulty)">
                         {{ question.difficulty }}
                       </span>
@@ -404,6 +429,7 @@ const props = defineProps({
   mode: { type: String, required: true },
   exam: { type: Object, default: null },
   subjects: { type: Array, required: true },
+  categories: { type: Array, default: () => [] },
   classLevels: { type: Array, required: true },
   statuses: { type: Object, required: true },
   scoringModes: { type: Object, required: true },
@@ -416,6 +442,7 @@ const props = defineProps({
 const form = useForm({
   subject_id: props.exam?.subject_id || '',
   class_level_id: props.exam?.class_level_id || '',
+  question_category_id: props.exam?.question_category_id || '',
   name: props.exam?.name || '',
   description: props.exam?.description || '',
   syllabus: props.exam?.syllabus || '',
@@ -441,6 +468,7 @@ const form = useForm({
 const questionFilter = ref({
   search: props.questionFilters.search || '',
   difficulty: props.questionFilters.difficulty || '',
+  category_id: props.questionFilters.category_id || '',
 });
 
 const selectedQuestionCache = ref([...(props.assignedQuestions || [])]);
@@ -459,6 +487,12 @@ const selectedIdSet = computed(() => new Set(selectedIds.value));
 const selectedCount = computed(() => selectedIds.value.length);
 const canLoadQuestions = computed(() => Boolean(form.subject_id && form.class_level_id));
 const availableQuestionRows = computed(() => props.availableQuestions?.data || []);
+const categoryOptions = computed(() => (props.categories || []).filter((category) =>
+  Number(category.subject_id) === Number(form.subject_id)
+    && (category.is_active
+      || Number(category.id) === Number(form.question_category_id)
+      || Number(category.id) === Number(questionFilter.value.category_id)),
+));
 
 const selectedQuestions = computed(() => selectedIds.value
   .map((id) => selectedQuestionCache.value.find((question) => Number(question.id) === id))
@@ -495,7 +529,31 @@ watch(
     selectedQuestionCache.value = [];
     form.clearErrors('question_ids');
 
+    if (form.question_category_id && !categoryOptions.value.some((category) => Number(category.id) === Number(form.question_category_id))) {
+      form.question_category_id = '';
+    }
+
+    questionFilter.value.category_id = form.question_category_id || '';
+
     if (newSubject && newClass) {
+      queueQuestionLoad();
+    }
+  },
+);
+
+watch(
+  () => form.question_category_id,
+  (newCategory, oldCategory) => {
+    if (newCategory === oldCategory) {
+      return;
+    }
+
+    form.question_ids = [];
+    selectedQuestionCache.value = [];
+    form.clearErrors('question_category_id', 'question_ids');
+    questionFilter.value.category_id = newCategory || '';
+
+    if (canLoadQuestions.value) {
       queueQuestionLoad();
     }
   },
@@ -540,6 +598,7 @@ const loadQuestions = () => {
     question_class_level_id: form.class_level_id,
     question_search: questionFilter.value.search,
     question_difficulty: questionFilter.value.difficulty,
+    question_category_id: questionFilter.value.category_id,
   }, {
     preserveState: true,
     preserveScroll: true,
@@ -552,9 +611,11 @@ const loadQuestions = () => {
 };
 
 const clearQuestionFilters = () => {
-  questionFilter.value = { search: '', difficulty: '' };
+  questionFilter.value = { search: '', difficulty: '', category_id: '' };
   loadQuestions();
 };
+
+const optionPrefix = (depth) => ''.padStart(depth * 2, '-');
 
 const isSelected = (questionId) => selectedIdSet.value.has(Number(questionId));
 

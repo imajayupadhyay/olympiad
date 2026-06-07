@@ -4,6 +4,7 @@
       mode="edit"
       :exam="exam"
       :subjects="subjects"
+      :categories="categories"
       :class-levels="classLevels"
       :statuses="statuses"
       :scoring-modes="scoringModes"
@@ -22,6 +23,7 @@ import ExamForm from './Components/ExamForm.vue';
 defineProps({
   exam: Object,
   subjects: Array,
+  categories: Array,
   classLevels: Array,
   statuses: Object,
   scoringModes: Object,

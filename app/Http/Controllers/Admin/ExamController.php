@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ClassLevel;
 use App\Models\Exam;
 use App\Models\Question;
+use App\Models\QuestionCategory;
 use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -22,6 +23,7 @@ class ExamController extends Controller
     {
         return [
             'subjects' => Subject::active(),
+            'categories' => $this->categoryOptions(),
             'classLevels' => ClassLevel::active(),
             'statuses' => Exam::statuses(),
             'scoringModes' => Exam::scoringModes(),
@@ -31,7 +33,11 @@ class ExamController extends Controller
 
     public function index(Request $request)
     {
-        $query = Exam::with(['subject:id,name,slug,icon,color', 'classLevel:id,level,label'])
+        $query = Exam::with([
+            'subject:id,name,slug,icon,color',
+            'classLevel:id,level,label',
+            'questionCategory:id,subject_id,parent_id,name,slug',
+        ])
             ->withCount('questions')
             ->latest('updated_at');
 
@@ -47,6 +53,11 @@ class ExamController extends Controller
             $query->where('subject_id', $request->input('subject_id'));
         }
 
+        if ($request->filled('question_category_id')) {
+            $category = QuestionCategory::find($request->input('question_category_id'));
+            $query->whereIn('question_category_id', $category ? $category->idsWithDescendants() : []);
+        }
+
         if ($request->filled('class_level_id')) {
             $query->where('class_level_id', $request->input('class_level_id'));
         }
@@ -58,7 +69,7 @@ class ExamController extends Controller
         return Inertia::render('Admin/Exams/Index', [
             ...$this->meta(),
             'exams' => $query->paginate(12)->withQueryString(),
-            'filters' => $request->only(['search', 'subject_id', 'class_level_id', 'status']),
+            'filters' => $request->only(['search', 'subject_id', 'question_category_id', 'class_level_id', 'status']),
             'stats' => [
                 'total' => Exam::count(),
                 'draft' => Exam::where('status', 'draft')->count(),
@@ -82,7 +93,8 @@ class ExamController extends Controller
     public function store(Request $request)
     {
         $data = $this->validatedExamData($request);
-        $questionIds = $this->validQuestionIds($request, $data['subject_id'], $data['class_level_id']);
+        $this->ensureCategoryMatchesSubject($data['subject_id'], $data['question_category_id'] ?? null);
+        $questionIds = $this->validQuestionIds($request, $data['subject_id'], $data['class_level_id'], $data['question_category_id'] ?? null);
 
         if ($data['status'] === 'published') {
             $this->ensurePublishReady($data, $questionIds);
@@ -110,7 +122,14 @@ class ExamController extends Controller
 
     public function edit(Request $request, Exam $exam)
     {
-        $exam->load(['subject:id,name,slug,icon,color', 'classLevel:id,level,label', 'questions.subject:id,name,slug,icon,color', 'questions.classLevel:id,level,label']);
+        $exam->load([
+            'subject:id,name,slug,icon,color',
+            'classLevel:id,level,label',
+            'questionCategory:id,subject_id,parent_id,name,slug',
+            'questions.subject:id,name,slug,icon,color',
+            'questions.classLevel:id,level,label',
+            'questions.questionCategory:id,subject_id,parent_id,name,slug',
+        ]);
 
         return Inertia::render('Admin/Exams/Edit', [
             ...$this->meta(),
@@ -124,7 +143,8 @@ class ExamController extends Controller
     public function update(Request $request, Exam $exam)
     {
         $data = $this->validatedExamData($request);
-        $questionIds = $this->validQuestionIds($request, $data['subject_id'], $data['class_level_id']);
+        $this->ensureCategoryMatchesSubject($data['subject_id'], $data['question_category_id'] ?? null);
+        $questionIds = $this->validQuestionIds($request, $data['subject_id'], $data['class_level_id'], $data['question_category_id'] ?? null);
 
         if ($data['status'] === 'published') {
             $this->ensurePublishReady($data, $questionIds);
@@ -202,6 +222,7 @@ class ExamController extends Controller
         $data = $request->validate([
             'subject_id' => ['required', 'exists:subjects,id'],
             'class_level_id' => ['required', 'exists:class_levels,id'],
+            'question_category_id' => ['nullable', 'exists:question_categories,id'],
             'name' => ['required', 'string', 'max:180'],
             'description' => ['nullable', 'string', 'max:1500'],
             'syllabus' => ['nullable', 'string'],
@@ -239,7 +260,7 @@ class ExamController extends Controller
         return $data;
     }
 
-    private function validQuestionIds(Request $request, int $subjectId, int $classLevelId): Collection
+    private function validQuestionIds(Request $request, int $subjectId, int $classLevelId, ?int $categoryId = null): Collection
     {
         $ids = collect($request->input('question_ids', []))
             ->filter(fn ($id) => $id !== null && $id !== '')
@@ -251,15 +272,21 @@ class ExamController extends Controller
             return $ids;
         }
 
-        $validCount = Question::whereIn('id', $ids)
+        $validQuestions = Question::whereIn('id', $ids)
             ->where('is_active', true)
             ->where('subject_id', $subjectId)
-            ->where('class_level_id', $classLevelId)
-            ->count();
+            ->where('class_level_id', $classLevelId);
+
+        if ($categoryId) {
+            $category = QuestionCategory::find($categoryId);
+            $validQuestions->whereIn('question_category_id', $category ? $category->idsWithDescendants() : []);
+        }
+
+        $validCount = $validQuestions->count();
 
         if ($validCount !== $ids->count()) {
             throw ValidationException::withMessages([
-                'question_ids' => 'Only active questions from this exam subject and class can be assigned.',
+                'question_ids' => 'Only active questions from this exam subject, class, and category can be assigned.',
             ]);
         }
 
@@ -321,8 +348,13 @@ class ExamController extends Controller
     {
         $subjectId = $request->input('question_subject_id') ?: $exam?->subject_id;
         $classLevelId = $request->input('question_class_level_id') ?: $exam?->class_level_id;
+        $categoryId = $request->input('question_category_id') ?: $exam?->question_category_id;
 
-        $query = Question::with(['subject:id,name,slug,icon,color', 'classLevel:id,level,label'])
+        $query = Question::with([
+            'subject:id,name,slug,icon,color',
+            'classLevel:id,level,label',
+            'questionCategory:id,subject_id,parent_id,name,slug',
+        ])
             ->where('is_active', true)
             ->latest();
 
@@ -335,6 +367,11 @@ class ExamController extends Controller
 
         if ($request->filled('question_difficulty')) {
             $query->where('difficulty', $request->input('question_difficulty'));
+        }
+
+        if ($categoryId) {
+            $category = QuestionCategory::find($categoryId);
+            $query->whereIn('question_category_id', $category ? $category->idsWithDescendants() : []);
         }
 
         if ($request->filled('question_search')) {
@@ -353,6 +390,7 @@ class ExamController extends Controller
         return [
             'search' => $request->input('question_search', ''),
             'difficulty' => $request->input('question_difficulty', ''),
+            'category_id' => $request->input('question_category_id', ''),
         ];
     }
 
@@ -362,6 +400,7 @@ class ExamController extends Controller
             'id' => $exam->id,
             'subject_id' => $exam->subject_id,
             'class_level_id' => $exam->class_level_id,
+            'question_category_id' => $exam->question_category_id,
             'name' => $exam->name,
             'exam_code' => $exam->exam_code,
             'description' => $exam->description,
@@ -383,6 +422,7 @@ class ExamController extends Controller
             'result_release_at' => $this->dateForInput($exam->result_release_at),
             'status' => $exam->status,
             'question_ids' => $exam->questions->pluck('id')->values(),
+            'question_category' => $exam->questionCategory,
         ];
     }
 
@@ -399,7 +439,62 @@ class ExamController extends Controller
             'negative_marks' => $question->pivot->negative_marks ?? $question->negative_marks,
             'subject' => $question->subject,
             'class_level' => $question->classLevel,
+            'question_category' => $question->questionCategory,
         ];
+    }
+
+    private function categoryOptions(): array
+    {
+        $categories = QuestionCategory::with('subject:id,name,icon,color,sort_order')
+            ->orderBy('subject_id')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+        $byId = $categories->keyBy('id');
+
+        return $categories->map(function (QuestionCategory $category) use ($byId) {
+            $path = [$category->name];
+            $parentId = $category->parent_id;
+            $seen = [$category->id => true];
+
+            while ($parentId && $byId->has($parentId) && ! isset($seen[$parentId])) {
+                $parent = $byId->get($parentId);
+                array_unshift($path, $parent->name);
+                $seen[$parent->id] = true;
+                $parentId = $parent->parent_id;
+            }
+
+            return [
+                'id' => $category->id,
+                'subject_id' => $category->subject_id,
+                'parent_id' => $category->parent_id,
+                'name' => $category->name,
+                'path' => implode(' / ', $path),
+                'depth' => max(count($path) - 1, 0),
+                'is_active' => $category->is_active,
+                'subject' => $category->subject,
+            ];
+        })->sortBy([
+            ['subject.sort_order', 'asc'],
+            ['path', 'asc'],
+        ])->values()->all();
+    }
+
+    private function ensureCategoryMatchesSubject(int $subjectId, ?int $categoryId): void
+    {
+        if (! $categoryId) {
+            return;
+        }
+
+        $categoryMatches = QuestionCategory::where('id', $categoryId)
+            ->where('subject_id', $subjectId)
+            ->exists();
+
+        if (! $categoryMatches) {
+            throw ValidationException::withMessages([
+                'question_category_id' => 'Category must belong to the selected subject.',
+            ]);
+        }
     }
 
     private function dateForInput($date): ?string

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 class Question extends Model
 {
     protected $fillable = [
-        'subject_id', 'class_level_id', 'difficulty', 'topic',
+        'subject_id', 'class_level_id', 'question_category_id', 'difficulty', 'topic',
         'question_text', 'question_image',
         'option_a', 'option_b', 'option_c', 'option_d',
         'question_type', 'correct_options',
@@ -42,6 +42,11 @@ class Question extends Model
     public function classLevel(): BelongsTo
     {
         return $this->belongsTo(ClassLevel::class);
+    }
+
+    public function questionCategory(): BelongsTo
+    {
+        return $this->belongsTo(QuestionCategory::class);
     }
 
     public function creator(): BelongsTo

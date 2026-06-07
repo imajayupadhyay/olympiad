@@ -137,6 +137,19 @@
                 </select>
               </div>
               <div>
+                <label class="block text-xs font-semibold text-text-muted mb-1.5">Category / Topic</label>
+                <select v-model="form.question_category_id"
+                        :disabled="!form.subject_id"
+                        class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white disabled:bg-gray-50 disabled:text-text-muted"
+                        :class="form.errors.question_category_id ? 'border-danger' : 'border-gray-200'">
+                  <option value="">Uncategorized</option>
+                  <option v-for="category in categoryOptions" :key="category.id" :value="category.id">
+                    {{ optionPrefix(category.depth) }} {{ category.path }}{{ category.is_active ? '' : ' (inactive)' }}
+                  </option>
+                </select>
+                <p v-if="form.errors.question_category_id" class="text-danger text-xs mt-1">{{ form.errors.question_category_id }}</p>
+              </div>
+              <div>
                 <label class="block text-xs font-semibold text-text-muted mb-1.5">Class Level *</label>
                 <select v-model="form.class_level_id"
                         class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white"
@@ -224,7 +237,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Link, useForm, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import RichTextEditor from '@/Components/Admin/RichTextEditor.vue';
@@ -232,6 +245,7 @@ import RichTextEditor from '@/Components/Admin/RichTextEditor.vue';
 const props = defineProps({
   question:     Object,
   subjects:     Array,
+  categories:   Array,
   classLevels:  Array,
   difficulties: Object,
   types:        Object,
@@ -251,6 +265,7 @@ const difficultyActive = {
 const form = useForm({
   subject_id:      props.question.subject_id,
   class_level_id:  props.question.class_level_id,
+  question_category_id: props.question.question_category_id || '',
   difficulty:      props.question.difficulty,
   question_type:   props.question.question_type,
   topic:           props.question.topic || '',
@@ -267,6 +282,19 @@ const form = useForm({
   negative_marks:  props.question.negative_marks,
   is_active:       props.question.is_active,
 });
+
+const categoryOptions = computed(() => (props.categories || []).filter((category) =>
+  Number(category.subject_id) === Number(form.subject_id)
+    && (category.is_active || Number(category.id) === Number(form.question_category_id)),
+));
+
+watch(() => form.subject_id, () => {
+  if (form.question_category_id && !categoryOptions.value.some((category) => Number(category.id) === Number(form.question_category_id))) {
+    form.question_category_id = '';
+  }
+});
+
+const optionPrefix = (depth) => ''.padStart(depth * 2, '-');
 
 const isCorrect = (opt) => form.correct_options.includes(opt);
 

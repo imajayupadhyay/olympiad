@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\ResultController;
 use App\Http\Controllers\Admin\Settings\ClassLevelController;
+use App\Http\Controllers\Admin\Settings\QuestionCategoryController;
 use App\Http\Controllers\Admin\Settings\SubjectController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
@@ -63,6 +64,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/subjects', [SubjectController::class, 'store'])->name('subjects.store');
         Route::put('/subjects/{subject}', [SubjectController::class, 'update'])->name('subjects.update');
         Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])->name('subjects.destroy');
+
+        Route::get('/categories', [QuestionCategoryController::class, 'index'])->name('categories');
+        Route::post('/categories', [QuestionCategoryController::class, 'store'])->name('categories.store');
+        Route::put('/categories/{category}', [QuestionCategoryController::class, 'update'])->name('categories.update');
+        Route::delete('/categories/{category}', [QuestionCategoryController::class, 'destroy'])->name('categories.destroy');
 
         Route::get('/classes', [ClassLevelController::class, 'index'])->name('classes');
         Route::post('/classes', [ClassLevelController::class, 'store'])->name('classes.store');

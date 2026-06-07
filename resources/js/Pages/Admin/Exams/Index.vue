@@ -48,7 +48,7 @@
     </div>
 
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+      <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
         <div class="md:col-span-2 relative">
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -61,6 +61,13 @@
         <select v-model="filterForm.subject_id" class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-gray-50 text-text-main">
           <option value="">All Subjects</option>
           <option v-for="subject in subjects" :key="subject.id" :value="subject.id">{{ subject.icon }} {{ subject.name }}</option>
+        </select>
+
+        <select v-model="filterForm.question_category_id" class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-gray-50 text-text-main">
+          <option value="">All Categories</option>
+          <option v-for="category in categoryOptions" :key="category.id" :value="category.id">
+            {{ optionPrefix(category.depth) }} {{ category.path }}
+          </option>
         </select>
 
         <select v-model="filterForm.class_level_id" class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-gray-50 text-text-main">
@@ -130,6 +137,7 @@
                 {{ exam.subject.icon }} {{ exam.subject.name }}
               </span>
               <p class="text-text-muted text-xs mt-1 font-number">{{ exam.class_level?.label }}</p>
+              <p v-if="exam.question_category" class="text-accent text-[11px] mt-1 truncate">{{ exam.question_category.name }}</p>
             </td>
             <td class="px-4 py-4 whitespace-nowrap">
               <p class="text-text-main text-xs font-semibold">{{ formatDateTime(exam.starts_at) }}</p>
@@ -220,13 +228,14 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
   exams: Object,
   subjects: Array,
+  categories: Array,
   classLevels: Array,
   statuses: Object,
   filters: Object,
@@ -236,6 +245,7 @@ const props = defineProps({
 const filterForm = ref({
   search: props.filters.search || '',
   subject_id: props.filters.subject_id || '',
+  question_category_id: props.filters.question_category_id || '',
   class_level_id: props.filters.class_level_id || '',
   status: props.filters.status || '',
 });
@@ -245,9 +255,20 @@ const deleteTarget = ref(null);
 const hasFilters = computed(() =>
   filterForm.value.search ||
   filterForm.value.subject_id ||
+  filterForm.value.question_category_id ||
   filterForm.value.class_level_id ||
   filterForm.value.status
 );
+
+const categoryOptions = computed(() => (props.categories || []).filter((category) =>
+  !filterForm.value.subject_id || Number(category.subject_id) === Number(filterForm.value.subject_id),
+));
+
+watch(() => filterForm.value.subject_id, () => {
+  if (filterForm.value.question_category_id && !categoryOptions.value.some((category) => Number(category.id) === Number(filterForm.value.question_category_id))) {
+    filterForm.value.question_category_id = '';
+  }
+});
 
 const applyFilters = () => {
   router.get(route('admin.exams.index'), filterForm.value, {
@@ -257,9 +278,11 @@ const applyFilters = () => {
 };
 
 const clearFilters = () => {
-  filterForm.value = { search: '', subject_id: '', class_level_id: '', status: '' };
+  filterForm.value = { search: '', subject_id: '', question_category_id: '', class_level_id: '', status: '' };
   applyFilters();
 };
+
+const optionPrefix = (depth) => ''.padStart(depth * 2, '-');
 
 const publishExam = (exam) => {
   router.patch(route('admin.exams.publish', exam.id), {}, { preserveScroll: true });
