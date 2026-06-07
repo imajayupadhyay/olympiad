@@ -25,9 +25,24 @@ class User extends Authenticatable
 
     protected $casts_extra = [];
 
+    /**
+     * Attributes appended to the model's array / JSON form.
+     *
+     * @var list<string>
+     */
+    protected $appends = ['photo_url'];
+
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    /**
+     * Public URL for the student's profile photo (null if none uploaded).
+     */
+    public function getPhotoUrlAttribute(): ?string
+    {
+        return $this->photo ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->photo) : null;
     }
 
     public function classLevel()

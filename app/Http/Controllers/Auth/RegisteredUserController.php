@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\ClassLevel;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -21,7 +22,10 @@ class RegisteredUserController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('Auth/Register');
+        return Inertia::render('Auth/Register', [
+            'classLevels' => ClassLevel::active(),
+            'states'      => User::indianStates(),
+        ]);
     }
 
     /**
@@ -31,22 +35,36 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        $data = $request->validate([
+            'name'           => 'required|string|max:100',
+            'email'          => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'phone'          => 'nullable|string|max:15',
+            'class_level_id' => 'required|exists:class_levels,id',
+            'dob'            => 'nullable|date|before:today',
+            'school'         => 'nullable|string|max:200',
+            'city'           => 'nullable|string|max:100',
+            'state'          => 'nullable|string|max:100',
+            'password'       => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'name'           => $data['name'],
+            'email'          => $data['email'],
+            'phone'          => $data['phone'] ?? null,
+            'class_level_id' => $data['class_level_id'],
+            'dob'            => $data['dob'] ?? null,
+            'school'         => $data['school'] ?? null,
+            'city'           => $data['city'] ?? null,
+            'state'          => $data['state'] ?? null,
+            'role'           => 'student',
+            'is_active'      => true,
+            'password'       => Hash::make($data['password']),
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        return redirect(route('student.dashboard', absolute: false));
     }
 }
