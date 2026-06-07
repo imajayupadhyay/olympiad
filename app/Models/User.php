@@ -60,6 +60,27 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\StudentNotification::class);
     }
 
+    public function enrollments()
+    {
+        return $this->hasMany(\App\Models\ExamEnrollment::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(\App\Models\Payment::class);
+    }
+
+    /**
+     * Whether this student already holds an active enrolment for the given exam.
+     */
+    public function isEnrolledIn(int $examId): bool
+    {
+        return $this->enrollments()
+            ->where('exam_id', $examId)
+            ->where('status', 'enrolled')
+            ->exists();
+    }
+
     public static function indianStates(): array
     {
         return [

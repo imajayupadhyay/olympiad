@@ -33,6 +33,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Resume a public-catalogue enrolment the visitor started before logging in.
+        if ($request->session()->has('pending_enroll_ids')) {
+            return redirect()->route('student.exams.resume-enroll');
+        }
+
         return redirect()->intended(route('student.dashboard', absolute: false));
     }
 

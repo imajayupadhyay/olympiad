@@ -81,6 +81,11 @@ class Exam extends Model
         return $this->hasMany(ExamAttempt::class);
     }
 
+    public function enrollments()
+    {
+        return $this->hasMany(ExamEnrollment::class);
+    }
+
     public function results()
     {
         return $this->hasMany(Result::class);
@@ -121,5 +126,41 @@ class Exam extends Model
             'question_bank' => 'Use question bank marks',
             'uniform' => 'Use exam-wide marks',
         ];
+    }
+
+    /**
+     * Whether this exam is free (no fee).
+     */
+    public function isFree(): bool
+    {
+        return (float) $this->fee_amount <= 0;
+    }
+
+    /**
+     * Availability of the exam window relative to now:
+     * 'upcoming' (before starts_at) | 'live' (within window) | 'closed' (after ends_at).
+     * Falls back to 'live' when a bound is not set.
+     */
+    public function availabilityState(): string
+    {
+        $now = now();
+
+        if ($this->starts_at && $now->lt($this->starts_at)) {
+            return 'upcoming';
+        }
+
+        if ($this->ends_at && $now->gt($this->ends_at)) {
+            return 'closed';
+        }
+
+        return 'live';
+    }
+
+    /**
+     * Whether a student can start the exam right now (published + within window).
+     */
+    public function isOpenNow(): bool
+    {
+        return $this->status === 'published' && $this->availabilityState() === 'live';
     }
 }

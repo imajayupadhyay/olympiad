@@ -1,5 +1,6 @@
 <script setup>
 import AuthLayout from '@/Layouts/AuthLayout.vue';
+import Stepper from './Onboarding/Components/Stepper.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
@@ -38,6 +39,8 @@ const submit = () => {
         heading="Create your account"
         subheading="A few details and you're ready for your first olympiad."
     >
+        <Stepper :current="1" />
+
         <form class="auth-form" @submit.prevent="submit">
             <!-- Identity -->
             <div class="field">
@@ -147,7 +150,7 @@ const submit = () => {
             </div>
 
             <button type="submit" class="cta" :class="{ busy: form.processing }" :disabled="form.processing">
-                <span>{{ form.processing ? 'Creating account…' : 'Create account' }}</span>
+                <span>{{ form.processing ? 'Saving…' : 'Save & Next →' }}</span>
             </button>
         </form>
 

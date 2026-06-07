@@ -3,6 +3,7 @@ defineProps({
     eyebrow: { type: String, default: 'Student Portal' },
     heading: { type: String, default: '' },
     subheading: { type: String, default: '' },
+    wide: { type: Boolean, default: false },
 });
 </script>
 
@@ -62,7 +63,7 @@ defineProps({
 
         <!-- ───────────── Form side (right) ───────────── -->
         <main class="form-panel">
-            <div class="form-shell">
+            <div class="form-shell" :class="{ wide }">
                 <a href="/" class="form-logo-mobile">
                     <span class="brand-mark">NOH</span>
                     <span>National Olympiad Hunt</span>
@@ -200,6 +201,7 @@ defineProps({
         var(--paper);
 }
 .form-shell { width: 100%; max-width: 30rem; animation: fadeUp .6s cubic-bezier(.2,.7,.2,1) both; }
+.form-shell.wide { max-width: 44rem; }
 
 .form-logo-mobile { display: flex; align-items: center; gap: .6rem; font-weight: 700; color: var(--ink); text-decoration: none; margin-bottom: 2rem; }
 @media (min-width: 1024px) { .form-logo-mobile { display: none; } }

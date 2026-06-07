@@ -65,6 +65,7 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('student.dashboard', absolute: false));
+        // Step 2 of the registration wizard — pick olympiads to enrol in.
+        return redirect(route('register.olympiads', absolute: false));
     }
 }

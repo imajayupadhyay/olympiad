@@ -20,12 +20,15 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
     Route::delete('/profile/photo', [ProfileController::class, 'deletePhoto'])->name('profile.photo.delete');
 
     Route::get('/exams', [ExamController::class, 'index'])->name('exams');
+    Route::post('/exams/enroll', [ExamController::class, 'enroll'])->name('exams.enroll');
+    Route::get('/exams/resume-enroll', [ExamController::class, 'resumeEnroll'])->name('exams.resume-enroll');
     Route::get('/exams/{exam}', [ExamController::class, 'show'])->name('exams.show');
-    Route::post('/exams/{exam}/enroll', [ExamController::class, 'enroll'])->name('exams.enroll');
 
+    Route::post('/exams/{exam}/start', [ExamRoomController::class, 'start'])->name('exams.start');
     Route::get('/exam-room/{attempt}', [ExamRoomController::class, 'index'])->name('exam-room');
     Route::post('/exam-room/{attempt}/answer', [ExamRoomController::class, 'saveAnswer'])->name('exam-room.answer');
     Route::post('/exam-room/{attempt}/submit', [ExamRoomController::class, 'submit'])->name('exam-room.submit');
+    Route::get('/exam-room/{attempt}/submitted', [ExamRoomController::class, 'submitted'])->name('exam-room.submitted');
 
     Route::get('/results', [ResultController::class, 'index'])->name('results');
     Route::get('/results/{result}', [ResultController::class, 'show'])->name('results.show');
@@ -37,6 +40,6 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
     Route::get('/practice', [PracticeController::class, 'index'])->name('practice');
 
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments');
-    Route::post('/payments/create', [PaymentController::class, 'create'])->name('payments.create');
-    Route::post('/payments/verify', [PaymentController::class, 'verify'])->name('payments.verify');
+    Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+    Route::post('/payments/{payment}/confirm', [PaymentController::class, 'confirm'])->name('payments.confirm');
 });

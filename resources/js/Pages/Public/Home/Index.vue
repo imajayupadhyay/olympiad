@@ -10,31 +10,8 @@
       </div>
     </div>
 
-    <!-- ============ NAVBAR ============ -->
-    <header class="nav" :class="{ scrolled }">
-      <div class="wrap nav__inner">
-        <Link href="/" class="brand">
-          <span class="brand__mark">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 19.3 7.2 17l.9-5.4L4.2 7.7l5.4-.8L12 2z" fill="#F2C84B"/><path d="M8 19h8v2.5a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5V19z" fill="#EE6A2C"/></svg>
-          </span>
-          <span>National Olympiad Hunt<small>Est. 2026 · India</small></span>
-        </Link>
-        <nav class="nav__links">
-          <a v-for="l in navLinks" :key="l.id" :href="'#' + l.id" :class="{ active: activeSection === l.id }">{{ l.label }}</a>
-        </nav>
-        <div class="nav__cta">
-          <Link href="/login" class="btn btn-ghost nav-login">Log In</Link>
-          <Link href="/register" class="btn btn-primary">Register Free
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </Link>
-          <button class="burger" :class="{ open: mobileOpen }" @click="mobileOpen = !mobileOpen" aria-label="Menu"><span></span><span></span><span></span></button>
-        </div>
-      </div>
-    </header>
-    <div class="mobile-menu" :class="{ open: mobileOpen }">
-      <a v-for="l in navLinks" :key="l.id" :href="'#' + l.id" @click="mobileOpen = false">{{ l.label }}</a>
-      <Link href="/register" class="btn btn-primary">Register Free</Link>
-    </div>
+    <!-- ============ NAVBAR (shared global header) ============ -->
+    <PublicHeader :active-section="activeSection" />
 
     <!-- ============ HERO ============ -->
     <section class="hero" id="home">
@@ -209,7 +186,6 @@
                   </div>
                   <div class="ecard__foot">
                     <div class="ecard__fee"><b>{{ e.fee }}</b><small>per attempt</small></div>
-                    <Link href="/register" class="btn btn-primary">Enroll</Link>
                   </div>
                 </div>
               </article>
@@ -457,14 +433,22 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
+import PublicHeader from '@/Components/Public/PublicHeader.vue';
+
+const props = defineProps({
+  upcomingExams: { type: Array, default: () => [] },
+});
+
+const page = usePage();
+const user = computed(() => page.props.auth?.user ?? null);
 
 /* ---------- static content ---------- */
 const year = new Date().getFullYear();
 const navLinks = [
   { id: 'subjects', label: 'Subjects' },
   { id: 'how',      label: 'How it Works' },
-  { id: 'exams',    label: 'Exams' },
+  { id: 'exams',    label: 'Exams', to: '/exams' },
   { id: 'rewards',  label: 'Rewards' },
   { id: 'faq',      label: 'FAQ' },
 ];
@@ -510,13 +494,7 @@ const steps = [
   { icon: '🏆', title: 'Win & Celebrate',   desc: 'Get instant scores, national ranks, downloadable certificates and rewards.' },
 ];
 
-const exams = [
-  { name: 'National Maths Olympiad', sub: 'Open · Class 1 to 12', date: '12 Jul 2026', ribbon: 'HOT', fee: '₹299', pills: ['⏱️ 60 min', '📋 50 MCQ', '🏅 Gold tier'] },
-  { name: 'Science Champions Cup',   sub: 'Open · Class 4 to 10', date: '19 Jul 2026', ribbon: '',    fee: '₹249', pills: ['⏱️ 45 min', '📋 40 MCQ', '🥈 Silver tier'] },
-  { name: 'Coding & Logic Quest',    sub: 'Open · Class 6 to 12', date: '26 Jul 2026', ribbon: 'NEW', fee: '₹349', pills: ['⏱️ 60 min', '📋 45 MCQ', '🏅 Gold tier'] },
-  { name: 'English Mastery Open',    sub: 'Open · Class 1 to 12', date: '02 Aug 2026', ribbon: '',    fee: '₹199', pills: ['⏱️ 45 min', '📋 40 MCQ', '🥉 Bronze tier'] },
-  { name: 'GK & Current Affairs',    sub: 'Open · Class 3 to 10', date: '09 Aug 2026', ribbon: '',    fee: '₹149', pills: ['⏱️ 30 min', '📋 30 MCQ', '🥈 Silver tier'] },
-];
+const exams = computed(() => props.upcomingExams);
 
 const silverPerks = ['Digital + printed certificate', 'State-level rank badge', '₹10,000 scholarship'];
 const goldPerks    = ['Govt-recognised certificate', 'National rank + trophy', '₹50,000 scholarship', 'Felicitation ceremony'];
@@ -583,7 +561,7 @@ const perView = computed(() => (windowWidth.value <= 600 ? 1 : windowWidth.value
 const examTrack    = ref(null);
 const examIndex    = ref(0);
 const examTX       = ref('translateX(0px)');
-const examMaxIndex = computed(() => Math.max(0, exams.length - perView.value));
+const examMaxIndex = computed(() => Math.max(0, exams.value.length - perView.value));
 const examPages    = computed(() => examMaxIndex.value + 1);
 function recalcExam() {
   const tr = examTrack.value; if (!tr || !tr.children[0]) return;
@@ -728,7 +706,7 @@ onUnmounted(() => {
   --maxw:1240px;
 
   font-family:var(--body); background:var(--paper); color:var(--ink); line-height:1.6;
-  overflow-x:hidden; -webkit-font-smoothing:antialiased;
+  overflow-x:hidden; -webkit-font-smoothing:antialiased; padding-top:74px;
   background-image:radial-gradient(var(--ink-12) .5px, transparent .5px);
   background-size:22px 22px;
 }
@@ -775,7 +753,7 @@ onUnmounted(() => {
 @keyframes scroll{ to{ transform:translateX(-50%);} }
 
 /* navbar */
-.nav{ position:sticky; top:0; z-index:80; transition:.3s; background:transparent; border-bottom:1px solid transparent; }
+.nav{ position:fixed; top:0; left:0; right:0; z-index:80; transition:.3s; background:transparent; border-bottom:1px solid transparent; }
 .nav.scrolled{ background:rgba(251,246,236,.72); backdrop-filter:blur(14px) saturate(140%); -webkit-backdrop-filter:blur(14px) saturate(140%); border-bottom-color:var(--paper-line); box-shadow:var(--shadow-sm); }
 .nav__inner{ display:flex; align-items:center; justify-content:space-between; height:74px; }
 .brand{ display:flex; align-items:center; gap:12px; font-family:var(--display); font-weight:700; font-size:20px; letter-spacing:-.01em; color:var(--ink); }
