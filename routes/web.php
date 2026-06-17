@@ -1,6 +1,10 @@
 <?php
 
+use App\Http\Controllers\RazorpayWebhookController;
 use Illuminate\Support\Facades\Route;
+
+// Razorpay server-to-server webhook (no auth; CSRF-exempt in bootstrap/app.php)
+Route::post('/razorpay/webhook', RazorpayWebhookController::class)->name('razorpay.webhook');
 
 // Auth routes (Breeze — login, register, password reset, email verify)
 require __DIR__.'/auth.php';

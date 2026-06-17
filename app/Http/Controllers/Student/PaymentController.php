@@ -38,10 +38,11 @@ class PaymentController extends Controller
         return Inertia::render('Student/Payments/Index', ['payments' => $rows]);
     }
 
-    /** Demo checkout screen for a pending payment. */
+    /** Razorpay checkout screen for a pending payment. */
     public function show(Request $request, Payment $payment): Response|\Illuminate\Http\RedirectResponse
     {
-        abort_unless($payment->user_id === $request->user()->id, 403);
+        $user = $request->user();
+        abort_unless($payment->user_id === $user->id, 403);
 
         if ($payment->status === 'paid') {
             return redirect()->route('student.payments')->with('info', 'This payment is already complete.');
@@ -54,25 +55,41 @@ class PaymentController extends Controller
         return Inertia::render('Student/Payments/Pay', [
             'payment'  => ['id' => $payment->id, 'amount' => (float) $payment->amount, 'currency' => $payment->currency],
             'items'    => $items,
+            'razorpay' => [
+                'key_id'       => config('services.razorpay.key_id'),
+                'order_id'     => $payment->razorpay_order_id,
+                'amount_paise' => (int) round($payment->amount * 100),
+                'currency'     => $payment->currency,
+            ],
+            'prefill'  => [
+                'name'    => $user->name,
+                'email'   => $user->email,
+                'contact' => $user->phone,
+            ],
         ]);
     }
 
-    /** Process the demo outcome (success / fail). */
-    public function confirm(Request $request, Payment $payment)
+    /** Verify the signed Razorpay checkout response, then enrol. */
+    public function verify(Request $request, Payment $payment): \Illuminate\Http\RedirectResponse
     {
         abort_unless($payment->user_id === $request->user()->id, 403);
 
-        $data = $request->validate(['outcome' => 'required|in:success,fail']);
+        $data = $request->validate([
+            'razorpay_payment_id' => 'required|string',
+            'razorpay_order_id'   => 'required|string',
+            'razorpay_signature'  => 'required|string',
+        ]);
 
-        if ($data['outcome'] === 'success') {
-            $this->payments->markPaid($payment);
+        abort_unless($data['razorpay_order_id'] === $payment->razorpay_order_id, 400);
 
-            return redirect()->route('student.exams')
-                ->with('success', 'Payment successful — you are now enrolled. 🎉');
+        try {
+            $this->payments->verifyAndEnroll($payment, $data['razorpay_payment_id'], $data['razorpay_signature']);
+        } catch (\Razorpay\Api\Errors\SignatureVerificationError $e) {
+            return redirect()->route('student.payments.show', $payment)
+                ->with('error', 'Payment verification failed. Please try again.');
         }
 
-        $this->payments->markFailed($payment);
-
-        return redirect()->route('student.exams')->with('error', 'Payment failed. Please try enrolling again.');
+        return redirect()->route('student.exams')
+            ->with('success', 'Payment successful — you are now enrolled. 🎉');
     }
 }

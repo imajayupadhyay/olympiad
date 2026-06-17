@@ -101,9 +101,16 @@ class OnboardingController extends Controller
 
         session()->forget('onboarding_exam_ids');
 
-        // Paid exams → demo checkout (free ones already enrolled above).
+        // Paid exams → Razorpay checkout (free ones already enrolled above).
         if ($paid->isNotEmpty()) {
-            $payment = $this->payments->createDemoOrder($user, $paid->pluck('id')->all());
+            try {
+                $payment = $this->payments->createOrder($user, $paid->pluck('id')->all());
+            } catch (\Throwable $e) {
+                report($e);
+
+                return redirect()->route('student.dashboard')
+                    ->with('error', 'Could not start the payment. You can complete it from the Exams page.');
+            }
 
             return redirect()->route('student.payments.show', $payment);
         }

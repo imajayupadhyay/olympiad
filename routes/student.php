@@ -41,5 +41,5 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
 
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments');
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
-    Route::post('/payments/{payment}/confirm', [PaymentController::class, 'confirm'])->name('payments.confirm');
+    Route::post('/payments/{payment}/verify', [PaymentController::class, 'verify'])->name('payments.verify');
 });

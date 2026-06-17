@@ -50,6 +50,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/certificates/{exam}/download', [CertificateController::class, 'download'])->name('certificates.download');
 
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments');
+    Route::get('/payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
     Route::post('/payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');

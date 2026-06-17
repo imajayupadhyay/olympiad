@@ -160,7 +160,7 @@ class ExamController extends Controller
     }
 
     /**
-     * Shared enrol pipeline: free exams enrol instantly; paid ones go to the demo gateway.
+     * Shared enrol pipeline: free exams enrol instantly; paid ones open a Razorpay order.
      */
     protected function processEnroll(\App\Models\User $user, array $ids)
     {
@@ -172,7 +172,14 @@ class ExamController extends Controller
         $enrolled = $this->enrollments->enrollFree($user, $free->pluck('id')->all());
 
         if ($paid->isNotEmpty()) {
-            $payment = $this->payments->createDemoOrder($user, $paid->pluck('id')->all());
+            try {
+                $payment = $this->payments->createOrder($user, $paid->pluck('id')->all());
+            } catch (\Throwable $e) {
+                report($e);
+
+                return redirect()->route('student.exams')
+                    ->with('error', 'Could not start the payment. Please try again.');
+            }
 
             return redirect()->route('student.payments.show', $payment);
         }
