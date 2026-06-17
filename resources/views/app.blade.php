@@ -4,7 +4,14 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        <title inertia>National Olympiad Hunt — Online Olympiad Exams for Class 1–12</title>
+
+        <!-- Open Graph / Twitter site-wide defaults (per-page values set via SeoHead) -->
+        <meta property="og:site_name" content="National Olympiad Hunt" />
+        <meta property="og:type" content="website" />
+        <meta property="og:locale" content="en_IN" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="theme-color" content="#EE6A2C" />
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,7 +24,6 @@
         @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
         @inertiaHead
     </head>
-    <title>National Olympiad Hunt</title>
     <body class="font-body antialiased bg-bg text-text-main">
         @inertia
     </body>

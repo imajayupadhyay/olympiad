@@ -1,4 +1,6 @@
 <template>
+  <SeoHead :title="title" noindex
+    description="National Olympiad Hunt admin panel — manage exams, questions, students, results, payments, coupons and content." />
   <div class="min-h-screen flex" style="background:#FBF6EC;">
 
     <!-- Sidebar -->
@@ -203,6 +205,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import SidebarLink from '@/Components/Shared/SidebarLink.vue';
 import AppLogo from '@/Components/Shared/AppLogo.vue';
+import SeoHead from '@/Components/Shared/SeoHead.vue';
 
 defineProps({
   title:    { type: String, default: 'Dashboard' },

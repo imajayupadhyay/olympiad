@@ -1,4 +1,5 @@
 <template>
+  <SeoHead description="National Olympiad Hunt — India's online olympiad exam platform for Class 1–12. Register, compete across subjects and earn national ranks, medals and certificates." />
   <div class="min-h-screen flex flex-col bg-bg">
 
     <!-- ── Navbar ── -->
@@ -155,6 +156,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import AppLogo from '@/Components/Shared/AppLogo.vue';
+import SeoHead from '@/Components/Shared/SeoHead.vue';
 
 // ── Scroll-aware navbar ──
 const scrolled    = ref(false);

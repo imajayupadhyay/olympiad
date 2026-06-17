@@ -1,6 +1,7 @@
 <script setup>
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import SeoHead from '@/Components/Shared/SeoHead.vue';
 
 const props = defineProps({
     payment: { type: Object, required: true },   // { id, gross, discount, amount, currency, coupon }
@@ -123,7 +124,7 @@ async function openRazorpay(data) {
 </script>
 
 <template>
-    <Head title="Checkout" />
+    <SeoHead title="Checkout" noindex />
 
     <div class="noh-pay">
         <div class="bg-grid"></div>

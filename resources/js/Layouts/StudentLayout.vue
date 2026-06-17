@@ -1,6 +1,7 @@
 <script setup>
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import SeoHead from '@/Components/Shared/SeoHead.vue';
 
 defineProps({
     title: { type: String, default: '' },
@@ -31,6 +32,8 @@ const isActive = (m) => page.url.startsWith(m);
 </script>
 
 <template>
+    <SeoHead noindex
+        description="Your National Olympiad Hunt student area — enrolled exams, results, certificates and payments." />
     <div class="noh-student">
         <!-- mobile overlay -->
         <div v-show="sidebarOpen" class="overlay" @click="sidebarOpen = false"></div>

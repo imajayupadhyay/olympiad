@@ -1,2 +1,30 @@
+# robots.txt — National Olympiad Hunt
+#
+# Public marketing pages are crawlable:
+#   /  /about  /blog  /contact  /exams  /faq  /pricing  /results
+# Authenticated dashboards, the exam room and auth/onboarding flows are blocked.
+# (The admin login URL is intentionally NOT listed here — disallowing it would
+#  publicly reveal the obfuscated path. It is unlinked and noindex instead.)
+
 User-agent: *
-Disallow:
+
+# Authenticated portals
+Disallow: /admin/
+Disallow: /student/
+Disallow: /exam-room/
+Disallow: /dashboard
+Disallow: /profile
+
+# Auth & onboarding flows
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /confirm-password
+Disallow: /verify-email
+
+# App internals
+Disallow: /razorpay/
+Disallow: /up
+
+Sitemap: https://neoexam.org/sitemap.xml

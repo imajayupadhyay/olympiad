@@ -6,11 +6,13 @@ import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import { Link } from '@inertiajs/vue3';
+import SeoHead from '@/Components/Shared/SeoHead.vue';
 
 const showingNavigationDropdown = ref(false);
 </script>
 
 <template>
+    <SeoHead noindex description="National Olympiad Hunt account area." />
     <div>
         <div class="min-h-screen bg-gray-100">
             <nav

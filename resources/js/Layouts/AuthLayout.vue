@@ -1,4 +1,6 @@
 <script setup>
+import SeoHead from '@/Components/Shared/SeoHead.vue';
+
 defineProps({
     eyebrow: { type: String, default: 'Student Portal' },
     heading: { type: String, default: '' },
@@ -8,6 +10,8 @@ defineProps({
 </script>
 
 <template>
+    <SeoHead noindex
+        description="Sign in to National Olympiad Hunt or create a free student account to register for olympiad exams." />
     <div class="noh-auth min-h-screen w-full flex">
         <!-- ───────────── Brand showcase (left) ───────────── -->
         <aside class="brand-panel">

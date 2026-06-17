@@ -1,6 +1,7 @@
 <script setup>
 import PublicHeader from '@/Components/Public/PublicHeader.vue';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import SeoHead from '@/Components/Shared/SeoHead.vue';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, reactive, ref, watch } from 'vue';
 
 const props = defineProps({
@@ -50,7 +51,9 @@ const availMeta = (a) => ({ upcoming: { l: 'Upcoming', c: 'av-up' }, live: { l: 
 </script>
 
 <template>
-    <Head title="Exams — National Olympiad Hunt" />
+    <SeoHead
+        title="Olympiad Exams"
+        description="Browse and enrol in upcoming National Olympiad Hunt exams by subject and class. Compare fees, schedules and syllabus, then register online in minutes." />
 
     <div class="noh">
         <!-- toast -->

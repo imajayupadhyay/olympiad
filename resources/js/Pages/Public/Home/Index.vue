@@ -1,4 +1,7 @@
 <template>
+  <SeoHead
+    title="Online Olympiad Exams for Class 1–12"
+    description="National Olympiad Hunt is India's online olympiad platform for Class 1–12. Register free, take timed olympiad exams across subjects, climb national ranks and win medals & certificates." />
   <div class="noh" ref="rootEl">
 
     <!-- ============ MARQUEE ============ -->
@@ -435,6 +438,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import PublicHeader from '@/Components/Public/PublicHeader.vue';
+import SeoHead from '@/Components/Shared/SeoHead.vue';
 
 const props = defineProps({
   upcomingExams: { type: Array, default: () => [] },

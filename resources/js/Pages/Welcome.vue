@@ -1,5 +1,6 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
+import SeoHead from '@/Components/Shared/SeoHead.vue';
 
 defineProps({
     canLogin: {
@@ -27,7 +28,7 @@ function handleImageError() {
 </script>
 
 <template>
-    <Head title="Welcome" />
+    <SeoHead title="Welcome" noindex />
     <div class="bg-gray-50 text-black/50 dark:bg-black dark:text-white/50">
         <img
             id="background"
