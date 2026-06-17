@@ -41,5 +41,8 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
 
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments');
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+    Route::post('/payments/{payment}/coupon', [PaymentController::class, 'applyCoupon'])->name('payments.coupon.apply');
+    Route::delete('/payments/{payment}/coupon', [PaymentController::class, 'removeCoupon'])->name('payments.coupon.remove');
+    Route::post('/payments/{payment}/order', [PaymentController::class, 'createOrder'])->name('payments.order');
     Route::post('/payments/{payment}/verify', [PaymentController::class, 'verify'])->name('payments.verify');
 });

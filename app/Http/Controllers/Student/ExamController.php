@@ -172,14 +172,7 @@ class ExamController extends Controller
         $enrolled = $this->enrollments->enrollFree($user, $free->pluck('id')->all());
 
         if ($paid->isNotEmpty()) {
-            try {
-                $payment = $this->payments->createOrder($user, $paid->pluck('id')->all());
-            } catch (\Throwable $e) {
-                report($e);
-
-                return redirect()->route('student.exams')
-                    ->with('error', 'Could not start the payment. Please try again.');
-            }
+            $payment = $this->payments->createPendingPayment($user, $paid->pluck('id')->all());
 
             return redirect()->route('student.payments.show', $payment);
         }

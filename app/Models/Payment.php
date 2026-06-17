@@ -11,9 +11,12 @@ class Payment extends Model
     protected $fillable = [
         'user_id',
         'amount',
+        'gross_amount',
+        'discount_amount',
         'currency',
         'status',
         'gateway',
+        'coupon_id',
         'razorpay_order_id',
         'razorpay_payment_id',
         'razorpay_signature',
@@ -23,14 +26,21 @@ class Payment extends Model
     ];
 
     protected $casts = [
-        'amount'  => 'decimal:2',
-        'notes'   => 'array',
-        'paid_at' => 'datetime',
+        'amount'          => 'decimal:2',
+        'gross_amount'    => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'notes'           => 'array',
+        'paid_at'         => 'datetime',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function coupon(): BelongsTo
+    {
+        return $this->belongsTo(Coupon::class);
     }
 
     public function enrollments(): HasMany
