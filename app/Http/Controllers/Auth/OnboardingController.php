@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Exam;
+use App\Models\Payment;
 use App\Services\EnrollmentService;
 use App\Services\PaymentService;
 use Illuminate\Http\Request;
@@ -73,42 +74,90 @@ class OnboardingController extends Controller
         return redirect()->route('register.checkout');
     }
 
-    /** Step 3 — order summary + checkout. */
+    /**
+     * Step 3 — checkout. Nothing payable (all-free selection) enrols straight away;
+     * otherwise a pending Payment is prepared and the coupon-enabled checkout is shown.
+     * Reuses the shared `student.payments.*` coupon/order/verify endpoints so a new
+     * registrant gets the exact same payment experience as a returning student.
+     */
     public function checkout(Request $request): Response|\Illuminate\Http\RedirectResponse
     {
+        $user = $request->user();
         $ids = session('onboarding_exam_ids', []);
 
         if (empty($ids)) {
             return redirect()->route('register.olympiads');
         }
 
+        $summary = $this->enrollments->selectionSummary($ids, $user);
+        $canonicalIds = collect($summary['items'])->pluck('id')->sort()->values()->all();
+
+        // No payable amount (all free, or everything already enrolled) → enrol and finish.
+        if (empty($canonicalIds) || (float) $summary['total'] <= 0) {
+            $enrolled = $this->enrollments->enrollFree($user, $canonicalIds);
+            session()->forget(['onboarding_exam_ids', 'onboarding_payment_id']);
+
+            return redirect()->route('student.dashboard')->with(
+                'success',
+                $enrolled->isNotEmpty()
+                    ? "Welcome aboard! You're enrolled in {$enrolled->count()} olympiad(s)."
+                    : 'Your account is ready. Browse olympiads anytime from the Exams page.'
+            );
+        }
+
+        $payment = $this->pendingPaymentFor($user, $canonicalIds);
+        $payment->load('coupon');
+
+        $items = Exam::whereIn('id', $payment->notes['exam_ids'] ?? [])
+            ->get(['id', 'name', 'fee_amount'])
+            ->map(fn (Exam $e) => ['id' => $e->id, 'name' => $e->name, 'fee_amount' => (float) $e->fee_amount]);
+
         return Inertia::render('Auth/Onboarding/Checkout', [
-            'summary' => $this->enrollments->selectionSummary($ids, $request->user()),
+            'payment' => [
+                'id'       => $payment->id,
+                'gross'    => (float) $payment->gross_amount,
+                'discount' => (float) $payment->discount_amount,
+                'amount'   => (float) $payment->amount,
+                'currency' => $payment->currency,
+                'coupon'   => $payment->coupon ? [
+                    'code' => $payment->coupon->code,
+                    'type' => $payment->coupon->type,
+                ] : null,
+            ],
+            'items'   => $items,
+            'keyId'   => config('services.razorpay.key_id'),
+            'prefill' => [
+                'name'    => $user->name,
+                'email'   => $user->email,
+                'contact' => $user->phone,
+            ],
         ]);
     }
 
-    /** Finalise: enrol free exams now; paid exams await Razorpay (Phase E). */
-    public function complete(Request $request)
+    /**
+     * Reuse the still-pending payment for this exact selection (so a coupon survives
+     * the back-and-forth re-renders); otherwise start a fresh one. The selection may
+     * include free exams — they ride along in the payment and enrol on success.
+     */
+    protected function pendingPaymentFor(\App\Models\User $user, array $canonicalIds): Payment
     {
-        $user = $request->user();
-        $ids = session('onboarding_exam_ids', []);
+        if ($pid = session('onboarding_payment_id')) {
+            $payment = Payment::where('id', $pid)
+                ->where('user_id', $user->id)
+                ->where('status', 'created')
+                ->first();
 
-        $exams = Exam::whereIn('id', $ids)->where('status', 'published')->get();
-        $free = $exams->filter->isFree();
-        $paid = $exams->reject->isFree();
-
-        $enrolled = $this->enrollments->enrollFree($user, $free->pluck('id')->all());
-
-        session()->forget('onboarding_exam_ids');
-
-        // Paid exams → checkout (free ones already enrolled above).
-        if ($paid->isNotEmpty()) {
-            $payment = $this->payments->createPendingPayment($user, $paid->pluck('id')->all());
-
-            return redirect()->route('student.payments.show', $payment);
+            if ($payment) {
+                $existing = collect($payment->notes['exam_ids'] ?? [])->sort()->values()->all();
+                if ($existing === $canonicalIds) {
+                    return $payment;
+                }
+            }
         }
 
-        return redirect()->route('student.dashboard')
-            ->with('success', "Welcome aboard! You're enrolled in {$enrolled->count()} exam(s).");
+        $payment = $this->payments->createPendingPayment($user, $canonicalIds);
+        session(['onboarding_payment_id' => $payment->id]);
+
+        return $payment;
     }
 }

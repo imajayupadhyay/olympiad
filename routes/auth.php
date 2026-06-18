@@ -41,7 +41,6 @@ Route::middleware('auth')->group(function () {
     Route::get('register/olympiads', [OnboardingController::class, 'olympiads'])->name('register.olympiads');
     Route::post('register/olympiads', [OnboardingController::class, 'storeOlympiads'])->name('register.olympiads.store');
     Route::get('register/checkout', [OnboardingController::class, 'checkout'])->name('register.checkout');
-    Route::post('register/complete', [OnboardingController::class, 'complete'])->name('register.complete');
 
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
