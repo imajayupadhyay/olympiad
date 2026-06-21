@@ -3,9 +3,18 @@
     description="National Olympiad Hunt admin panel — manage exams, questions, students, results, payments, coupons and content." />
   <div class="min-h-screen flex" style="background:#FBF6EC;">
 
+    <!-- Mobile backdrop (only when the drawer is open on small screens) -->
+    <div
+      v-if="sidebarOpen"
+      @click="sidebarOpen = false"
+      class="fixed inset-0 bg-black/50 z-30 lg:hidden"
+      aria-hidden="true"
+    ></div>
+
     <!-- Sidebar -->
     <aside
-      class="w-64 flex flex-col shadow-2xl shrink-0 fixed inset-y-0 left-0 z-30"
+      class="w-64 flex flex-col shadow-2xl shrink-0 fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out motion-reduce:transition-none"
+      :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
       style="background:linear-gradient(180deg,#0A1024 0%,#131C3D 60%,#1B2748 100%);"
     >
       <!-- Brand -->
@@ -18,7 +27,7 @@
       </div>
 
       <!-- Nav -->
-      <nav class="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto text-sm">
+      <nav class="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto text-sm" @click="closeOnMobile">
         <p class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-1">Main</p>
 
         <SidebarLink :href="route('admin.dashboard')" :active="isActive('/admin/dashboard')">
@@ -173,14 +182,33 @@
       </div>
     </aside>
 
-    <!-- Page content (offset by sidebar width) -->
-    <div class="flex-1 flex flex-col ml-64 min-h-screen">
+    <!-- Page content (offset by sidebar width when open on desktop, full width otherwise) -->
+    <div
+      class="flex-1 flex flex-col min-h-screen transition-[margin] duration-300 ease-in-out motion-reduce:transition-none"
+      :class="sidebarOpen ? 'lg:ml-64' : 'ml-0'"
+    >
 
       <!-- Top bar -->
-      <header class="bg-white border-b border-gray-200 px-6 py-3.5 flex items-center justify-between sticky top-0 z-20 shadow-sm">
-        <div>
-          <h1 class="font-heading font-bold text-text-main text-lg leading-tight">{{ title }}</h1>
-          <p v-if="subtitle" class="text-text-muted text-xs mt-0.5">{{ subtitle }}</p>
+      <header class="bg-white border-b border-gray-200 px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-20 shadow-sm">
+        <div class="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            @click="toggleSidebar"
+            class="p-2 -ml-1 rounded-lg text-text-muted hover:text-primary hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30 shrink-0"
+            :aria-label="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
+            :aria-expanded="sidebarOpen"
+          >
+            <svg v-if="sidebarOpen" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+            </svg>
+            <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+          </button>
+          <div class="min-w-0">
+            <h1 class="font-heading font-bold text-text-main text-lg leading-tight truncate">{{ title }}</h1>
+            <p v-if="subtitle" class="text-text-muted text-xs mt-0.5 truncate">{{ subtitle }}</p>
+          </div>
         </div>
         <div class="flex items-center gap-3">
           <a href="/" target="_blank" class="text-text-muted hover:text-primary text-xs flex items-center gap-1.5 transition-colors">
@@ -202,6 +230,7 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import SidebarLink from '@/Components/Shared/SidebarLink.vue';
 import AppLogo from '@/Components/Shared/AppLogo.vue';
@@ -210,6 +239,56 @@ import SeoHead from '@/Components/Shared/SeoHead.vue';
 defineProps({
   title:    { type: String, default: 'Dashboard' },
   subtitle: { type: String, default: '' },
+});
+
+const STORAGE_KEY = 'noh-admin-sidebar-open';
+
+// Open by default; the real value is resolved on mount (desktop reads the saved
+// preference, mobile always starts closed). The layout remounts on every Inertia
+// visit, so persistence lives in localStorage rather than component state.
+const sidebarOpen = ref(true);
+
+const isDesktop = () => window.matchMedia('(min-width: 1024px)').matches;
+
+const applyResponsiveState = () => {
+  if (isDesktop()) {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    sidebarOpen.value = stored === null ? true : stored === 'true';
+  } else {
+    sidebarOpen.value = false;
+  }
+};
+
+const toggleSidebar = () => {
+  sidebarOpen.value = !sidebarOpen.value;
+  // Only the desktop preference is remembered; mobile is always a transient drawer.
+  if (isDesktop()) localStorage.setItem(STORAGE_KEY, String(sidebarOpen.value));
+};
+
+const closeOnMobile = () => {
+  if (!isDesktop()) sidebarOpen.value = false;
+};
+
+const onKeydown = (e) => {
+  if (e.key === 'Escape' && !isDesktop() && sidebarOpen.value) sidebarOpen.value = false;
+};
+
+let resizeTimer;
+const onResize = () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(applyResponsiveState, 150);
+};
+
+onMounted(() => {
+  applyResponsiveState();
+  window.addEventListener('resize', onResize);
+  window.addEventListener('keydown', onKeydown);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', onResize);
+  window.removeEventListener('keydown', onKeydown);
+  clearTimeout(resizeTimer);
 });
 
 const isActive = (path) => usePage().url.startsWith(path);
