@@ -1,5 +1,4 @@
 <script setup>
-import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -10,9 +9,6 @@ const props = defineProps({
 const emit = defineEmits(['toggle']);
 
 const selectable = computed(() => !props.exam.is_enrolled && props.exam.availability !== 'closed');
-
-const fmtDate = (d) =>
-    d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'TBA';
 
 const availMeta = computed(() => ({
     upcoming: { label: 'Upcoming', cls: 'av-upcoming' },
@@ -27,28 +23,14 @@ const toggle = () => { if (selectable.value) emit('toggle', props.exam.id); };
     <div class="card" :class="{ on: selected, enrolled: exam.is_enrolled }" @click="toggle">
         <!-- top row -->
         <div class="top">
-            <span class="subj" :style="exam.subject?.color ? { background: exam.subject.color + '22', color: exam.subject.color } : {}">
-                <span v-if="exam.subject?.icon" class="subj-ic">{{ exam.subject.icon }}</span>
-                {{ exam.subject?.name ?? 'General' }}
-            </span>
             <span class="avail" :class="availMeta.cls">
                 <span class="dot"></span>{{ availMeta.label }}
             </span>
         </div>
 
-        <h3 class="name">{{ exam.name }}</h3>
+        <h3 class="name">{{ exam.subject?.name ?? 'General' }}</h3>
 
-        <!-- meta -->
-        <div class="meta">
-            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1 2.7 2.5 6 2.5s6-1.5 6-2.5v-5"/></svg>{{ exam.class_level?.label ?? '—' }}</span>
-            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>{{ exam.questions_count }} Qs</span>
-            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{{ exam.duration_minutes }} min</span>
-        </div>
-
-        <div class="window">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-            {{ fmtDate(exam.starts_at) }} → {{ fmtDate(exam.ends_at) }}
-        </div>
+        <p v-if="exam.description" class="desc">{{ exam.description }}</p>
 
         <!-- footer -->
         <div class="foot">
@@ -64,8 +46,6 @@ const toggle = () => { if (selectable.value) emit('toggle', props.exam.id); };
                 <svg v-if="selected" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
             </span>
         </div>
-
-        <Link :href="route('student.exams.show', exam.id)" class="details" @click.stop>View details →</Link>
     </div>
 </template>
 
@@ -80,9 +60,7 @@ const toggle = () => { if (selectable.value) emit('toggle', props.exam.id); };
 .card.enrolled { cursor: default; }
 .card.enrolled:hover { transform: none; }
 
-.top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
-.subj { display: inline-flex; align-items: center; gap: .35rem; font-size: .76rem; font-weight: 700; padding: .25rem .6rem; border-radius: 999px; background: #F3E9D6; color: #5B6373; }
-.subj-ic { font-size: .9rem; line-height: 1; }
+.top { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; }
 
 .avail { display: inline-flex; align-items: center; gap: .35rem; font-size: .72rem; font-weight: 700; padding: .2rem .55rem; border-radius: 999px; }
 .avail .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
@@ -92,12 +70,7 @@ const toggle = () => { if (selectable.value) emit('toggle', props.exam.id); };
 
 .name { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.12rem; color: #0A1024; margin: 0; line-height: 1.25; }
 
-.meta { display: flex; flex-wrap: wrap; gap: .9rem; }
-.meta span { display: inline-flex; align-items: center; gap: .35rem; font-size: .82rem; color: #5B6373; }
-.meta svg { width: 15px; height: 15px; }
-
-.window { display: flex; align-items: center; gap: .4rem; font-size: .8rem; color: #5B6373; font-family: "Space Grotesk", monospace; }
-.window svg { width: 15px; height: 15px; }
+.desc { font-size: .86rem; color: #5B6373; line-height: 1.45; margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
 .foot { display: flex; align-items: center; justify-content: space-between; margin-top: .2rem; padding-top: .7rem; border-top: 1px solid #F0E6D2; }
 .fee { font-family: "Space Grotesk", monospace; font-weight: 700; font-size: 1.05rem; color: #0A1024; }
@@ -109,7 +82,4 @@ const toggle = () => { if (selectable.value) emit('toggle', props.exam.id); };
 .check { width: 24px; height: 24px; border-radius: 8px; border: 2px solid #D9C9A6; display: grid; place-items: center; color: #fff; transition: all .15s; }
 .check.on { background: #EE6A2C; border-color: #EE6A2C; }
 .check svg { width: 14px; height: 14px; }
-
-.details { font-size: .8rem; font-weight: 600; color: #C9501A; text-decoration: none; }
-.details:hover { text-decoration: underline; }
 </style>

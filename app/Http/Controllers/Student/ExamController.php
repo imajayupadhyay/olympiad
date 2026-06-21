@@ -120,7 +120,6 @@ class ExamController extends Controller
 
         return Inertia::render('Student/Exams/Detail', [
             'exam' => array_merge($this->cardData($exam, $isEnrolled), [
-                'description'  => $exam->description,
                 'syllabus'     => $exam->syllabus,
                 'eligibility'  => $exam->eligibility,
                 'instructions' => $exam->instructions,
@@ -195,6 +194,7 @@ class ExamController extends Controller
         return [
             'id'               => $exam->id,
             'name'             => $exam->name,
+            'description'      => $exam->description,
             'exam_code'        => $exam->exam_code,
             'subject'          => $exam->subject?->only(['id', 'name', 'icon', 'color']),
             'class_level'      => $exam->classLevel?->only(['id', 'label']),
