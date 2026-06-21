@@ -164,7 +164,12 @@
               </span>
             </td>
             <td class="px-4 py-3.5">
-              <span class="font-number text-text-main text-sm">{{ q.class_level?.label }}</span>
+              <div class="flex flex-wrap gap-1">
+                <span v-for="cl in q.class_levels" :key="cl.id"
+                      class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-text-main">
+                  {{ cl.label }}
+                </span>
+              </div>
             </td>
             <td class="px-4 py-3.5">
               <span class="text-xs font-semibold px-2 py-1 rounded-md" :class="difficultyClass(q.difficulty)">

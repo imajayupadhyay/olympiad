@@ -150,12 +150,21 @@
                 <p v-if="form.errors.question_category_id" class="text-danger text-xs mt-1">{{ form.errors.question_category_id }}</p>
               </div>
               <div>
-                <label class="block text-xs font-semibold text-text-muted mb-1.5">Class Level *</label>
-                <select v-model="form.class_level_id"
-                        class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white"
-                        :class="form.errors.class_level_id ? 'border-danger' : 'border-gray-200'">
-                  <option v-for="cl in classLevels" :key="cl.id" :value="cl.id">{{ cl.label }}</option>
-                </select>
+                <label class="block text-xs font-semibold text-text-muted mb-1.5">Class Levels *</label>
+                <div class="grid grid-cols-4 gap-2">
+                  <button
+                    v-for="cl in classLevels" :key="cl.id"
+                    type="button"
+                    @click="toggleClassLevel(cl.id)"
+                    class="py-2 rounded-xl text-xs font-semibold border-2 transition-all"
+                    :class="form.class_level_ids.includes(cl.id)
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-gray-100 text-text-muted hover:border-gray-200'"
+                  >
+                    {{ cl.label }}
+                  </button>
+                </div>
+                <p v-if="form.errors.class_level_ids" class="text-danger text-xs mt-1">{{ form.errors.class_level_ids }}</p>
               </div>
               <div>
                 <label class="block text-xs font-semibold text-text-muted mb-1.5">Difficulty *</label>
@@ -264,7 +273,7 @@ const difficultyActive = {
 
 const form = useForm({
   subject_id:      props.question.subject_id,
-  class_level_id:  props.question.class_level_id,
+  class_level_ids: props.question.class_levels?.map(cl => cl.id) ?? [],
   question_category_id: props.question.question_category_id || '',
   difficulty:      props.question.difficulty,
   question_type:   props.question.question_type,
@@ -293,6 +302,15 @@ watch(() => form.subject_id, () => {
     form.question_category_id = '';
   }
 });
+
+const toggleClassLevel = (id) => {
+  const index = form.class_level_ids.indexOf(id);
+  if (index === -1) {
+    form.class_level_ids.push(id);
+  } else {
+    form.class_level_ids.splice(index, 1);
+  }
+};
 
 const optionPrefix = (depth) => ''.padStart(depth * 2, '-');
 

@@ -392,9 +392,8 @@ class AdminExamManagementTest extends TestCase
 
     private function createQuestion(User $admin, Subject $subject, ClassLevel $classLevel, ?QuestionCategory $category = null): Question
     {
-        return Question::create([
+        $question = Question::create([
             'subject_id' => $subject->id,
-            'class_level_id' => $classLevel->id,
             'question_category_id' => $category?->id,
             'difficulty' => 'medium',
             'topic' => 'General',
@@ -411,6 +410,10 @@ class AdminExamManagementTest extends TestCase
             'is_active' => true,
             'created_by' => $admin->id,
         ]);
+
+        $question->classLevels()->attach($classLevel->id);
+
+        return $question;
     }
 
     private function examPayload(Subject $subject, ClassLevel $classLevel): array

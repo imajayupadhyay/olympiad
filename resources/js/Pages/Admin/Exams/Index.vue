@@ -162,6 +162,10 @@
                       class="text-primary hover:text-primary-light text-xs font-semibold px-2.5 py-1.5 rounded-lg hover:bg-primary/5 transition-colors">
                   Edit
                 </Link>
+                <button @click="duplicateExam(exam)"
+                        class="text-accent text-xs font-semibold px-2.5 py-1.5 rounded-lg hover:bg-accent/5 transition-colors">
+                  Duplicate
+                </button>
                 <button v-if="exam.status !== 'published'" @click="publishExam(exam)"
                         class="text-success text-xs font-semibold px-2.5 py-1.5 rounded-lg hover:bg-green-50 transition-colors">
                   Publish
@@ -294,6 +298,10 @@ const unpublishExam = (exam) => {
 
 const archiveExam = (exam) => {
   router.patch(route('admin.exams.archive', exam.id), {}, { preserveScroll: true });
+};
+
+const duplicateExam = (exam) => {
+  router.post(route('admin.exams.duplicate', exam.id));
 };
 
 const deleteExam = () => {

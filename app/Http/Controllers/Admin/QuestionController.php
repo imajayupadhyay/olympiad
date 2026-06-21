@@ -30,7 +30,8 @@ class QuestionController extends Controller
     {
         return [
             'subject_id'      => ['required', 'exists:subjects,id'],
-            'class_level_id'  => ['required', 'exists:class_levels,id'],
+            'class_level_ids'   => ['required', 'array', 'min:1'],
+            'class_level_ids.*' => ['integer', 'distinct', 'exists:class_levels,id'],
             'question_category_id' => ['nullable', 'exists:question_categories,id'],
             'difficulty'      => ['required', 'in:easy,medium,hard'],
             'question_type'   => ['required', 'in:single,multiple'],
@@ -56,13 +57,15 @@ class QuestionController extends Controller
     {
         $query = Question::with([
             'subject:id,name,slug,icon,color',
-            'classLevel:id,level,label',
+            'classLevels:id,level,label',
             'questionCategory:id,subject_id,parent_id,name,slug',
         ])
             ->latest();
 
         if ($request->filled('subject_id'))     $query->where('subject_id', $request->subject_id);
-        if ($request->filled('class_level_id')) $query->where('class_level_id', $request->class_level_id);
+        if ($request->filled('class_level_id')) {
+            $query->whereHas('classLevels', fn ($q) => $q->where('class_levels.id', $request->class_level_id));
+        }
         if ($request->filled('question_category_id')) {
             $category = QuestionCategory::find($request->question_category_id);
             $query->whereIn('question_category_id', $category ? $category->idsWithDescendants() : []);
@@ -96,13 +99,17 @@ class QuestionController extends Controller
         $data = $request->validate($this->validationRules());
         $this->ensureCategoryMatchesSubject($data['subject_id'], $data['question_category_id'] ?? null);
 
+        $classLevelIds = $data['class_level_ids'];
+        unset($data['class_level_ids']);
+
         if ($request->hasFile('question_image')) {
             $data['question_image'] = $request->file('question_image')
                 ->store('questions', 'public');
         }
 
         $data['created_by'] = Auth::id();
-        Question::create($data);
+        $question = Question::create($data);
+        $question->classLevels()->sync($classLevelIds);
 
         return redirect()->route('admin.questions.index')
             ->with('success', 'Question added successfully.');
@@ -110,7 +117,7 @@ class QuestionController extends Controller
 
     public function edit(Question $question)
     {
-        $question->load('questionCategory');
+        $question->load('questionCategory', 'classLevels');
 
         return Inertia::render('Admin/Questions/Edit', [
             ...$this->meta(),
@@ -122,6 +129,9 @@ class QuestionController extends Controller
     {
         $data = $request->validate($this->validationRules(true));
         $this->ensureCategoryMatchesSubject($data['subject_id'], $data['question_category_id'] ?? null);
+
+        $classLevelIds = $data['class_level_ids'];
+        unset($data['class_level_ids']);
 
         if ($request->hasFile('question_image')) {
             if ($question->question_image) {
@@ -140,6 +150,7 @@ class QuestionController extends Controller
         }
 
         $question->update($data);
+        $question->classLevels()->sync($classLevelIds);
 
         return redirect()->route('admin.questions.index')
             ->with('success', 'Question updated.');

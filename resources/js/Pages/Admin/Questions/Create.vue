@@ -188,13 +188,21 @@
 
               <!-- Class -->
               <div>
-                <label class="block text-xs font-semibold text-text-muted mb-1.5">Class Level *</label>
-                <select v-model="form.class_level_id"
-                        class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white transition-colors"
-                        :class="form.errors.class_level_id ? 'border-danger' : 'border-gray-200'">
-                  <option value="">Choose class…</option>
-                  <option v-for="cl in classLevels" :key="cl.id" :value="cl.id">{{ cl.label }}</option>
-                </select>
+                <label class="block text-xs font-semibold text-text-muted mb-1.5">Class Levels *</label>
+                <div class="grid grid-cols-4 gap-2">
+                  <button
+                    v-for="cl in classLevels" :key="cl.id"
+                    type="button"
+                    @click="toggleClassLevel(cl.id)"
+                    class="py-2 rounded-xl text-xs font-semibold border-2 transition-all"
+                    :class="form.class_level_ids.includes(cl.id)
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-gray-100 text-text-muted hover:border-gray-200'"
+                  >
+                    {{ cl.label }}
+                  </button>
+                </div>
+                <p v-if="form.errors.class_level_ids" class="text-danger text-xs mt-1">{{ form.errors.class_level_ids }}</p>
               </div>
 
               <!-- Difficulty -->
@@ -302,7 +310,7 @@ const difficultyActive = {
 
 const blankForm = () => useForm({
   subject_id:      '',
-  class_level_id:  '',
+  class_level_ids: [],
   question_category_id: '',
   difficulty:      'medium',
   question_type:   'single',
@@ -332,6 +340,15 @@ watch(() => form.subject_id, () => {
 });
 
 const optionPrefix = (depth) => ''.padStart(depth * 2, '-');
+
+const toggleClassLevel = (id) => {
+  const index = form.class_level_ids.indexOf(id);
+  if (index === -1) {
+    form.class_level_ids.push(id);
+  } else {
+    form.class_level_ids.splice(index, 1);
+  }
+};
 
 const isCorrect = (opt) => form.correct_options.includes(opt);
 

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 class Question extends Model
 {
     protected $fillable = [
-        'subject_id', 'class_level_id', 'question_category_id', 'difficulty', 'topic',
+        'subject_id', 'question_category_id', 'difficulty', 'topic',
         'question_text', 'question_image',
         'option_a', 'option_b', 'option_c', 'option_d',
         'question_type', 'correct_options',
@@ -39,9 +39,9 @@ class Question extends Model
         return $this->belongsTo(Subject::class);
     }
 
-    public function classLevel(): BelongsTo
+    public function classLevels(): BelongsToMany
     {
-        return $this->belongsTo(ClassLevel::class);
+        return $this->belongsToMany(ClassLevel::class, 'question_class_levels')->withTimestamps();
     }
 
     public function questionCategory(): BelongsTo

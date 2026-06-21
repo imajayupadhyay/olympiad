@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ClassLevel extends Model
@@ -11,9 +12,9 @@ class ClassLevel extends Model
 
     protected $casts = ['is_active' => 'boolean'];
 
-    public function questions(): HasMany
+    public function questions(): BelongsToMany
     {
-        return $this->hasMany(Question::class);
+        return $this->belongsToMany(Question::class, 'question_class_levels')->withTimestamps();
     }
 
     public function exams(): HasMany

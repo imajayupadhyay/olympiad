@@ -127,7 +127,7 @@ class ExamController extends Controller
             'classLevel:id,level,label',
             'questionCategory:id,subject_id,parent_id,name,slug',
             'questions.subject:id,name,slug,icon,color',
-            'questions.classLevel:id,level,label',
+            'questions.classLevels:id,level,label',
             'questions.questionCategory:id,subject_id,parent_id,name,slug',
         ]);
 
@@ -177,6 +177,64 @@ class ExamController extends Controller
         $exam->delete();
 
         return back()->with('success', 'Exam deleted.');
+    }
+
+    public function duplicate(Exam $exam)
+    {
+        $exam->load('questions');
+
+        $newExam = DB::transaction(function () use ($exam) {
+            $data = [
+                'subject_id' => $exam->subject_id,
+                'class_level_id' => $exam->class_level_id,
+                'question_category_id' => $exam->question_category_id,
+                'description' => $exam->description,
+                'syllabus' => $exam->syllabus,
+                'eligibility' => $exam->eligibility,
+                'instructions' => $exam->instructions,
+                'starts_at' => $exam->starts_at,
+                'ends_at' => $exam->ends_at,
+                'duration_minutes' => $exam->duration_minutes,
+                'fee_amount' => $exam->fee_amount,
+                'fee_currency' => $exam->fee_currency,
+                'scoring_mode' => $exam->scoring_mode,
+                'marks_per_question' => $exam->marks_per_question,
+                'negative_marking_enabled' => $exam->negative_marking_enabled,
+                'negative_marks_per_question' => $exam->negative_marks_per_question,
+                'randomize_questions' => $exam->randomize_questions,
+                'randomize_options' => $exam->randomize_options,
+                'show_result_immediately' => $exam->show_result_immediately,
+                'name' => $exam->name.' (Copy)',
+                'status' => 'draft',
+                'published_at' => null,
+                'result_release_at' => null,
+            ];
+            $data['slug'] = $this->uniqueSlug($data['name']);
+            $data['exam_code'] = $this->generateExamCode();
+            $data['created_by'] = Auth::id();
+            $data['updated_by'] = Auth::id();
+
+            $newExam = Exam::create($data);
+
+            $pivotRows = $exam->questions->map(fn (Question $question) => [
+                'exam_id' => $newExam->id,
+                'question_id' => $question->id,
+                'sort_order' => $question->pivot->sort_order,
+                'marks' => $question->pivot->marks,
+                'negative_marks' => $question->pivot->negative_marks,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ])->all();
+
+            if ($pivotRows !== []) {
+                DB::table('exam_questions')->insert($pivotRows);
+            }
+
+            return $newExam;
+        });
+
+        return redirect()->route('admin.exams.edit', $newExam)
+            ->with('success', 'Exam duplicated — review and save your changes.');
     }
 
     public function publish(Exam $exam)
@@ -275,7 +333,7 @@ class ExamController extends Controller
         $validQuestions = Question::whereIn('id', $ids)
             ->where('is_active', true)
             ->where('subject_id', $subjectId)
-            ->where('class_level_id', $classLevelId);
+            ->whereHas('classLevels', fn ($q) => $q->where('class_levels.id', $classLevelId));
 
         if ($categoryId) {
             $category = QuestionCategory::find($categoryId);
@@ -352,7 +410,7 @@ class ExamController extends Controller
 
         $query = Question::with([
             'subject:id,name,slug,icon,color',
-            'classLevel:id,level,label',
+            'classLevels:id,level,label',
             'questionCategory:id,subject_id,parent_id,name,slug',
         ])
             ->where('is_active', true)
@@ -362,7 +420,7 @@ class ExamController extends Controller
             $query->whereRaw('0 = 1');
         } else {
             $query->where('subject_id', $subjectId)
-                ->where('class_level_id', $classLevelId);
+                ->whereHas('classLevels', fn ($q) => $q->where('class_levels.id', $classLevelId));
         }
 
         if ($request->filled('question_difficulty')) {
@@ -438,7 +496,7 @@ class ExamController extends Controller
             'marks' => $question->pivot->marks ?? $question->marks,
             'negative_marks' => $question->pivot->negative_marks ?? $question->negative_marks,
             'subject' => $question->subject,
-            'class_level' => $question->classLevel,
+            'class_levels' => $question->classLevels,
             'question_category' => $question->questionCategory,
         ];
     }

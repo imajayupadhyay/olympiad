@@ -33,6 +33,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
     Route::resource('questions', QuestionController::class);
     Route::resource('exams', ExamController::class);
+    Route::post('/exams/{exam}/duplicate', [ExamController::class, 'duplicate'])->name('exams.duplicate');
     Route::patch('/exams/{exam}/publish', [ExamController::class, 'publish'])->name('exams.publish');
     Route::patch('/exams/{exam}/unpublish', [ExamController::class, 'unpublish'])->name('exams.unpublish');
     Route::patch('/exams/{exam}/archive', [ExamController::class, 'archive'])->name('exams.archive');

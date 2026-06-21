@@ -131,11 +131,14 @@ class AdminQuestionCategoryTest extends TestCase
             ...$this->questionPayload($admin, $science, $classLevel),
             'question_category_id' => $child->id,
         ]);
-        Question::create([
+        $matchingQuestion->classLevels()->attach($classLevel->id);
+
+        $siblingQuestion = Question::create([
             ...$this->questionPayload($admin, $science, $classLevel),
             'question_category_id' => $sibling->id,
             'question_text' => '<p>Biology question?</p>',
         ]);
+        $siblingQuestion->classLevels()->attach($classLevel->id);
 
         $response = $this->actingAs($admin)->get(route('admin.questions.index', [
             'question_category_id' => $parent->id,
@@ -176,7 +179,7 @@ class AdminQuestionCategoryTest extends TestCase
     {
         return [
             'subject_id' => $subject->id,
-            'class_level_id' => $classLevel->id,
+            'class_level_ids' => [$classLevel->id],
             'difficulty' => 'medium',
             'topic' => 'General',
             'question_text' => '<p>What is the correct answer?</p>',
