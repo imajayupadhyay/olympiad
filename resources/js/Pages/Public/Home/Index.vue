@@ -179,14 +179,10 @@
               <article class="ecard" v-for="(e, i) in exams" :key="i">
                 <div class="ecard__head">
                   <div class="ecard__ribbon" v-if="e.ribbon">{{ e.ribbon }}</div>
-                  <div class="ecard__date">📅 {{ e.date }}</div>
                   <h3>{{ e.name }}</h3>
-                  <div class="ecard__sub">{{ e.sub }}</div>
+                  <p class="ecard__desc" v-if="e.description">{{ e.description }}</p>
                 </div>
                 <div class="ecard__body">
-                  <div class="ecard__row">
-                    <span class="ecard__pill" v-for="p in e.pills" :key="p">{{ p }}</span>
-                  </div>
                   <div class="ecard__foot">
                     <div class="ecard__fee"><b>{{ e.fee }}</b><small>per attempt</small></div>
                   </div>
@@ -903,12 +899,9 @@ onUnmounted(() => {
 .ecard:hover{ transform:translateY(-6px); box-shadow:var(--shadow-lg); }
 .ecard__head{ padding:26px 26px 0; position:relative; }
 .ecard__ribbon{ position:absolute; top:18px; right:-34px; transform:rotate(40deg); background:var(--saffron); color:#fff; font:700 11px/1 var(--body); letter-spacing:.06em; padding:6px 40px; }
-.ecard__date{ display:inline-flex; align-items:center; gap:8px; font:600 12px/1 var(--body); color:var(--gold-lt); background:rgba(214,153,31,.14); padding:8px 12px; border-radius:100px; margin-bottom:18px; }
 .ecard h3{ font-family:var(--display); font-size:24px; font-weight:600; line-height:1.1; margin-bottom:8px; }
-.ecard__sub{ color:var(--paper-45); font-size:13.5px; }
+.ecard__desc{ color:var(--paper-45); font-size:13.5px; line-height:1.5; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
 .ecard__body{ padding:22px 26px 26px; }
-.ecard__row{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px; }
-.ecard__pill{ font:600 12px/1 var(--body); padding:8px 12px; border-radius:100px; background:rgba(255,255,255,.07); color:var(--paper-70); }
 .ecard__foot{ display:flex; align-items:center; justify-content:space-between; padding-top:20px; border-top:1px solid rgba(255,255,255,.08); }
 .ecard__fee b{ font-family:var(--mono); font-size:24px; font-weight:700; color:var(--gold-lt); }
 .ecard__fee small{ display:block; font-size:11px; color:var(--paper-45); letter-spacing:.04em; }

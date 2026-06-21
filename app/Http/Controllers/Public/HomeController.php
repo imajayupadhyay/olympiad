@@ -12,8 +12,7 @@ class HomeController extends Controller
     public function index(): Response
     {
         $upcomingExams = Exam::where('status', 'published')
-            ->with('subject:id,name', 'classLevel:id,label')
-            ->withCount('questions')
+            ->with('subject:id,name')
             ->orderByRaw('starts_at IS NULL, starts_at')
             ->take(8)
             ->get()
@@ -21,16 +20,10 @@ class HomeController extends Controller
                 $state = $e->availabilityState();
 
                 return [
-                    'name'   => $e->name,
-                    'sub'    => trim(($e->subject?->name ?? 'Olympiad').' · '.($e->classLevel?->label ?? '')),
-                    'date'   => $e->starts_at ? $e->starts_at->format('d M Y') : 'TBA',
-                    'ribbon' => $state === 'live' ? 'LIVE' : '',
-                    'fee'    => $e->isFree() ? 'Free' : '₹'.number_format((float) $e->fee_amount, 0),
-                    'pills'  => [
-                        '⏱️ '.$e->duration_minutes.' min',
-                        '📋 '.$e->questions_count.' MCQ',
-                        '🎓 '.($e->classLevel?->label ?? 'All classes'),
-                    ],
+                    'name'        => $e->subject?->name ?? $e->name,
+                    'description' => $e->description,
+                    'ribbon'      => $state === 'live' ? 'LIVE' : '',
+                    'fee'         => $e->isFree() ? 'Free' : '₹'.number_format((float) $e->fee_amount, 0),
                 ];
             });
 

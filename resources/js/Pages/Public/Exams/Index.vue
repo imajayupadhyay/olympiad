@@ -46,7 +46,6 @@ watch(() => page.props.flash, (f) => {
     clearTimeout(tt); tt = setTimeout(() => (toast.value = null), 4000);
 }, { deep: true, immediate: true });
 
-const fmt = (d) => d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'TBA';
 const availMeta = (a) => ({ upcoming: { l: 'Upcoming', c: 'av-up' }, live: { l: 'Live now', c: 'av-live' }, closed: { l: 'Closed', c: 'av-closed' } }[a] ?? { l: '', c: '' });
 </script>
 
@@ -86,18 +85,10 @@ const availMeta = (a) => ({ upcoming: { l: 'Upcoming', c: 'av-up' }, live: { l: 
             <div v-if="exams.length" class="grid">
                 <div v-for="e in exams" :key="e.id" class="card" :class="{ on: picked.includes(e.id), enrolled: e.is_enrolled }" @click="toggle(e)">
                     <div class="top">
-                        <span class="subj" :style="e.subject?.color ? { background: e.subject.color + '22', color: e.subject.color } : {}">
-                            <span v-if="e.subject?.icon">{{ e.subject.icon }}</span> {{ e.subject?.name ?? 'General' }}
-                        </span>
                         <span class="avail" :class="availMeta(e.availability).c"><span class="dot"></span>{{ availMeta(e.availability).l }}</span>
                     </div>
-                    <h3>{{ e.name }}</h3>
-                    <div class="meta">
-                        <span>🎓 {{ e.class_level?.label }}</span>
-                        <span>📝 {{ e.questions_count }} Qs</span>
-                        <span>⏱ {{ e.duration_minutes }}m</span>
-                    </div>
-                    <div class="win">{{ fmt(e.starts_at) }} → {{ fmt(e.ends_at) }}</div>
+                    <h3>{{ e.subject?.name ?? e.name }}</h3>
+                    <p v-if="e.description" class="desc">{{ e.description }}</p>
                     <div class="foot">
                         <span class="fee" :class="{ free: e.is_free }">{{ e.is_free ? 'FREE' : '₹' + e.fee_amount.toLocaleString('en-IN') }}</span>
                         <span v-if="e.is_enrolled" class="enr">✓ Enrolled</span>
@@ -195,16 +186,14 @@ const availMeta = (a) => ({ upcoming: { l: 'Upcoming', c: 'av-up' }, live: { l: 
 .card:hover { transform:translateY(-3px); box-shadow:0 22px 44px -24px rgba(10,16,36,.3); }
 .card.on { border-color:var(--saffron); box-shadow:0 0 0 3px rgba(238,106,44,.14); }
 .card.enrolled { cursor:default; }
-.top { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
-.subj { display:inline-flex; align-items:center; gap:.35rem; font-size:.76rem; font-weight:700; padding:.25rem .6rem; border-radius:999px; background:var(--paper-2); color:#5B6373; }
+.top { display:flex; align-items:center; justify-content:flex-end; gap:.5rem; }
 .avail { display:inline-flex; align-items:center; gap:.3rem; font-size:.72rem; font-weight:700; padding:.2rem .55rem; border-radius:999px; }
 .avail .dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
 .av-up { background:rgba(44,73,166,.12); color:var(--royal); }
 .av-live { background:rgba(22,138,102,.14); color:var(--emerald); }
 .av-closed { background:rgba(91,99,115,.14); color:#5B6373; }
 .card h3 { font-family:var(--display); font-weight:600; font-size:1.12rem; color:var(--ink); margin:0; line-height:1.25; }
-.meta { display:flex; flex-wrap:wrap; gap:.8rem; font-size:.82rem; color:#5B6373; }
-.win { font-family:var(--mono); font-size:.8rem; color:#5B6373; }
+.desc { font-size:.86rem; color:#5B6373; line-height:1.45; margin:0; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
 .foot { display:flex; align-items:center; justify-content:space-between; padding-top:.7rem; border-top:1px solid #F0E6D2; margin-top:.2rem; }
 .fee { font-family:var(--mono); font-weight:700; font-size:1.05rem; color:var(--ink); }
 .fee.free { color:var(--emerald); }

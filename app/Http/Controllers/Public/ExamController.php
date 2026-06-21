@@ -40,6 +40,7 @@ class ExamController extends Controller
         $exams = $query->get()->map(fn (Exam $e) => [
             'id'               => $e->id,
             'name'             => $e->name,
+            'description'      => $e->description,
             'subject'          => $e->subject?->only(['name', 'icon', 'color']),
             'class_level'      => $e->classLevel?->only(['label']),
             'questions_count'  => $e->questions_count,
