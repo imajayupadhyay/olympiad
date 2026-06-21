@@ -52,7 +52,7 @@ const skip = () => router.visit(route('student.dashboard'));
                 </span>
                 <span class="subj">{{ e.subject?.icon || '📝' }}</span>
                 <span class="info">
-                    <strong>{{ e.name }}</strong>
+                    <strong>{{ e.subject?.name ?? e.name }}</strong>
                 </span>
                 <span class="fee" :class="{ free: e.is_free }">{{ e.is_free ? 'FREE' : '₹' + e.fee_amount.toLocaleString('en-IN') }}</span>
             </button>

@@ -51,9 +51,9 @@ defineProps({
                     </p>
 
                     <ul class="brand-feats">
-                        <li><span class="dot dot-saffron"></span> Timed online exams from anywhere</li>
-                        <li><span class="dot dot-gold"></span> National, state &amp; school-level ranks</li>
-                        <li><span class="dot dot-emerald"></span> Instant scorecards &amp; certificates</li>
+                        <li><span class="dot dot-gold"></span> Prize worth ₹10 Lakh</li>
+                        <li><span class="dot dot-saffron"></span> 10+ different countries participation</li>
+                        <li><span class="dot dot-emerald"></span> National, state &amp; school-level ranks</li>
                     </ul>
                 </div>
 
