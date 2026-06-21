@@ -2,7 +2,7 @@
 import AuthLayout from '@/Layouts/AuthLayout.vue';
 import Stepper from './Onboarding/Components/Stepper.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 defineProps({
     classLevels: { type: Array, default: () => [] },
@@ -23,6 +23,41 @@ const form = useForm({
 });
 
 const showPassword = ref(false);
+
+// Date of birth as three dropdowns (no calendar). Composed into form.dob (YYYY-MM-DD).
+const dobDay = ref('');
+const dobMonth = ref('');
+const dobYear = ref('');
+
+const months = [
+    { v: '01', l: 'Jan' }, { v: '02', l: 'Feb' }, { v: '03', l: 'Mar' },
+    { v: '04', l: 'Apr' }, { v: '05', l: 'May' }, { v: '06', l: 'Jun' },
+    { v: '07', l: 'Jul' }, { v: '08', l: 'Aug' }, { v: '09', l: 'Sep' },
+    { v: '10', l: 'Oct' }, { v: '11', l: 'Nov' }, { v: '12', l: 'Dec' },
+];
+
+const thisYear = new Date().getFullYear();
+const years = Array.from({ length: 28 }, (_, i) => thisYear - 3 - i); // e.g. 2023 → 1996
+
+// Days available depend on the chosen month/year (28–31), so Feb never offers 30/31.
+const maxDay = computed(() => {
+    if (!dobMonth.value) return 31;
+    const y = dobYear.value ? Number(dobYear.value) : 2000; // leap-safe fallback
+    return new Date(y, Number(dobMonth.value), 0).getDate();
+});
+const days = computed(() => Array.from({ length: maxDay.value }, (_, i) => i + 1));
+
+// Drop an out-of-range day if the month/year change shrinks the month.
+watch(maxDay, (max) => {
+    if (dobDay.value && Number(dobDay.value) > max) dobDay.value = '';
+});
+
+// Keep form.dob in sync; empty until all three are picked (field is optional).
+watch([dobDay, dobMonth, dobYear], () => {
+    form.dob = (dobDay.value && dobMonth.value && dobYear.value)
+        ? `${dobYear.value}-${dobMonth.value}-${String(dobDay.value).padStart(2, '0')}`
+        : '';
+});
 
 const submit = () => {
     form.post(route('register'), {
@@ -86,10 +121,20 @@ const submit = () => {
                 </div>
 
                 <div class="field">
-                    <label for="dob">Date of birth</label>
-                    <div class="control">
-                        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
-                        <input id="dob" type="date" v-model="form.dob" />
+                    <label for="dob-day">Date of birth</label>
+                    <div class="control dob">
+                        <select id="dob-day" class="dob-part" v-model="dobDay" aria-label="Day of birth">
+                            <option value="" disabled>Day</option>
+                            <option v-for="d in days" :key="d" :value="d">{{ d }}</option>
+                        </select>
+                        <select class="dob-part" v-model="dobMonth" aria-label="Month of birth">
+                            <option value="" disabled>Month</option>
+                            <option v-for="m in months" :key="m.v" :value="m.v">{{ m.l }}</option>
+                        </select>
+                        <select class="dob-part" v-model="dobYear" aria-label="Year of birth">
+                            <option value="" disabled>Year</option>
+                            <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+                        </select>
                     </div>
                     <p v-if="form.errors.dob" class="err">{{ form.errors.dob }}</p>
                 </div>
@@ -186,6 +231,11 @@ const submit = () => {
 }
 .control select { cursor: pointer; appearance: none; -webkit-appearance: none; }
 .control input::placeholder { color: rgba(10,16,36,.32); }
+
+/* Date of birth: three equal dropdowns, no calendar */
+.control.dob { padding-left: .3rem; }
+.control.dob .dob-part { flex: 1; min-width: 0; padding: .75rem .5rem; text-align: center; }
+.control.dob .dob-part:not(:last-child) { border-right: 1px solid #F0E6D2; }
 .toggle { border: 0; background: transparent; cursor: pointer; padding: 0 .8rem; color: rgba(10,16,36,.4); display: grid; place-items: center; }
 .toggle:hover { color: #EE6A2C; }
 .toggle svg { width: 17px; height: 17px; }
