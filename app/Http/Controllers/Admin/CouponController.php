@@ -14,7 +14,9 @@ class CouponController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Coupon::withCount('redemptions')->latest();
+        // Only admin-authored coupons — auto-minted referral coupons are managed
+        // from the Referrals module.
+        $query = Coupon::manual()->withCount('redemptions')->latest();
 
         if ($request->filled('search')) {
             $query->where('code', 'like', '%'.strtoupper(trim($request->search)).'%');
@@ -60,11 +62,11 @@ class CouponController extends Controller
             'coupons' => $coupons,
             'filters' => $request->only(['search', 'type', 'status']),
             'totals'  => [
-                'all'         => Coupon::count(),
-                'active'      => Coupon::where('is_active', true)
+                'all'         => Coupon::manual()->count(),
+                'active'      => Coupon::manual()->where('is_active', true)
                     ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>=', now()))->count(),
-                'redemptions' => CouponRedemption::count(),
-                'discount'    => (float) CouponRedemption::sum('discount_amount'),
+                'redemptions' => CouponRedemption::whereHas('coupon', fn ($q) => $q->manual())->count(),
+                'discount'    => (float) CouponRedemption::whereHas('coupon', fn ($q) => $q->manual())->sum('discount_amount'),
             ],
         ]);
     }
@@ -129,6 +131,7 @@ class CouponController extends Controller
 
         $data['min_order_amount'] = $data['min_order_amount'] ?? 0;
         $data['is_active'] = $data['is_active'] ?? true;
+        $data['source'] = 'manual';
 
         return $data;
     }

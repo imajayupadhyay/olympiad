@@ -31,6 +31,11 @@ class CouponService
             return $this->fail('This coupon is not active.');
         }
 
+        // Personal (referral) coupons are locked to their owner.
+        if ($coupon->owner_user_id !== null && $coupon->owner_user_id !== $user->id) {
+            return $this->fail('This reward isn’t available on your account.');
+        }
+
         if ($coupon->isExhausted()) {
             return $this->fail('This coupon has reached its usage limit.');
         }

@@ -28,6 +28,18 @@ const savedPct = computed(() => {
     return g > 0 ? Math.round((Number(props.payment.discount) / g) * 100) : 0;
 });
 
+// Label varies for auto-applied referral coupons.
+const couponLabel = computed(() => {
+    const src = props.payment.coupon?.source;
+    if (src === 'referral_welcome') return 'Welcome discount applied';
+    if (src === 'referral_reward') return 'Referral reward applied';
+    return 'Coupon applied';
+});
+const isReferralCoupon = computed(() => {
+    const src = props.payment.coupon?.source;
+    return src === 'referral_welcome' || src === 'referral_reward';
+});
+
 // ── Coupon (shared student endpoints) ──
 const applyCoupon = () => {
     if (!couponForm.code.trim()) return;
@@ -157,29 +169,35 @@ async function openRazorpay(data) {
             <div class="ticket-foot">
                 <!-- Coupon -->
                 <div class="coupon">
-                    <template v-if="payment.coupon">
-                        <div class="cp-applied">
-                            <div class="cp-left">
-                                <span class="cp-tag">{{ payment.coupon.code }}</span>
-                                <span class="cp-msg">Coupon applied</span>
-                            </div>
-                            <button type="button" class="cp-remove" @click="removeCoupon">Remove</button>
+                    <!-- referral discount applied automatically -->
+                    <div v-if="payment.coupon && isReferralCoupon" class="cp-applied referral">
+                        <div class="cp-left">
+                            <span class="cp-tag">🎁</span>
+                            <span class="cp-msg">{{ couponLabel }}</span>
                         </div>
-                    </template>
-                    <template v-else>
-                        <div class="cp-input">
-                            <input
-                                v-model="couponForm.code"
-                                type="text"
-                                placeholder="Have a coupon code?"
-                                spellcheck="false"
-                                @keydown.enter.prevent="applyCoupon"
-                            />
-                            <button type="button" :disabled="couponForm.processing || !couponForm.code.trim()" @click="applyCoupon">
-                                {{ couponForm.processing ? '…' : 'Apply' }}
-                            </button>
+                        <button type="button" class="cp-remove" @click="removeCoupon">Remove</button>
+                    </div>
+                    <!-- manual coupon applied -->
+                    <div v-else-if="payment.coupon" class="cp-applied">
+                        <div class="cp-left">
+                            <span class="cp-tag">{{ payment.coupon.code }}</span>
+                            <span class="cp-msg">{{ couponLabel }}</span>
                         </div>
-                    </template>
+                        <button type="button" class="cp-remove" @click="removeCoupon">Remove</button>
+                    </div>
+                    <!-- manual code entry (also offered when a referral discount is on, to replace it) -->
+                    <div v-if="!payment.coupon || isReferralCoupon" class="cp-input" :class="{ 'cp-input-stacked': isReferralCoupon }">
+                        <input
+                            v-model="couponForm.code"
+                            type="text"
+                            :placeholder="isReferralCoupon ? 'Use a coupon code instead?' : 'Have a coupon code?'"
+                            spellcheck="false"
+                            @keydown.enter.prevent="applyCoupon"
+                        />
+                        <button type="button" :disabled="couponForm.processing || !couponForm.code.trim()" @click="applyCoupon">
+                            {{ couponForm.processing ? '…' : 'Apply' }}
+                        </button>
+                    </div>
                     <p v-if="couponForm.errors.code" class="cp-err">{{ couponForm.errors.code }}</p>
                     <p v-else-if="flashError" class="cp-err">{{ flashError }}</p>
                     <p v-else-if="flashSuccess && payment.coupon" class="cp-ok">{{ flashSuccess }}</p>
@@ -274,6 +292,7 @@ async function openRazorpay(data) {
 /* ── Coupon ── */
 .coupon { margin-bottom: 1rem; }
 .cp-input { display: flex; gap: .5rem; }
+.cp-input-stacked { margin-top: .6rem; }
 .cp-input input {
     flex: 1; border: 1.5px solid var(--line); background: var(--paper); border-radius: 11px;
     padding: .7rem .85rem; font-family: "Space Grotesk", monospace; font-size: .9rem;
@@ -298,6 +317,9 @@ async function openRazorpay(data) {
     background: var(--gold-lt); padding: .25rem .55rem; border-radius: 7px; font-size: .82rem;
 }
 .cp-msg { font-size: .82rem; font-weight: 600; color: #97751e; }
+.cp-applied.referral { border-color: var(--emerald); background: rgba(22,138,102,.1); }
+.cp-applied.referral .cp-tag { background: rgba(22,138,102,.18); color: var(--emerald); }
+.cp-applied.referral .cp-msg { color: var(--emerald); }
 .cp-remove { border: 0; background: transparent; color: var(--saffron-dk); font-weight: 700; font-size: .8rem; cursor: pointer; }
 .cp-remove:hover { text-decoration: underline; }
 .cp-err { color: #b02a1f; font-size: .78rem; font-weight: 600; margin: .5rem 0 0; }

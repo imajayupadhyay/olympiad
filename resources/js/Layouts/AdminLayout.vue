@@ -106,6 +106,15 @@
           Coupons
         </SidebarLink>
 
+        <SidebarLink :href="route('admin.referrals')" :active="isActive('/admin/referrals')">
+          <template #icon>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a3 3 0 10-2.83-4M5 12a3 3 0 102.83-4"/>
+            </svg>
+          </template>
+          Referrals
+        </SidebarLink>
+
         <SidebarLink :href="route('admin.notifications')" :active="isActive('/admin/notifications')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

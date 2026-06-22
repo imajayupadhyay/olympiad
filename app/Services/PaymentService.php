@@ -204,5 +204,8 @@ class PaymentService
         if ($payment->coupon_id && $payment->coupon) {
             $this->coupons->redeem($payment->coupon, $payment->user, $payment, (float) $payment->discount_amount);
         }
+
+        // Qualify a referral on first paid enrolment (no-op in registration mode).
+        app(ReferralService::class)->qualifyReferral($payment->user, 'first_paid_enrollment');
     }
 }

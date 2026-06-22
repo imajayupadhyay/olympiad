@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\ClassLevel;
 use App\Models\User;
+use App\Services\ReferralService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -62,6 +63,11 @@ class RegisteredUserController extends Controller
         ]);
 
         event(new Registered($user));
+
+        // Attribute this signup to a referrer if a referral code was carried in.
+        if ($code = $request->session()->pull('referral_code')) {
+            app(ReferralService::class)->attribute($user, $code);
+        }
 
         Auth::login($user);
 

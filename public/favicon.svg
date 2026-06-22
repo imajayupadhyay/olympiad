@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="National Olympiad Hunt">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F2C84B"/>
+      <stop offset="1" stop-color="#D6991F"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".35"/>
+      <stop offset=".5" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#gold)"/>
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#shine)"/>
+  <rect x="8" y="8" width="496" height="496" rx="106" fill="none" stroke="#0A1024" stroke-opacity=".12" stroke-width="6"/>
+  <!-- Blocky serif-less "N" monogram (deep ink), drawn as vector paths -->
+  <path fill="#0A1024" d="M150 150 H212 V362 H150 Z M300 150 H362 V362 H300 Z M150 150 H212 L362 362 H300 Z"/>
+</svg>

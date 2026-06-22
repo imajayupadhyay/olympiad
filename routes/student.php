@@ -9,6 +9,7 @@ use App\Http\Controllers\Student\CertificateController;
 use App\Http\Controllers\Student\LeaderboardController;
 use App\Http\Controllers\Student\PracticeController;
 use App\Http\Controllers\Student\PaymentController;
+use App\Http\Controllers\Student\ReferralController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->group(function () {
@@ -38,6 +39,8 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
 
     Route::get('/leaderboard', [LeaderboardController::class, 'index'])->name('leaderboard');
     Route::get('/practice', [PracticeController::class, 'index'])->name('practice');
+
+    Route::get('/refer', [ReferralController::class, 'index'])->name('referrals');
 
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments');
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
