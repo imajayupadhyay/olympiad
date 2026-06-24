@@ -78,7 +78,9 @@ class DashboardController extends Controller
     /** Compact Refer & Earn card data (null when the program is off). */
     private function referralWidget($user): ?array
     {
-        if (! ReferralSetting::current()->is_active) {
+        $settings = ReferralSetting::current();
+
+        if (! $settings->is_active) {
             return null;
         }
 
