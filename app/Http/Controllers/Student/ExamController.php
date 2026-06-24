@@ -10,6 +10,7 @@ use App\Models\Result;
 use App\Models\Subject;
 use App\Services\EnrollmentService;
 use App\Services\PaymentService;
+use App\Services\ReferralService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,6 +20,7 @@ class ExamController extends Controller
     public function __construct(
         protected EnrollmentService $enrollments,
         protected PaymentService $payments,
+        protected ReferralService $referrals,
     ) {
     }
 
@@ -76,6 +78,10 @@ class ExamController extends Controller
                 'subject_id'     => $request->input('subject_id', ''),
                 'class_level_id' => (string) ($classFilter ?? ''),
             ],
+            // Refer & Earn card + instant discount preview on the selection summary —
+            // identical state/feed to the registration Step 2 page.
+            'referral'      => $this->referrals->shareState($user),
+            'discounts'     => $this->referrals->usableCouponRules($user),
         ]);
     }
 
