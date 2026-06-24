@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\Payment;
 use App\Services\PaymentService;
+use App\Services\ReferralService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ class PaymentController extends Controller
 {
     public function __construct(
         protected PaymentService $payments,
+        protected ReferralService $referrals,
     ) {
     }
 
@@ -52,6 +54,15 @@ class PaymentController extends Controller
         }
 
         $payment->load('coupon');
+
+        // Auto-apply an earned referral reward (or welcome) when nothing is applied yet.
+        if (! $payment->coupon_id) {
+            if ($auto = $this->referrals->autoCouponFor($user, (float) $payment->gross_amount)) {
+                $this->payments->applyCoupon($payment, $auto->code);
+                $payment->load('coupon');
+            }
+        }
+
         $examIds = $payment->notes['exam_ids'] ?? [];
         $items = Exam::whereIn('id', $examIds)->get(['id', 'name', 'fee_amount'])
             ->map(fn ($e) => ['id' => $e->id, 'name' => $e->name, 'fee_amount' => (float) $e->fee_amount]);
@@ -64,8 +75,9 @@ class PaymentController extends Controller
                 'amount'   => (float) $payment->amount,
                 'currency' => $payment->currency,
                 'coupon'   => $payment->coupon ? [
-                    'code' => $payment->coupon->code,
-                    'type' => $payment->coupon->type,
+                    'code'   => $payment->coupon->code,
+                    'type'   => $payment->coupon->type,
+                    'source' => $payment->coupon->source,
                 ] : null,
             ],
             'items'    => $items,

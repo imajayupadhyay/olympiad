@@ -26,6 +26,7 @@ const nav = [
     { label: 'Certificates', href: '/student/certificates', match: '/student/certificates', icon: 'medal'},
     { label: 'Practice',     href: '/student/practice',     match: '/student/practice',     icon: 'bolt' },
     { label: 'Payments',     href: '/student/payments',     match: '/student/payments',     icon: 'card' },
+    { label: 'Refer & Earn', href: '/student/refer',        match: '/student/refer',        icon: 'gift' },
 ];
 
 const isActive = (m) => page.url.startsWith(m);
@@ -124,6 +125,7 @@ const icons = {
     medal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="15" r="6"/><path d="M9 9 7 2m8 7 2-7M10.5 13.5 12 12l1.5 1.5"/></svg>',
     bolt:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>',
     card:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>',
+    gift:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v9h14v-9"/><path d="M12 8S10 3 7.5 4.5 9 8 12 8Zm0 0s2-5 4.5-3.5S15 8 12 8Z"/></svg>',
     user:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
     logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>',
 };

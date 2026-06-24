@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\ExamController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\QuestionController;
+use App\Http\Controllers\Admin\ReferralController;
+use App\Http\Controllers\Admin\ReferralSettingController;
 use App\Http\Controllers\Admin\ResultController;
 use App\Http\Controllers\Admin\Settings\ClassLevelController;
 use App\Http\Controllers\Admin\Settings\QuestionCategoryController;
@@ -60,6 +62,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/coupons/{coupon}', [CouponController::class, 'update'])->name('coupons.update');
     Route::patch('/coupons/{coupon}/toggle', [CouponController::class, 'toggle'])->name('coupons.toggle');
     Route::delete('/coupons/{coupon}', [CouponController::class, 'destroy'])->name('coupons.destroy');
+
+    Route::get('/referrals', [ReferralController::class, 'index'])->name('referrals');
+    Route::get('/referrals/settings', [ReferralSettingController::class, 'index'])->name('referrals.settings');
+    Route::put('/referrals/settings', [ReferralSettingController::class, 'update'])->name('referrals.settings.update');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
     Route::post('/notifications/send', [NotificationController::class, 'send'])->name('notifications.send');

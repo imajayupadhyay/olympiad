@@ -11,6 +11,8 @@ class Coupon extends Model
 {
     protected $fillable = [
         'code',
+        'source',
+        'owner_user_id',
         'description',
         'type',
         'value',
@@ -42,6 +44,18 @@ class Coupon extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** The user a personal (referral) coupon is restricted to, if any. */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_user_id');
+    }
+
+    /** Admin-authored coupons only (excludes auto-minted referral coupons). */
+    public function scopeManual(Builder $query): Builder
+    {
+        return $query->where('source', 'manual');
     }
 
     /** Window + active flag check (does NOT check usage limits — that needs a user). */

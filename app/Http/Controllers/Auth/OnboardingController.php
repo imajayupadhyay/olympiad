@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\Payment;
+use App\Models\ReferralSetting;
 use App\Services\EnrollmentService;
 use App\Services\PaymentService;
+use App\Services\ReferralService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,6 +22,7 @@ class OnboardingController extends Controller
     public function __construct(
         protected EnrollmentService $enrollments,
         protected PaymentService $payments,
+        protected ReferralService $referrals,
     ) {
     }
 
@@ -49,9 +52,46 @@ class OnboardingController extends Controller
             ]);
 
         return Inertia::render('Auth/Onboarding/Olympiads', [
-            'exams'    => $exams,
-            'selected' => session('onboarding_exam_ids', []),
+            'exams'     => $exams,
+            'selected'  => session('onboarding_exam_ids', []),
+            'referral'  => $this->referralState($user),
+            'discounts' => $this->referrals->usableCouponRules($user),
         ]);
+    }
+
+    /** Referral share-widget state for the onboarding pages. */
+    protected function referralState(\App\Models\User $user): ?array
+    {
+        $settings = ReferralSetting::current();
+        if (! $settings->is_active) {
+            return null;
+        }
+
+        $applied = $user->referred_by !== null || $user->referralRecord()->exists();
+
+        $referred  = $user->referralsMade()->count();
+        $progress  = $this->referrals->progressCount($user);   // clicks or qualified, per mode
+        $rewarded  = \App\Models\Coupon::where('owner_user_id', $user->id)
+            ->where('source', 'referral_reward')->count();
+        $threshold = max(1, (int) $settings->unlock_threshold);
+        $toward    = $progress % $threshold;
+
+        return [
+            'applied' => $applied,                              // did THIS student sign up via a link?
+            'welcome' => $settings->refereeDiscountLabel(),     // discount a referee gets
+            'reward'  => $settings->referrerRewardLabel(),      // what the sharer earns
+            'link'    => $user->referralLink(),                 // this student's own shareable link
+            'code'    => $user->referral_code,
+            'stats'   => [
+                'referred'  => $referred,
+                'progress'  => $progress,
+                'rewarded'  => $rewarded,
+                'threshold' => $threshold,
+                'toward'    => $toward,
+                'remaining' => $threshold - $toward,
+                'mode'      => $settings->qualify_on,
+            ],
+        ];
     }
 
     /** Persist the selection and move to checkout. */
@@ -108,6 +148,14 @@ class OnboardingController extends Controller
         $payment = $this->pendingPaymentFor($user, $canonicalIds);
         $payment->load('coupon');
 
+        // Auto-apply the referee welcome discount when nothing is applied yet.
+        if (! $payment->coupon_id) {
+            if ($auto = $this->referrals->autoCouponFor($user, (float) $payment->gross_amount)) {
+                $this->payments->applyCoupon($payment, $auto->code);
+                $payment->load('coupon');
+            }
+        }
+
         $items = Exam::whereIn('id', $payment->notes['exam_ids'] ?? [])
             ->get(['id', 'name', 'fee_amount'])
             ->map(fn (Exam $e) => ['id' => $e->id, 'name' => $e->name, 'fee_amount' => (float) $e->fee_amount]);
@@ -120,8 +168,9 @@ class OnboardingController extends Controller
                 'amount'   => (float) $payment->amount,
                 'currency' => $payment->currency,
                 'coupon'   => $payment->coupon ? [
-                    'code' => $payment->coupon->code,
-                    'type' => $payment->coupon->type,
+                    'code'   => $payment->coupon->code,
+                    'type'   => $payment->coupon->type,
+                    'source' => $payment->coupon->source,
                 ] : null,
             ],
             'items'   => $items,

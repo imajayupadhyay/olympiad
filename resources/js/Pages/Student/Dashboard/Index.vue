@@ -1,12 +1,29 @@
 <script setup>
 import StudentLayout from '@/Layouts/StudentLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     myExams: { type: Array, default: () => [] },
     stats: { type: Object, default: () => ({}) },
+    referral: { type: Object, default: null },
 });
+
+const referralProgressLabel = computed(() => ({
+    link_click: 'link opens',
+    registration: 'joined',
+    first_paid_enrollment: 'enrolled',
+}[props.referral?.mode] || 'joined'));
+
+const referralCopied = ref(false);
+const copyReferral = async () => {
+    if (!props.referral?.link) return;
+    try {
+        await navigator.clipboard.writeText(props.referral.link);
+        referralCopied.value = true;
+        setTimeout(() => (referralCopied.value = false), 2000);
+    } catch { /* clipboard unavailable */ }
+};
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user ?? {});
@@ -96,6 +113,21 @@ const startExam = (examId) => router.post(route('student.exams.start', examId));
                 <Link :href="route('student.exams')" class="cta start">Browse olympiads →</Link>
             </div>
         </section>
+
+        <!-- refer & earn -->
+        <section v-if="referral" class="refer">
+            <div class="refer-l">
+                <span class="refer-ic">🎁</span>
+                <div>
+                    <strong>Refer &amp; Earn</strong>
+                    <small>{{ referral.progress }} {{ referralProgressLabel }} · {{ referral.rewards }} reward{{ referral.rewards === 1 ? '' : 's' }} ready to use</small>
+                </div>
+            </div>
+            <div class="refer-r">
+                <button class="refer-copy" :class="{ done: referralCopied }" @click="copyReferral">{{ referralCopied ? 'Copied ✓' : 'Copy link' }}</button>
+                <Link :href="route('student.referrals')" class="refer-cta">Refer friends →</Link>
+            </div>
+        </section>
     </StudentLayout>
 </template>
 
@@ -144,6 +176,22 @@ const startExam = (examId) => router.post(route('student.exams.start', examId));
 
 .empty { text-align: center; padding: 2rem 1rem; color: #5B6373; }
 .empty p { margin: 0 0 1rem; font-size: .92rem; }
+
+.refer { margin-top: 1.3rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    border-radius: 18px; padding: 1.2rem 1.4rem; color: #FBF6EC;
+    background: linear-gradient(135deg, #1B2748, #131C3D 60%, #0A1024);
+    box-shadow: 0 20px 50px -28px rgba(10,16,36,.5); }
+.refer-l { display: flex; align-items: center; gap: .9rem; }
+.refer-ic { font-size: 1.7rem; }
+.refer-l strong { display: block; font-family: "Fraunces", serif; font-weight: 600; font-size: 1.05rem; }
+.refer-l small { color: rgba(251,246,236,.6); font-size: .8rem; }
+.refer-r { display: flex; align-items: center; gap: .6rem; }
+.refer-copy { border: 1px solid rgba(251,246,236,.2); background: rgba(251,246,236,.08); color: #fff; cursor: pointer;
+    font-weight: 600; font-size: .82rem; padding: .55rem 1rem; border-radius: 11px; transition: background .2s; }
+.refer-copy:hover { background: rgba(251,246,236,.16); }
+.refer-copy.done { background: rgba(22,138,102,.3); border-color: rgba(22,138,102,.5); }
+.refer-cta { text-decoration: none; font-weight: 700; font-size: .85rem; padding: .55rem 1.1rem; border-radius: 11px; color: #fff;
+    background: linear-gradient(135deg, #F2854E, #EE6A2C); white-space: nowrap; }
 
 @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }

@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\Certificate;
+use App\Models\Coupon;
 use App\Models\ExamAttempt;
+use App\Models\ReferralSetting;
 use App\Models\Result;
+use App\Services\ReferralService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -68,6 +71,26 @@ class DashboardController extends Controller
                 'results'      => $results->where('is_released', true)->count(),
                 'certificates' => Certificate::where('user_id', $user->id)->where('type', 'student')->count(),
             ],
+            'referral' => $this->referralWidget($user),
         ]);
+    }
+
+    /** Compact Refer & Earn card data (null when the program is off). */
+    private function referralWidget($user): ?array
+    {
+        if (! ReferralSetting::current()->is_active) {
+            return null;
+        }
+
+        return [
+            'link'     => $user->referralLink(),
+            'progress' => app(ReferralService::class)->progressCount($user),
+            'mode'     => $settings->qualify_on,
+            'rewards'  => Coupon::where('owner_user_id', $user->id)
+                ->where('source', 'referral_reward')
+                ->where('is_active', true)
+                ->where('used_count', 0)
+                ->count(),
+        ];
     }
 }
