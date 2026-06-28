@@ -87,6 +87,8 @@ class PaymentController extends Controller
                 'email'   => $user->email,
                 'contact' => $user->phone,
             ],
+            // Refer & Earn share container — same state/feed as the exams + registration pages.
+            'referral' => $this->referrals->shareState($user),
         ]);
     }
 

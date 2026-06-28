@@ -167,6 +167,47 @@ class ReferralService
     }
 
     /**
+     * Share-widget state for a logged-in user (Refer & Earn card): the user's own
+     * link, the configured referee/referrer labels, and the mode-aware progress
+     * stats that drive the reward meter. Returns null when the program is inactive.
+     * Single source of truth for the onboarding Step 2 + student Exams referral card.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function shareState(User $user): ?array
+    {
+        $settings = ReferralSetting::current();
+        if (! $settings->is_active) {
+            return null;
+        }
+
+        $applied   = $user->referred_by !== null || $user->referralRecord()->exists();
+        $referred  = $user->referralsMade()->count();
+        $progress  = $this->progressCount($user);   // clicks or qualified, per mode
+        $rewarded  = Coupon::where('owner_user_id', $user->id)
+            ->where('source', 'referral_reward')->count();
+        $threshold = max(1, (int) $settings->unlock_threshold);
+        $toward    = $progress % $threshold;
+
+        return [
+            'applied' => $applied,                              // did THIS user sign up via a link?
+            'welcome' => $settings->refereeDiscountLabel(),     // discount a referee gets
+            'reward'  => $settings->referrerRewardLabel(),      // what the sharer earns
+            'link'    => $user->referralLink(),                 // this user's own shareable link
+            'code'    => $user->referral_code,
+            'stats'   => [
+                'referred'  => $referred,
+                'progress'  => $progress,
+                'rewarded'  => $rewarded,
+                'threshold' => $threshold,
+                'toward'    => $toward,
+                'remaining' => $threshold - $toward,
+                'mode'      => $settings->qualify_on,
+            ],
+        ];
+    }
+
+    /**
      * Mint referrer rewards for every full threshold of qualifying actions —
      * repeatable: refer N → a reward, another N → another. Idempotent (mints only
      * the rewards not yet granted). Locks the counted rows to avoid double-mint.

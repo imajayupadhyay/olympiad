@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\Payment;
-use App\Models\ReferralSetting;
 use App\Services\EnrollmentService;
 use App\Services\PaymentService;
 use App\Services\ReferralService;
@@ -54,44 +53,9 @@ class OnboardingController extends Controller
         return Inertia::render('Auth/Onboarding/Olympiads', [
             'exams'     => $exams,
             'selected'  => session('onboarding_exam_ids', []),
-            'referral'  => $this->referralState($user),
+            'referral'  => $this->referrals->shareState($user),
             'discounts' => $this->referrals->usableCouponRules($user),
         ]);
-    }
-
-    /** Referral share-widget state for the onboarding pages. */
-    protected function referralState(\App\Models\User $user): ?array
-    {
-        $settings = ReferralSetting::current();
-        if (! $settings->is_active) {
-            return null;
-        }
-
-        $applied = $user->referred_by !== null || $user->referralRecord()->exists();
-
-        $referred  = $user->referralsMade()->count();
-        $progress  = $this->referrals->progressCount($user);   // clicks or qualified, per mode
-        $rewarded  = \App\Models\Coupon::where('owner_user_id', $user->id)
-            ->where('source', 'referral_reward')->count();
-        $threshold = max(1, (int) $settings->unlock_threshold);
-        $toward    = $progress % $threshold;
-
-        return [
-            'applied' => $applied,                              // did THIS student sign up via a link?
-            'welcome' => $settings->refereeDiscountLabel(),     // discount a referee gets
-            'reward'  => $settings->referrerRewardLabel(),      // what the sharer earns
-            'link'    => $user->referralLink(),                 // this student's own shareable link
-            'code'    => $user->referral_code,
-            'stats'   => [
-                'referred'  => $referred,
-                'progress'  => $progress,
-                'rewarded'  => $rewarded,
-                'threshold' => $threshold,
-                'toward'    => $toward,
-                'remaining' => $threshold - $toward,
-                'mode'      => $settings->qualify_on,
-            ],
-        ];
     }
 
     /** Persist the selection and move to checkout. */

@@ -4,12 +4,31 @@ import { computed } from 'vue';
 const props = defineProps({
     items: { type: Array, default: () => [] },     // [{id,name,fee_amount,is_free}]
     processing: { type: Boolean, default: false },
+    discounts: { type: Array, default: () => [] }, // student's usable personal discount rules
 });
 
 const emit = defineEmits(['checkout', 'clear']);
 
 const total = computed(() => props.items.reduce((s, e) => s + (e.fee_amount || 0), 0));
 const hasPaid = computed(() => props.items.some((e) => !e.is_free));
+
+// Instant price preview — mirrors CouponService::discountFor + autoCouponFor (best rule).
+// Identical math to the registration Step 2 page so the total matches checkout.
+const discountAmount = computed(() => {
+    const t = total.value;
+    if (!t || !props.discounts.length) return 0;
+    let best = 0;
+    for (const d of props.discounts) {
+        if (t < (d.min_order_amount || 0)) continue;
+        let amt = d.type === 'percentage' ? Math.round((t * d.value / 100) * 100) / 100 : d.value;
+        if (d.type === 'percentage' && d.max_discount) amt = Math.min(amt, d.max_discount);
+        amt = Math.min(amt, t);
+        if (amt > best) best = amt;
+    }
+    return Math.round(best * 100) / 100;
+});
+const finalTotal = computed(() => Math.max(0, Math.round((total.value - discountAmount.value) * 100) / 100));
+const fmtINR = (n) => '₹' + Number(n).toLocaleString('en-IN');
 </script>
 
 <template>
@@ -25,8 +44,15 @@ const hasPaid = computed(() => props.items.some((e) => !e.is_free));
 
             <div class="right">
                 <div class="total">
-                    <small>Total</small>
-                    <strong :class="{ free: total === 0 }">{{ total === 0 ? 'FREE' : '₹' + total.toLocaleString('en-IN') }}</strong>
+                    <small>
+                        Total
+                        <span v-if="discountAmount > 0" class="save">{{ fmtINR(discountAmount) }} off</span>
+                    </small>
+                    <span v-if="discountAmount > 0" class="amounts">
+                        <s class="was">{{ fmtINR(total) }}</s>
+                        <strong :class="{ free: finalTotal === 0 }">{{ finalTotal === 0 ? 'FREE' : fmtINR(finalTotal) }}</strong>
+                    </span>
+                    <strong v-else :class="{ free: total === 0 }">{{ total === 0 ? 'FREE' : fmtINR(total) }}</strong>
                 </div>
                 <button class="clear" type="button" @click="emit('clear')">Clear</button>
                 <button class="cta" type="button" :disabled="processing" @click="emit('checkout')">
@@ -57,7 +83,10 @@ const hasPaid = computed(() => props.items.some((e) => !e.is_free));
 
 .right { display: flex; align-items: center; gap: 1rem; }
 .total { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
-.total small { font-size: .68rem; color: rgba(251,246,236,.5); }
+.total small { font-size: .68rem; color: rgba(251,246,236,.5); display: inline-flex; align-items: center; gap: .4rem; }
+.total small .save { font-size: .62rem; font-weight: 700; color: #34d399; background: rgba(52,211,153,.16); padding: .08rem .4rem; border-radius: 999px; text-transform: uppercase; letter-spacing: .03em; }
+.total .amounts { display: inline-flex; align-items: baseline; gap: .4rem; }
+.total .amounts .was { font-family: "Space Grotesk", monospace; font-size: .85rem; color: rgba(251,246,236,.45); text-decoration: line-through; }
 .total strong { font-family: "Space Grotesk", monospace; font-size: 1.2rem; color: #F2C84B; }
 .total strong.free { color: #34d399; }
 
