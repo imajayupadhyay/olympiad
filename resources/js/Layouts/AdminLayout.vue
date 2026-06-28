@@ -18,12 +18,8 @@
       style="background:linear-gradient(180deg,#0A1024 0%,#131C3D 60%,#1B2748 100%);"
     >
       <!-- Brand -->
-      <div class="px-5 py-5 border-b border-blue-800/60 flex items-center gap-3">
-        <AppLogo :size="36" :show-text="false" />
-        <div>
-          <p class="font-heading font-bold text-white text-base leading-tight">NOH Admin</p>
-          <p class="text-blue-300 text-xs">National Olympiad Hunt</p>
-        </div>
+      <div class="px-5 py-5 border-b border-blue-800/60 flex items-center">
+        <AppLogo :size="54" variant="light" />
       </div>
 
       <!-- Nav -->

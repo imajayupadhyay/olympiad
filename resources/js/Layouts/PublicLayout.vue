@@ -13,8 +13,8 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
 
         <!-- Logo -->
-        <Link href="/">
-          <AppLogo :size="38" text-class="text-base" />
+        <Link href="/" class="inline-flex items-center">
+          <AppLogo :size="54" variant="light" />
         </Link>
 
         <!-- Desktop Nav -->
@@ -92,7 +92,7 @@
           <!-- Brand column -->
           <div class="md:col-span-2">
             <Link href="/" class="inline-block mb-4">
-              <AppLogo :size="44" text-class="text-lg" />
+              <AppLogo :size="54" variant="light" />
             </Link>
             <p class="text-blue-200 text-sm leading-relaxed max-w-xs mt-3" style="font-family:'Inter',sans-serif;">
               India's premier online olympiad platform. Empowering school students to compete, excel, and earn recognition nationwide.

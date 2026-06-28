@@ -396,8 +396,7 @@
         <div class="foot-grid">
           <div class="foot-brand">
             <Link href="/" class="brand">
-              <span class="brand__mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 19.3 7.2 17l.9-5.4L4.2 7.7l5.4-.8L12 2z" fill="#F2C84B"/><path d="M8 19h8v2.5a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5V19z" fill="#EE6A2C"/></svg></span>
-              <span>National Olympiad Hunt</span>
+              <AppLogo :size="54" variant="light" />
             </Link>
             <p>India's premier olympiad platform for school students, building confidence one competition at a time.</p>
             <div class="foot-social">
@@ -434,6 +433,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import PublicHeader from '@/Components/Public/PublicHeader.vue';
+import AppLogo from '@/Components/Shared/AppLogo.vue';
 import SeoHead from '@/Components/Shared/SeoHead.vue';
 
 const props = defineProps({

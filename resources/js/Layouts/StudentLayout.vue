@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import SeoHead from '@/Components/Shared/SeoHead.vue';
+import AppLogo from '@/Components/Shared/AppLogo.vue';
 
 defineProps({
     title: { type: String, default: '' },
@@ -45,11 +46,7 @@ const isActive = (m) => page.url.startsWith(m);
 
             <div class="side-head">
                 <Link href="/student/dashboard" class="logo">
-                    <span class="logo-mark">NOH</span>
-                    <span class="logo-text">
-                        <strong>Olympiad Hunt</strong>
-                        <small>Student Portal</small>
-                    </span>
+                    <AppLogo :size="54" variant="light" />
                 </Link>
             </div>
 

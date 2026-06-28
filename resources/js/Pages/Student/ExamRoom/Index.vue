@@ -1,5 +1,6 @@
 <script setup>
 import ExamRoomLayout from '@/Layouts/ExamRoomLayout.vue';
+import AppLogo from '@/Components/Shared/AppLogo.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 
@@ -212,7 +213,7 @@ function doSubmit(reason = 'manual') {
             <!-- header -->
             <header class="bar">
                 <div class="bar-l">
-                    <span class="logo">NOH</span>
+                    <AppLogo :size="54" variant="dark" />
                     <h2>{{ exam.name }}</h2>
                 </div>
                 <div class="bar-r">

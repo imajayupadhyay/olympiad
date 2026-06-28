@@ -15,11 +15,11 @@
         <!-- Logo & heading -->
         <div class="text-center mb-8">
           <div class="flex justify-center mb-5">
-            <AppLogo :size="56" :show-text="false" />
+            <AppLogo :size="54" variant="light" />
           </div>
           <h1 class="font-heading font-bold text-white text-2xl mb-1">Admin Access</h1>
           <p class="text-blue-300 text-sm" style="font-family:'Inter',sans-serif;">
-            National Olympiad Hunt — Secure Panel
+            Secure Panel
           </p>
           <!-- Security badge -->
           <div class="inline-flex items-center gap-2 mt-3 bg-green-500/10 border border-green-500/20 text-green-300 text-xs font-medium px-3 py-1.5 rounded-full">

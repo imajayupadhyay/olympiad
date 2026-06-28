@@ -1,6 +1,7 @@
 <script setup>
 import PublicHeader from '@/Components/Public/PublicHeader.vue';
 import SeoHead from '@/Components/Shared/SeoHead.vue';
+import AppLogo from '@/Components/Shared/AppLogo.vue';
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, reactive, ref, watch } from 'vue';
 
@@ -123,7 +124,7 @@ const availMeta = (a) => ({ upcoming: { l: 'Upcoming', c: 'av-up' }, live: { l: 
         <!-- footer -->
         <footer class="foot-band">
             <div class="wrap foot-band__inner">
-                <Link href="/" class="brand light"><span class="brand-mark">NOH</span><span class="brand-name">National Olympiad Hunt</span></Link>
+                <Link href="/" class="brand light"><AppLogo :size="54" variant="light" /></Link>
                 <p>© {{ year }} National Olympiad Hunt. All rights reserved.</p>
             </div>
         </footer>

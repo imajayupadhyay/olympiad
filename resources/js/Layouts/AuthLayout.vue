@@ -1,5 +1,6 @@
 <script setup>
 import SeoHead from '@/Components/Shared/SeoHead.vue';
+import AppLogo from '@/Components/Shared/AppLogo.vue';
 
 defineProps({
     eyebrow: { type: String, default: 'Student Portal' },
@@ -25,8 +26,7 @@ defineProps({
 
             <div class="brand-inner">
                 <a href="/" class="brand-logo">
-                    <span class="brand-mark">NOH</span>
-                    <span class="brand-name">National Olympiad Hunt</span>
+                    <AppLogo :size="54" variant="light" />
                 </a>
 
                 <div class="brand-hero">
@@ -69,8 +69,7 @@ defineProps({
         <main class="form-panel">
             <div class="form-shell" :class="{ wide }">
                 <a href="/" class="form-logo-mobile">
-                    <span class="brand-mark">NOH</span>
-                    <span>National Olympiad Hunt</span>
+                    <AppLogo :size="54" variant="dark" />
                 </a>
 
                 <header class="form-head">
