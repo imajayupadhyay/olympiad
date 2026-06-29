@@ -1,14 +1,14 @@
 <template>
   <SeoHead
-    title="Online Olympiad Exams for Class 1–12"
-    description="National Olympiad Hunt is India's online olympiad platform for Class 1–12. Register free, take timed olympiad exams across subjects, climb national ranks and win medals & certificates." />
+    :title="seoSection.page_title"
+    :description="seoSection.meta_description" />
   <div class="noh" ref="rootEl">
 
     <!-- ============ MARQUEE ============ -->
-    <div class="marquee">
+    <div v-if="marqueeSection.is_enabled" class="marquee">
       <div class="marquee__track">
         <template v-for="n in 2" :key="n">
-          <span v-for="(m, i) in marquee" :key="n + '-' + i"><i class="dot"></i> {{ m.icon }} {{ m.text }} <b>{{ m.hl }}</b></span>
+          <span v-for="(m, i) in marquee" :key="n + '-' + i"><i class="dot"></i> {{ iconFor(m.icon) }} {{ m.text }} <b>{{ m.hl }}</b></span>
         </template>
       </div>
     </div>
@@ -17,7 +17,7 @@
     <PublicHeader :active-section="activeSection" />
 
     <!-- ============ HERO ============ -->
-    <section class="hero" id="home">
+    <section v-if="heroSection.is_enabled" class="hero" id="home">
       <div class="hero__blob a"></div>
       <div class="hero__blob b"></div>
       <!-- decorative floating shapes -->
@@ -28,20 +28,20 @@
 
       <div class="wrap hero__grid">
         <div class="hero__copy" data-reveal>
-          <div class="hero__badge glass">India's largest school olympiad <b>NEW · 2026</b></div>
+          <div class="hero__badge glass">{{ heroSection.badge_text }} <b>{{ heroSection.badge_highlight }}</b></div>
           <h1>
-            Where India's<br>
-            <span class="underline">young minds
+            {{ heroSection.headline_line_1 }}<br>
+            <span class="underline">{{ heroSection.headline_highlight }}
               <svg viewBox="0 0 300 16" preserveAspectRatio="none" fill="none"><path d="M2 12C60 4 140 3 298 8" stroke="#EE6A2C" stroke-width="5" stroke-linecap="round"/></svg>
             </span><br>
-            rise to the <span class="ital">top.</span>
+            {{ heroSection.headline_line_2 }} <span class="ital">{{ heroSection.headline_italic }}</span>
           </h1>
-          <p class="lede">Compete in national olympiads across 8 subjects, from Class 1 to 12. Earn ranks, medals and scholarships — judged on one fair, transparent national stage.</p>
+          <p class="lede">{{ heroSection.lede }}</p>
           <div class="hero__cta">
-            <Link href="/register" class="btn btn-primary btn-shine">Start Your Journey
+            <Link :href="heroSection.primary_cta_url" class="btn btn-primary btn-shine">{{ heroSection.primary_cta_label }}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </Link>
-            <a href="#exams" class="btn btn-ghost">Explore Exams</a>
+            <a :href="heroSection.secondary_cta_url" class="btn btn-ghost">{{ heroSection.secondary_cta_label }}</a>
           </div>
           <div class="hero__trust">
             <div class="avatars">
@@ -51,7 +51,7 @@
               <span style="background:#6C3FA0">NV</span>
               <span style="background:#D6991F">+</span>
             </div>
-            <small><b>1,20,000+ students</b> from 5,000+ schools<br><span class="stars">★★★★★</span> rated 4.9/5 by parents</small>
+            <small><b>{{ heroSection.trust_text }}</b><br><span class="stars">★★★★★</span> {{ heroSection.rating_text }}</small>
           </div>
         </div>
 
@@ -67,12 +67,12 @@
                 <defs><linearGradient id="g1" x1="12" y1="6" x2="52" y2="46"><stop stop-color="#FBE08A"/><stop offset="1" stop-color="#D6991F"/></linearGradient></defs>
               </svg>
               <div class="medal-card__rank">
-                <div class="num">#01</div>
-                <small>National Rank</small>
+                <div class="num">{{ heroSection.rank_number }}</div>
+                <small>{{ heroSection.rank_label }}</small>
               </div>
             </div>
-            <h3>Aarav Mehta</h3>
-            <div class="sub">Class 8 · Maths Olympiad · Delhi</div>
+            <h3>{{ heroSection.winner_name }}</h3>
+            <div class="sub">{{ heroSection.winner_meta }}</div>
             <div class="medal-card__bars">
               <div class="bar-row" v-for="b in heroBars" :key="b.label">
                 <div class="lbl"><span>{{ b.label }}</span><b>{{ b.val }}</b></div>
@@ -81,17 +81,9 @@
             </div>
           </div>
 
-          <div class="chip glass c1">
-            <span class="chip__ic" style="background:rgba(22,138,102,.16)">🎯</span>
-            <div><b>Live Ranking</b><small>Updated in real-time</small></div>
-          </div>
-          <div class="chip glass c2">
-            <span class="chip__ic" style="background:rgba(214,153,31,.18)">🏅</span>
-            <div><b>Gold Medal</b><small>Certificate + ₹50K</small></div>
-          </div>
-          <div class="chip glass c3">
-            <span class="chip__ic" style="background:rgba(44,73,166,.16)">📜</span>
-            <div><b>Verified</b><small>Govt-recognised cert</small></div>
+          <div v-for="(chip, i) in heroChips" :key="chip.title" class="chip glass" :class="'c' + (i + 1)">
+            <span class="chip__ic" :style="{ background: chip.color }">{{ iconFor(chip.icon) }}</span>
+            <div><b>{{ chip.title }}</b><small>{{ chip.subtitle }}</small></div>
           </div>
         </div>
       </div>
@@ -101,7 +93,7 @@
     </section>
 
     <!-- ============ STATS ============ -->
-    <section class="stats">
+    <section v-if="statsSection.is_enabled" class="stats">
       <div class="wrap stats__grid">
         <div class="stat" v-for="s in stats" :key="s.label">
           <div class="num">{{ s.display }}</div>
@@ -111,26 +103,26 @@
     </section>
 
     <!-- ============ SUBJECTS / TABS ============ -->
-    <section class="section" id="subjects">
+    <section v-if="subjectsSection.is_enabled" class="section" id="subjects">
       <svg class="bg-dots" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
       <div class="wrap">
         <div class="shead" data-reveal>
-          <span class="eyebrow">Choose your arena</span>
-          <h2>Eight subjects. One <span class="ital">national</span> stage.</h2>
-          <p>Every olympiad is crafted by India's top educators and mapped to your class syllabus — challenging enough to stretch, fair enough to enjoy.</p>
+          <span class="eyebrow">{{ subjectsSection.eyebrow }}</span>
+          <h2>{{ subjectsSection.title }}</h2>
+          <p>{{ subjectsSection.description }}</p>
         </div>
 
         <div class="tabs" data-reveal>
           <button v-for="t in subjectTabs" :key="t.key" class="tab" :class="{ active: activeTab === t.key }" @click="activeTab = t.key">
-            <span class="em">{{ t.icon }}</span> {{ t.label }}
+            <span class="em">{{ iconFor(t.icon) }}</span> {{ t.label }}
           </button>
         </div>
 
         <div class="tab-panels" data-reveal>
           <div class="subj-grid">
-            <div v-for="(s, i) in subjectGroups[activeTab]" :key="activeTab + s.name" class="subj"
+            <div v-for="(s, i) in activeSubjects" :key="activeTab + s.name" class="subj"
                  :style="{ '--accent': s.color, transitionDelay: (i * 60) + 'ms' }">
-              <div class="subj__ic">{{ s.icon }}</div>
+              <div class="subj__ic">{{ iconFor(s.icon) }}</div>
               <h3>{{ s.name }}</h3>
               <p>{{ s.desc }}</p>
               <div class="subj__meta">
@@ -144,16 +136,16 @@
     </section>
 
     <!-- ============ HOW IT WORKS ============ -->
-    <section class="section section--ink" id="how">
+    <section v-if="howSection.is_enabled" class="section section--ink" id="how">
       <svg class="bg-grid" aria-hidden="true"></svg>
       <div class="wrap">
         <div class="shead center" data-reveal>
-          <span class="eyebrow light" style="justify-content:center">Simple by design</span>
-          <h2>From sign-up to <span class="ital">stardom</span> in three steps</h2>
+          <span class="eyebrow light" style="justify-content:center">{{ howSection.eyebrow }}</span>
+          <h2>{{ howSection.title }}</h2>
         </div>
         <div class="steps">
           <div class="step" v-for="(s, i) in steps" :key="s.title" data-reveal :style="{ transitionDelay: (i * 120) + 'ms' }">
-            <div class="step__n glass-dark">{{ s.icon }}<span>{{ i + 1 }}</span></div>
+            <div class="step__n glass-dark">{{ iconFor(s.icon) }}<span>{{ i + 1 }}</span></div>
             <h3>{{ s.title }}</h3>
             <p>{{ s.desc }}</p>
           </div>
@@ -162,17 +154,17 @@
     </section>
 
     <!-- ============ EXAMS / CAROUSEL ============ -->
-    <section class="section" id="exams">
+    <section v-if="examsSection.is_enabled" class="section" id="exams">
       <div class="wrap">
         <div class="shead row" data-reveal>
           <div>
-            <span class="eyebrow">Upcoming olympiads</span>
-            <h2>Live exams open for <span class="ital">registration</span></h2>
+            <span class="eyebrow">{{ examsSection.eyebrow }}</span>
+            <h2>{{ examsSection.title }}</h2>
           </div>
-          <Link href="/exams" class="btn btn-ghost">View all exams →</Link>
+          <Link href="/exams" class="btn btn-ghost">{{ examsSection.view_all_label }}</Link>
         </div>
 
-        <div class="carousel" data-reveal>
+        <div v-if="exams.length" class="carousel" data-reveal>
           <div class="carousel__viewport">
             <div class="carousel__track" ref="examTrack" :style="{ transform: examTX }"
                  @touchstart.passive="onTouchStart($event, 'exam')" @touchend.passive="onTouchEnd($event, 'exam')">
@@ -200,40 +192,44 @@
             </div>
           </div>
         </div>
+        <div v-else class="empty-public" data-reveal>
+          <h3>{{ examsSection.empty_title }}</h3>
+          <p>{{ examsSection.empty_description }}</p>
+        </div>
       </div>
     </section>
 
     <!-- ============ REWARDS / MEDALS ============ -->
-    <section class="section section--paper2" id="rewards">
+    <section v-if="rewardsSection.is_enabled" class="section section--paper2" id="rewards">
       <div class="wrap">
         <div class="shead center" data-reveal>
-          <span class="eyebrow" style="justify-content:center">Recognition that matters</span>
-          <h2>Compete for more than a <span class="ital">score</span></h2>
-          <p>Every winner earns a verified certificate, a national rank badge and real rewards worth celebrating.</p>
+          <span class="eyebrow" style="justify-content:center">{{ rewardsSection.eyebrow }}</span>
+          <h2>{{ rewardsSection.title }}</h2>
+          <p>{{ rewardsSection.description }}</p>
         </div>
         <div class="medals">
           <div class="mcard silver" data-reveal>
             <svg class="mcard__medal" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="40" r="20" fill="#D9DEE8" stroke="#fff" stroke-width="2"/><path d="M22 8h20l-7 18H29L22 8z" fill="#9aa3b5"/><text x="32" y="47" font-size="18" font-family="Space Grotesk" font-weight="700" fill="#5a6273" text-anchor="middle">2</text></svg>
-            <div class="tier">Silver Tier</div>
-            <h3>Top 10%</h3>
+            <div class="tier">{{ rewardTier('silver').label }}</div>
+            <h3>{{ rewardTier('silver').headline }}</h3>
             <ul>
-              <li v-for="p in silverPerks" :key="p"><svg viewBox="0 0 24 24" fill="none" stroke="#168A66" stroke-width="3"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg> {{ p }}</li>
+              <li v-for="p in rewardTier('silver').perks" :key="p"><svg viewBox="0 0 24 24" fill="none" stroke="#168A66" stroke-width="3"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg> {{ p }}</li>
             </ul>
           </div>
           <div class="mcard gold" data-reveal style="transition-delay:.1s">
             <svg class="mcard__medal" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="40" r="20" fill="#F2C84B" stroke="#fff" stroke-width="2"/><path d="M22 8h20l-7 18H29L22 8z" fill="#EE6A2C"/><text x="32" y="47" font-size="18" font-family="Space Grotesk" font-weight="700" fill="#7a5a10" text-anchor="middle">1</text></svg>
-            <div class="tier">Gold Tier</div>
-            <h3>Top 1%</h3>
+            <div class="tier">{{ rewardTier('gold').label }}</div>
+            <h3>{{ rewardTier('gold').headline }}</h3>
             <ul>
-              <li v-for="p in goldPerks" :key="p"><svg viewBox="0 0 24 24" fill="none" stroke="#168A66" stroke-width="3"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg> {{ p }}</li>
+              <li v-for="p in rewardTier('gold').perks" :key="p"><svg viewBox="0 0 24 24" fill="none" stroke="#168A66" stroke-width="3"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg> {{ p }}</li>
             </ul>
           </div>
           <div class="mcard bronze" data-reveal style="transition-delay:.2s">
             <svg class="mcard__medal" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="40" r="20" fill="#D99868" stroke="#fff" stroke-width="2"/><path d="M22 8h20l-7 18H29L22 8z" fill="#a05c2c"/><text x="32" y="47" font-size="18" font-family="Space Grotesk" font-weight="700" fill="#5a3416" text-anchor="middle">3</text></svg>
-            <div class="tier">Bronze Tier</div>
-            <h3>Top 25%</h3>
+            <div class="tier">{{ rewardTier('bronze').label }}</div>
+            <h3>{{ rewardTier('bronze').headline }}</h3>
             <ul>
-              <li v-for="p in bronzePerks" :key="p"><svg viewBox="0 0 24 24" fill="none" stroke="#168A66" stroke-width="3"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg> {{ p }}</li>
+              <li v-for="p in rewardTier('bronze').perks" :key="p"><svg viewBox="0 0 24 24" fill="none" stroke="#168A66" stroke-width="3"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg> {{ p }}</li>
             </ul>
           </div>
         </div>
@@ -241,12 +237,12 @@
     </section>
 
     <!-- ============ TESTIMONIALS / CAROUSEL ============ -->
-    <section class="section tsection">
+    <section v-if="testimonialsSection.is_enabled" class="section tsection">
       <svg class="bg-grid" aria-hidden="true"></svg>
       <div class="wrap">
         <div class="shead center" data-reveal style="margin-inline:auto">
-          <span class="eyebrow light" style="justify-content:center">Loved across India</span>
-          <h2>Students and parents on <span class="ital">the Hunt</span></h2>
+          <span class="eyebrow light" style="justify-content:center">{{ testimonialsSection.eyebrow }}</span>
+          <h2>{{ testimonialsSection.title }}</h2>
         </div>
         <div class="tcarousel" data-reveal @mouseenter="pauseTest" @mouseleave="resumeTest">
           <div class="ttrack" ref="testTrack" :style="{ transform: testTX }"
@@ -275,18 +271,18 @@
     </section>
 
     <!-- ============ FAQ / ACCORDION ============ -->
-    <section class="section" id="faq">
+    <section v-if="faqSection.is_enabled" class="section" id="faq">
       <div class="wrap faq-wrap">
         <div data-reveal>
-          <span class="eyebrow">Good to know</span>
-          <h2 class="h-serif faq-h">Questions,<br><span class="ital">answered.</span></h2>
+          <span class="eyebrow">{{ faqSection.eyebrow }}</span>
+          <h2 class="h-serif faq-h">{{ faqSection.title }}</h2>
           <div class="faq-aside" style="margin-top:30px">
-            <h3>Still curious?</h3>
-            <p>Our support team replies within a few hours, every day of the week.</p>
-            <a href="#register" class="btn btn-gold">Talk to us</a>
+            <h3>{{ faqSection.aside_title }}</h3>
+            <p>{{ faqSection.aside_description }}</p>
+            <a :href="faqSection.contact_url" class="btn btn-gold">{{ faqSection.contact_label }}</a>
             <div class="faq-aside__help">
               <span class="chip__ic" style="width:44px;height:44px;background:rgba(214,153,31,.18);font-size:20px">💬</span>
-              <div><b>care@olympiadhunt.in</b><small>+91 98765 43210 · Mon–Sun</small></div>
+              <div><b>{{ faqSection.support_email }}</b><small>{{ faqSection.support_phone }}</small></div>
             </div>
           </div>
         </div>
@@ -305,15 +301,15 @@
     </section>
 
     <!-- ============ REGISTER FORM ============ -->
-    <section class="section register" id="register">
+    <section v-if="registerSection.is_enabled" class="section register" id="register">
       <div class="wrap reg-grid">
         <div class="reg-copy" data-reveal>
-          <span class="eyebrow">Your seat awaits</span>
-          <h2>Create your free <span class="ital">student account</span> today</h2>
-          <p>It takes under two minutes. Register now and get instant access to free practice tests while you choose your first olympiad.</p>
+          <span class="eyebrow">{{ registerSection.eyebrow }}</span>
+          <h2>{{ registerSection.title }}</h2>
+          <p>{{ registerSection.description }}</p>
           <div class="reg-feats">
             <div class="reg-feat" v-for="f in regFeats" :key="f.title">
-              <div class="reg-feat__ic">{{ f.icon }}</div>
+              <div class="reg-feat__ic">{{ iconFor(f.icon) }}</div>
               <div><b>{{ f.title }}</b><small>{{ f.sub }}</small></div>
             </div>
           </div>
@@ -321,8 +317,8 @@
 
         <div class="form-card glass" data-reveal>
           <form v-if="!submitted" @submit.prevent="submitForm" novalidate>
-            <h3>Register in 2 minutes</h3>
-            <p>Join 1,20,000+ students already on the Hunt.</p>
+            <h3>{{ registerSection.form_title }}</h3>
+            <p>{{ registerSection.form_description }}</p>
 
             <div class="field" :class="{ err: errors.name }">
               <label>Student Full Name</label>
@@ -361,66 +357,55 @@
               <span class="msg">Enter a valid 10-digit number.</span>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-shine">Create My Free Account
+            <button type="submit" class="btn btn-primary btn-shine">{{ registerSection.button_label }}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
-            <p class="form-note">By registering you agree to our Terms & Privacy Policy.</p>
+            <p class="form-note">{{ registerSection.note }}</p>
           </form>
 
           <div v-else class="form-success show">
             <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="#168A66" opacity=".12"/><circle cx="32" cy="32" r="22" fill="#168A66"/><path d="M22 32l7 7 13-14" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <h3 class="h-serif">Welcome aboard! 🎉</h3>
-            <p>Your free account is ready. Check your email to verify and start practising right away.</p>
+            <h3 class="h-serif">{{ registerSection.success_title }}</h3>
+            <p>{{ registerSection.success_description }}</p>
           </div>
         </div>
       </div>
     </section>
 
     <!-- ============ CTA BANNER ============ -->
-    <section class="cta">
+    <section v-if="finalCtaSection.is_enabled" class="cta">
       <div class="wrap">
         <div class="cta__inner" data-reveal>
-          <h2>Ready to prove your <span class="ital">brilliance</span> on the national stage?</h2>
-          <p>Join India's fastest-growing olympiad community and turn your hard work into recognition.</p>
+          <h2>{{ finalCtaSection.title }}</h2>
+          <p>{{ finalCtaSection.description }}</p>
           <div class="cta__btns">
-            <Link href="/register" class="btn btn-gold">Register Free Now</Link>
-            <a href="#exams" class="btn btn-ghost light">Browse Exams</a>
+            <Link :href="finalCtaSection.primary_url" class="btn btn-gold">{{ finalCtaSection.primary_label }}</Link>
+            <a :href="finalCtaSection.secondary_url" class="btn btn-ghost light">{{ finalCtaSection.secondary_label }}</a>
           </div>
         </div>
       </div>
     </section>
 
     <!-- ============ FOOTER ============ -->
-    <footer>
+    <footer v-if="footerSection.is_enabled">
       <div class="wrap">
         <div class="foot-grid">
           <div class="foot-brand">
             <Link href="/" class="brand">
               <AppLogo :size="54" variant="light" />
             </Link>
-            <p>India's premier olympiad platform for school students, building confidence one competition at a time.</p>
+            <p>{{ footerSection.description }}</p>
             <div class="foot-social">
-              <a href="#" aria-label="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
-              <a href="#" aria-label="YouTube"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="4"/><path d="M10 9l5 3-5 3V9z" fill="currentColor" stroke="none"/></svg></a>
-              <a href="#" aria-label="Twitter"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h3l-7 8 8 12h-6l-5-7-6 7H2l8-9L2 2h6l4 6 6-6z"/></svg></a>
-              <a href="#" aria-label="Facebook"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 8h3V4h-3a4 4 0 0 0-4 4v2H7v4h3v8h4v-8h3l1-4h-4V8a1 1 0 0 1 1-1z"/></svg></a>
+              <a v-for="social in footerSection.socials" :key="social.label" :href="social.url" :aria-label="social.label">{{ social.label.charAt(0) }}</a>
             </div>
           </div>
-          <div class="foot-col">
-            <h4>Platform</h4>
-            <Link href="/exams">Subjects</Link><Link href="/exams">Exams</Link><a href="#rewards">Rewards</a><Link href="/results">Leaderboard</Link><Link href="/exams">Practice Tests</Link>
-          </div>
-          <div class="foot-col">
-            <h4>Company</h4>
-            <Link href="/about">About Us</Link><a href="#how">How it Works</a><Link href="/blog">Blog</Link><Link href="/contact">Careers</Link><Link href="/contact">Contact</Link>
-          </div>
-          <div class="foot-col">
-            <h4>Support</h4>
-            <a href="#faq">FAQ</a><Link href="/contact">Help Center</Link><Link href="/terms">Terms of Use</Link><Link href="/privacy">Privacy Policy</Link><Link href="/refund">Refund Policy</Link>
+          <div v-for="column in footerSection.columns" :key="column.title" class="foot-col">
+            <h4>{{ column.title }}</h4>
+            <Link v-for="link in column.links" :key="link.label" :href="link.url">{{ link.label }}</Link>
           </div>
         </div>
         <div class="foot-bottom">
-          <span>© {{ year }} National Olympiad Hunt. All rights reserved. Made in India 🇮🇳</span>
+          <span>© {{ year }} {{ footerSection.copyright }}</span>
           <div class="foot-bottom__links"><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><a href="#">Cookies</a></div>
         </div>
       </div>
@@ -431,112 +416,94 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
 import PublicHeader from '@/Components/Public/PublicHeader.vue';
 import AppLogo from '@/Components/Shared/AppLogo.vue';
 import SeoHead from '@/Components/Shared/SeoHead.vue';
 
 const props = defineProps({
   upcomingExams: { type: Array, default: () => [] },
+  homepageContent: { type: Object, default: () => ({}) },
 });
 
-const page = usePage();
-const user = computed(() => page.props.auth?.user ?? null);
-
-/* ---------- static content ---------- */
+/* ---------- dynamic content with safe fallbacks ---------- */
 const year = new Date().getFullYear();
-const navLinks = [
-  { id: 'subjects', label: 'Subjects' },
-  { id: 'how',      label: 'How it Works' },
-  { id: 'exams',    label: 'Exams', to: '/exams' },
-  { id: 'rewards',  label: 'Rewards' },
-  { id: 'faq',      label: 'FAQ' },
-];
-const marquee = [
-  { icon: '🏆', text: 'National Maths Olympiad 2026 —', hl: 'Registrations Open' },
-  { icon: '🎓', text: 'Over 1,20,000+ students competing nationwide', hl: '' },
-  { icon: '🥇', text: 'Win scholarships up to', hl: '₹1,00,000' },
-  { icon: '📅', text: 'Early-bird closes', hl: '30 June' },
-];
-const heroBars = [
-  { label: 'Accuracy',   val: '98%',  w: '98%' },
-  { label: 'Percentile', val: '99.7', w: '99%' },
-  { label: 'Speed Score',val: '92%',  w: '92%' },
-];
-
-const subjectTabs = [
-  { key: 'core',   icon: '🧠', label: 'Core Academics' },
-  { key: 'lang',   icon: '🗣️', label: 'Languages' },
-  { key: 'future', icon: '🚀', label: 'Future Skills' },
-];
-const subjectGroups = {
-  core: [
-    { name: 'Mathematics',       icon: '📐', color: '#2C49A6', range: 'Class 1–12', desc: 'Logic, numbers and problem-solving from arithmetic to advanced reasoning.' },
-    { name: 'Science',           icon: '🔬', color: '#168A66', range: 'Class 1–12', desc: 'Physics, chemistry and biology brought alive through concept-first questions.' },
-    { name: 'General Knowledge', icon: '🌍', color: '#EE6A2C', range: 'Class 1–10', desc: 'Current affairs, history, geography and the world around us.' },
-  ],
-  lang: [
-    { name: 'English',        icon: '📖', color: '#6C3FA0', range: 'Class 1–12', desc: 'Grammar, comprehension and vocabulary tested the smart way.' },
-    { name: 'Hindi',          icon: '🅰️', color: '#C9501A', range: 'Class 1–10', desc: 'व्याकरण, गद्य और काव्य — strengthen your mother tongue.' },
-    { name: 'Social Science', icon: '🏛️', color: '#168A66', range: 'Class 6–12', desc: 'History, civics and geography for the curious citizen.' },
-  ],
-  future: [
-    { name: 'Computers',        icon: '💻', color: '#2C49A6', range: 'Class 3–12', desc: 'Logic, coding fundamentals and digital literacy for the AI age.' },
-    { name: 'Logical Reasoning',icon: '🧩', color: '#D6991F', range: 'Class 1–12', desc: 'Patterns, puzzles and analytical thinking that sharpen the mind.' },
-    { name: 'Creativity & Art', icon: '🎨', color: '#EE6A2C', range: 'Class 1–8',  desc: 'Visual thinking, design sense and imaginative problem-solving.' },
-  ],
+const defaultContent = {
+  seo: { is_enabled: true, page_title: 'Online Olympiad Exams for Class 1-12', meta_description: "National Olympiad Hunt is India's online olympiad platform for Class 1-12. Register free, take timed olympiad exams across subjects, climb national ranks and win medals & certificates." },
+  marquee: { is_enabled: true, items: [] },
+  hero: { is_enabled: true, bars: [], chips: [] },
+  stats: { is_enabled: true, items: [] },
+  subjects: { is_enabled: true, groups: [] },
+  how_it_works: { is_enabled: true, steps: [] },
+  exams: { is_enabled: true, eyebrow: 'Upcoming olympiads', title: 'Live exams open for registration', view_all_label: 'View all exams ->', empty_title: 'New olympiads are being scheduled', empty_description: 'Published exams from Exam Management will appear here automatically.' },
+  rewards: { is_enabled: true, tiers: [] },
+  testimonials: { is_enabled: true, items: [] },
+  faq: { is_enabled: true, items: [] },
+  register: { is_enabled: true, features: [], subject_options: [] },
+  final_cta: { is_enabled: true },
+  footer: { is_enabled: true, socials: [], columns: [] },
 };
-const activeTab = ref('core');
+const section = (key) => ({ ...(defaultContent[key] || {}), ...(props.homepageContent?.[key] || {}) });
+const asArray = (value) => Array.isArray(value) ? value : [];
+const seoSection = section('seo');
+const marqueeSection = section('marquee');
+const heroSection = section('hero');
+const statsSection = section('stats');
+const subjectsSection = section('subjects');
+const howSection = section('how_it_works');
+const examsSection = section('exams');
+const rewardsSection = section('rewards');
+const testimonialsSection = section('testimonials');
+const faqSection = section('faq');
+const registerSection = section('register');
+const finalCtaSection = section('final_cta');
+const footerSection = section('footer');
 
-const steps = [
-  { icon: '📝', title: 'Register & Pick',   desc: 'Create a free account, choose your class and the subjects you want to conquer.' },
-  { icon: '⚡', title: 'Compete Online',    desc: 'Take the timed MCQ exam from home in a secure, full-screen proctored room.' },
-  { icon: '🏆', title: 'Win & Celebrate',   desc: 'Get instant scores, national ranks, downloadable certificates and rewards.' },
-];
+const iconMap = {
+  Trophy: '🏆', Students: '🎓', Medal: '🏅', Calendar: '📅', Target: '🎯', Certificate: '📜',
+  Brain: '🧠', Language: '🗣️', Rocket: '🚀', Math: '📐', Science: '🔬', World: '🌍',
+  Book: '📖', Hindi: 'A', Civics: '🏛️', Computer: '💻', Puzzle: '🧩', Art: '🎨',
+  Register: '📝', Lightning: '⚡', Gift: '🎁', Books: '📚', Lock: '🔒',
+};
+const iconFor = (icon) => iconMap[icon] || icon || '';
+
+const marquee = asArray(marqueeSection.items);
+const heroBars = asArray(heroSection.bars);
+const heroChips = asArray(heroSection.chips).slice(0, 3);
+const subjectTabs = asArray(subjectsSection.groups).map((group) => ({ key: group.key, icon: group.icon, label: group.label }));
+const subjectGroups = asArray(subjectsSection.groups).reduce((groups, group) => {
+  groups[group.key] = asArray(group.subjects);
+  return groups;
+}, {});
+const activeTab = ref(subjectTabs[0]?.key || 'core');
+const activeSubjects = computed(() => subjectGroups[activeTab.value] || []);
+
+const steps = asArray(howSection.steps);
 
 const exams = computed(() => props.upcomingExams);
 
-const silverPerks = ['Digital + printed certificate', 'State-level rank badge', '₹10,000 scholarship'];
-const goldPerks    = ['Govt-recognised certificate', 'National rank + trophy', '₹50,000 scholarship', 'Felicitation ceremony'];
-const bronzePerks  = ['Digital merit certificate', 'School-level rank badge', 'Practice vouchers'];
-
-const testimonials = [
-  { quote: 'The exam room felt exactly like a real competition. My son cleared the Maths olympiad with All-India Rank 14 — the certificate is now framed on our wall!', name: 'Rohit Malhotra', role: 'Parent · Bengaluru, Karnataka', initials: 'RM', color: '#2C49A6' },
-  { quote: 'I loved how fast the results came. Within minutes I saw my score, my rank and where I went wrong. It pushed me to practice harder for the next round.', name: 'Ananya Sharma', role: 'Class 9 · Jaipur, Rajasthan', initials: 'AS', color: '#168A66' },
-  { quote: 'As a school we registered 200 students. The dashboard, the ranks, the certificates — everything was seamless and genuinely motivating for the kids.', name: 'Veena Pillai', role: 'Principal · Kochi, Kerala', initials: 'VP', color: '#EE6A2C' },
-  { quote: 'The questions were challenging but fair. Winning a Gold tier scholarship genuinely changed how my daughter sees her own potential. Thank you!', name: 'Deepak Kumar', role: 'Parent · Patna, Bihar', initials: 'DK', color: '#6C3FA0' },
-  { quote: 'From a small town in Assam to an All-India Rank — National Olympiad Hunt gave me a stage I never thought I would reach. Forever grateful.', name: 'Manish Bora', role: 'Class 11 · Guwahati, Assam', initials: 'MB', color: '#D6991F' },
-];
-
-const faqs = [
-  { q: 'Who can participate in the olympiads?', a: 'Any student from Class 1 to Class 12 in India can register. You only need to pick your current class and the subjects you would like to compete in — no school nomination required.' },
-  { q: 'How are the exams conducted?', a: 'All exams are online, timed MCQ tests taken in a secure full-screen room from any laptop or tablet. The system auto-submits when time ends and flags tab-switching to keep it fair for everyone.' },
-  { q: 'When will I get my results and rank?', a: 'You will see your score and a detailed breakdown instantly after submitting. National, state and school ranks are published once the exam window closes — usually within 48 hours.' },
-  { q: 'Are the certificates recognised?', a: 'Yes. Every participant receives a verified digital certificate, and Gold-tier winners receive a government-recognised certificate plus a printed copy and trophy.' },
-  { q: 'What does it cost to participate?', a: 'Registration is free. You only pay a small per-exam fee (starting at ₹149) when you enroll for a specific olympiad. Practice tests are completely free for all registered students.' },
-];
+const rewardTiers = asArray(rewardsSection.tiers);
+const rewardTier = (key) => rewardTiers.find((tier) => tier.key === key) || { label: '', headline: '', perks: [] };
+const testimonials = asArray(testimonialsSection.items);
+const faqs = asArray(faqSection.items);
 const openFaq = ref(0);
 
-const regFeats = [
-  { icon: '🎁', title: 'Free to join',        sub: 'No payment until you enroll for an exam' },
-  { icon: '📚', title: 'Free practice tests',  sub: 'Sharpen up before the real competition' },
-  { icon: '🔒', title: 'Safe & private',       sub: 'Your data is encrypted and never shared' },
-];
-const subjectOptions = ['Mathematics', 'Science', 'English', 'Computers', 'General Knowledge', 'Reasoning'];
+const regFeats = asArray(registerSection.features);
+const subjectOptions = asArray(registerSection.subject_options);
 
 /* ---------- nav / scroll state ---------- */
 const rootEl       = ref(null);
-const scrolled     = ref(false);
-const mobileOpen   = ref(false);
 const activeSection= ref('home');
 const barsIn       = ref(false);
 
 /* ---------- animated counters ---------- */
 const stats = reactive([
-  { label: 'Students Enrolled', target: 120000, suffix: '+', display: '0' },
-  { label: 'Partner Schools',   target: 5000,   suffix: '+', display: '0' },
-  { label: 'Subjects Offered',  target: 8,      suffix: '',  display: '0' },
-  { label: 'States & UTs',      target: 28,     suffix: '',  display: '0' },
+  ...asArray(statsSection.items).map((item) => ({
+    label: item.label,
+    target: Number(item.target) || 0,
+    suffix: item.suffix || '',
+    display: '0',
+  })),
 ]);
 let countersDone = false;
 function runCounters() {
@@ -628,15 +595,11 @@ function submitForm() {
 }
 
 /* ---------- lifecycle ---------- */
-let scrollHandler, resizeHandler;
+let resizeHandler;
 const observers = [];
 
 onMounted(() => {
   document.documentElement.style.scrollBehavior = 'smooth';
-
-  scrollHandler = () => { scrolled.value = window.scrollY > 12; };
-  window.addEventListener('scroll', scrollHandler, { passive: true });
-  scrollHandler();
 
   resizeHandler = () => { windowWidth.value = window.innerWidth; };
   window.addEventListener('resize', resizeHandler, { passive: true });
@@ -680,7 +643,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', scrollHandler);
   window.removeEventListener('resize', resizeHandler);
   observers.forEach((o) => o.disconnect());
   clearInterval(testTimer);
@@ -906,6 +868,9 @@ onUnmounted(() => {
 .ecard__fee b{ font-family:var(--mono); font-size:24px; font-weight:700; color:var(--gold-lt); }
 .ecard__fee small{ display:block; font-size:11px; color:var(--paper-45); letter-spacing:.04em; }
 .ecard .btn{ padding:11px 18px; font-size:13.5px; }
+.empty-public{ background:var(--paper-2); border:1px solid var(--paper-line); border-radius:var(--r-lg); padding:36px; text-align:center; }
+.empty-public h3{ font-family:var(--display); font-size:24px; font-weight:600; margin-bottom:8px; }
+.empty-public p{ color:var(--ink-70); font-size:15px; }
 .carousel__nav{ display:flex; align-items:center; justify-content:space-between; margin-top:8px; }
 .carousel__dots{ display:flex; gap:8px; }
 .cdot{ width:9px; height:9px; border-radius:100px; background:var(--ink-12); cursor:pointer; transition:.3s; border:none; padding:0; }

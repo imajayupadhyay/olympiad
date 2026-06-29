@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Exam;
+use App\Models\HomepageSection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -29,6 +30,7 @@ class HomeController extends Controller
 
         return Inertia::render('Public/Home/Index', [
             'upcomingExams' => $upcomingExams,
+            'homepageContent' => HomepageSection::publicPayload(),
         ]);
     }
 

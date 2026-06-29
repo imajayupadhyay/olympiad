@@ -72,6 +72,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/notifications/{log}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
     Route::get('/content', [ContentController::class, 'index'])->name('content');
+    Route::put('/content/homepage/{section}', [ContentController::class, 'update'])->name('content.homepage.update');
+    Route::post('/content/homepage/{section}/reset', [ContentController::class, 'reset'])->name('content.homepage.reset');
 
     // ── Settings ────────────────────────────────────────────────────────────────
     Route::prefix('settings')->name('settings.')->group(function () {
