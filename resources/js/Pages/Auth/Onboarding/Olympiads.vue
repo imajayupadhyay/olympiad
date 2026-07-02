@@ -3,6 +3,7 @@ import AuthLayout from '@/Layouts/AuthLayout.vue';
 import Stepper from './Components/Stepper.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import { usePoll } from '@/composables/usePoll';
 
 const props = defineProps({
     exams: { type: Array, default: () => [] },
@@ -10,6 +11,9 @@ const props = defineProps({
     referral: { type: Object, default: null },
     discounts: { type: Array, default: () => [] }, // student's usable personal discount rules
 });
+
+// Keep the referral share-card counters fresh (≤5s) without a manual refresh.
+usePoll(['referral']);
 
 // ── Referral sharing ──
 const stats = computed(() => props.referral?.stats ?? {});

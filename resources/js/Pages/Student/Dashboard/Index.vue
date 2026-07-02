@@ -2,12 +2,16 @@
 import StudentLayout from '@/Layouts/StudentLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import { usePoll } from '@/composables/usePoll';
 
 const props = defineProps({
     myExams: { type: Array, default: () => [] },
     stats: { type: Object, default: () => ({}) },
     referral: { type: Object, default: null },
 });
+
+// Keep the referral widget counters fresh (≤5s) without a manual refresh.
+usePoll(['referral']);
 
 const referralProgressLabel = computed(() => ({
     link_click: 'link opens',

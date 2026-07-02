@@ -2,6 +2,7 @@
 import StudentLayout from '@/Layouts/StudentLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import { usePoll } from '@/composables/usePoll';
 
 const props = defineProps({
     active:    { type: Boolean, default: false },
@@ -12,6 +13,9 @@ const props = defineProps({
     rewards:   { type: Array, default: () => [] },
     referrals: { type: Array, default: () => [] },
 });
+
+// Keep the live counters fresh (≤5s) without a manual page refresh.
+usePoll(['stats', 'referrals', 'rewards']);
 
 const copied = ref(false);
 const copyLink = async () => {
