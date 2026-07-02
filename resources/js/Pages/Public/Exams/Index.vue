@@ -95,7 +95,6 @@ watch(openKey, (v) => {
 onBeforeUnmount(() => { document.body.style.overflow = ''; window.removeEventListener('keydown', onKeydown); });
 
 /* ── helpers ── */
-const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '';
 const fmtFee = (n) => n === 0 ? 'FREE' : '₹' + Number(n).toLocaleString('en-IN');
 const tint = (hex, a) => hex + a; // 6-digit hex + alpha byte, e.g. tint('#2C49A6','14')
 const availMeta = (a) => ({ upcoming: { l: 'Upcoming', c: 'av-up' }, live: { l: 'Live now', c: 'av-live' }, closed: { l: 'Closed', c: 'av-closed' } }[a] ?? { l: '', c: '' });
@@ -219,7 +218,6 @@ watch(() => page.props.flash, (f) => {
                             @click="toggle(e)"
                         >
                             <span class="chip__cls">{{ e.class_level?.label ?? e.name }}</span>
-                            <span class="chip__win">{{ fmtDate(e.starts_at) }} – {{ fmtDate(e.ends_at) }}</span>
                             <span class="chip__row">
                                 <span class="chip__fee" :class="{ free: e.is_free }">{{ fmtFee(e.fee_amount) }}</span>
                                 <span v-if="e.is_enrolled" class="chip__enr">✓ Enrolled</span>
@@ -366,7 +364,6 @@ watch(() => page.props.flash, (f) => {
 .chip:focus-visible { outline:3px solid var(--saffron); outline-offset:2px; }
 .chip.off { cursor:default; opacity:.6; }
 .chip__cls { font-family:var(--mono); font-weight:700; font-size:.98rem; color:var(--ink); }
-.chip__win { font-size:.72rem; color:#8a90a0; }
 .chip__row { display:flex; align-items:center; justify-content:space-between; margin-top:.15rem; }
 .chip__fee { font-family:var(--mono); font-weight:700; font-size:.88rem; color:var(--ink); }
 .chip__fee.free { color:var(--emerald); }
