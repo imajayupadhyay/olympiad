@@ -1,6 +1,6 @@
 <script setup>
 import StudentLayout from '@/Layouts/StudentLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { usePoll } from '@/composables/usePoll';
 
@@ -17,6 +17,16 @@ const props = defineProps({
 // Keep the live counters fresh (≤5s) without a manual page refresh.
 usePoll(['stats', 'referrals', 'rewards']);
 
+// In "copy/share the link" mode, each copy/share action counts toward the reward.
+// No-op in every other mode. Re-renders this page so the count updates instantly.
+const trackShare = (channel) => {
+    if (props.stats?.mode !== 'link_share') return;
+    router.post(route('student.referrals.track-share'), { channel }, {
+        preserveScroll: true,
+        preserveState: true,
+    });
+};
+
 const copied = ref(false);
 const copyLink = async () => {
     try {
@@ -24,6 +34,7 @@ const copyLink = async () => {
         copied.value = true;
         setTimeout(() => (copied.value = false), 2000);
     } catch { /* clipboard unavailable */ }
+    trackShare('copy');
 };
 
 const shareText = computed(() =>
@@ -35,6 +46,7 @@ const mailLink = computed(() => `mailto:?subject=${encodeURIComponent('Join Nati
 const nativeShare = async () => {
     if (navigator.share) {
         try { await navigator.share({ title: 'National Olympiad Hunt', text: shareText.value, url: props.link }); } catch { /* cancelled */ }
+        trackShare('native');
     } else {
         copyLink();
     }
@@ -47,11 +59,13 @@ const displayToward = computed(() => justEarned.value ? props.stats.threshold : 
 
 // Mode-aware progress wording (admin setting).
 const progressLabel = computed(() => ({
+    link_share: 'Shares',
     link_click: 'Link opens',
     registration: 'Joined',
     first_paid_enrollment: 'Enrolled',
 }[props.stats.mode] || 'Joined'));
 const progressNoun = computed(() => ({
+    link_share: 'link share',
     link_click: 'link open',
     registration: 'qualified referral',
     first_paid_enrollment: 'paid enrollment',
@@ -107,8 +121,8 @@ const statusBadge = (s) => ({
                         </div>
 
                         <div class="share">
-                            <a class="sh wa" :href="waLink" target="_blank" rel="noopener">WhatsApp</a>
-                            <a class="sh mail" :href="mailLink">Email</a>
+                            <a class="sh wa" :href="waLink" target="_blank" rel="noopener" @click="trackShare('whatsapp')">WhatsApp</a>
+                            <a class="sh mail" :href="mailLink" @click="trackShare('email')">Email</a>
                             <button class="sh more" @click="nativeShare">More…</button>
                             <span class="code-chip">Your code: <strong>{{ code }}</strong></span>
                         </div>

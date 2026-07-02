@@ -72,6 +72,22 @@ class ReferralController extends Controller
         ]);
     }
 
+    /**
+     * Record that the user copied/shared their own referral link. Only counts in
+     * link_share mode (the service self-gates). Returns to the caller's page so the
+     * refreshed referral props update the count instantly.
+     */
+    public function trackShare(Request $request)
+    {
+        $data = $request->validate([
+            'channel' => ['nullable', 'string', 'in:copy,whatsapp,email,native'],
+        ]);
+
+        $this->referrals->recordShare($request->user(), $data['channel'] ?? null);
+
+        return back();
+    }
+
     /** Show only the first name + an initial for privacy. */
     private function maskName(string $name): string
     {

@@ -128,5 +128,10 @@ onUnmounted(() => onScroll && window.removeEventListener('scroll', onScroll));
 @media (max-width:860px){
     .nav__links, .nav-login{ display:none; }
     .burger{ display:flex; }
+    /* mobile: enlarge the logo a touch, shrink the CTA button so they sit in balance */
+    .brand :deep(img){ height:62px !important; }
+    .nav__cta{ gap:8px; }
+    .nav__cta .btn{ padding:9px 15px; font-size:13px; gap:6px; }
+    .nav__cta .btn svg{ width:15px; height:15px; }
 }
 </style>

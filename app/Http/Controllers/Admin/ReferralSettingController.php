@@ -34,7 +34,7 @@ class ReferralSettingController extends Controller
             'referrer_max_discount'    => ['nullable', 'numeric', 'min:1'],
 
             'unlock_threshold'         => ['required', 'integer', 'min:1'],
-            'qualify_on'               => ['required', Rule::in(['registration', 'first_paid_enrollment', 'link_click'])],
+            'qualify_on'               => ['required', Rule::in(['registration', 'first_paid_enrollment', 'link_click', 'link_share'])],
             'reward_validity_days'     => ['nullable', 'integer', 'min:1'],
         ]);
 

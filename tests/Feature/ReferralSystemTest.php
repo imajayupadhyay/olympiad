@@ -7,6 +7,7 @@ use App\Models\Coupon;
 use App\Models\Referral;
 use App\Models\ReferralClick;
 use App\Models\ReferralSetting;
+use App\Models\ReferralShare;
 use App\Models\User;
 use App\Services\CouponService;
 use App\Services\ReferralService;
@@ -227,6 +228,57 @@ class ReferralSystemTest extends TestCase
         $referrer = User::factory()->create(['is_active' => true]);
         $svc->recordClickByCode($referrer->referral_code, '10.0.0.9');
         $this->assertSame(0, ReferralClick::count());
+    }
+
+    public function test_link_share_mode_counts_every_share_and_rewards_on_threshold(): void
+    {
+        $this->activeProgram(['qualify_on' => 'link_share', 'unlock_threshold' => 2]);
+        $svc = app(ReferralService::class);
+        $referrer = User::factory()->create(['is_active' => true]);
+
+        // Every share counts (no de-dupe), unlike link_click.
+        $svc->recordShare($referrer, 'copy');
+        $svc->recordShare($referrer, 'copy'); // same channel — still counts
+        $this->assertSame(2, ReferralShare::where('referrer_id', $referrer->id)->count());
+        $this->assertSame(2, $svc->progressCount($referrer));
+        $this->assertSame(1, $this->rewardCount($referrer), 'Reward minted at share threshold (2)');
+
+        $svc->recordShare($referrer, 'whatsapp'); // mid-cycle (3 of next 4)
+        $this->assertSame(1, $this->rewardCount($referrer));
+
+        $svc->recordShare($referrer, 'email'); // 4 shares → second reward (repeatable)
+        $this->assertSame(2, $this->rewardCount($referrer));
+        $this->assertSame(4, $svc->progressCount($referrer));
+    }
+
+    public function test_record_share_is_a_no_op_outside_link_share_mode(): void
+    {
+        $this->activeProgram(['qualify_on' => 'registration', 'unlock_threshold' => 1]);
+        $svc = app(ReferralService::class);
+        $referrer = User::factory()->create(['is_active' => true]);
+
+        $svc->recordShare($referrer, 'copy');
+        $this->assertSame(0, ReferralShare::count());
+        $this->assertSame(0, $this->rewardCount($referrer));
+
+        // Also a no-op when the program is off, even in link_share mode.
+        ReferralSetting::current()->update(['qualify_on' => 'link_share', 'is_active' => false]);
+        $svc->recordShare($referrer, 'copy');
+        $this->assertSame(0, ReferralShare::count());
+    }
+
+    public function test_track_share_endpoint_records_a_share(): void
+    {
+        $this->activeProgram(['qualify_on' => 'link_share', 'unlock_threshold' => 1]);
+        $referrer = User::factory()->create(['is_active' => true]);
+
+        $this->actingAs($referrer)
+            ->from(route('student.referrals'))
+            ->post(route('student.referrals.track-share'), ['channel' => 'copy'])
+            ->assertRedirect();
+
+        $this->assertSame(1, ReferralShare::where('referrer_id', $referrer->id)->count());
+        $this->assertSame(1, $this->rewardCount($referrer), 'Threshold 1 → reward on first share');
     }
 
     private function rewardCount(User $referrer): int

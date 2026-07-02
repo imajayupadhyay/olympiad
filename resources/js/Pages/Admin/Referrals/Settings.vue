@@ -128,12 +128,17 @@
         <div>
           <label class="block text-xs font-semibold text-text-muted mb-1.5">A referral counts as successful when…</label>
           <select v-model="form.qualify_on" class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-gray-50 text-text-main">
+            <option value="link_share">When the user copies or shares their link (no open needed)</option>
             <option value="link_click">As soon as someone opens the shared link</option>
             <option value="registration">The referred student finishes registration via the link</option>
             <option value="first_paid_enrollment">The referred student completes their first paid enrollment</option>
           </select>
-          <p v-if="form.qualify_on === 'link_click'" class="text-text-muted text-[11px] mt-1.5">
-            Loosest option — the referrer earns from link opens alone (de-duped per device/IP), no sign-up required.
+          <p v-if="form.qualify_on === 'link_share'" class="text-text-muted text-[11px] mt-1.5">
+            Loosest option — the referrer earns every time they copy or share their own link (no de-dupe, no open or
+            sign-up required). Raise the unlock threshold to temper how often a reward is granted.
+          </p>
+          <p v-else-if="form.qualify_on === 'link_click'" class="text-text-muted text-[11px] mt-1.5">
+            The referrer earns from link opens alone (de-duped per device/IP), no sign-up required.
           </p>
         </div>
         <p class="text-text-muted text-[11px] bg-gray-50 rounded-lg p-3">Note: the sharer earns one reward at the first time they cross the unlock threshold.</p>
@@ -192,6 +197,7 @@ const qualifyNoun = computed(() => ({
     registration: 'sign-up via the link',
     first_paid_enrollment: 'paid enrollment',
     link_click: 'link open',
+    link_share: 'link share',
 }[form.qualify_on] || 'referral'));
 
 const saved = ref(false);

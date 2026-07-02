@@ -49,3 +49,9 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
     Route::post('/payments/{payment}/order', [PaymentController::class, 'createOrder'])->name('payments.order');
     Route::post('/payments/{payment}/verify', [PaymentController::class, 'verify'])->name('payments.verify');
 });
+
+// Referral share tracking (link_share mode) — only `auth`, NOT `verified`, so the
+// onboarding Step-2 card of a just-registered (unverified) student can post here too.
+Route::middleware('auth')->prefix('student')->name('student.')->group(function () {
+    Route::post('/refer/track-share', [ReferralController::class, 'trackShare'])->name('referrals.track-share');
+});

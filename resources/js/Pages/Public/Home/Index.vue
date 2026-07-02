@@ -28,12 +28,10 @@
 
       <div class="wrap hero__grid">
         <div class="hero__copy" data-reveal>
-          <div class="hero__badge glass">{{ heroSection.badge_text }} <b>{{ heroSection.badge_highlight }}</b></div>
+          <!-- <div class="hero__badge glass">{{ heroSection.badge_text }} <b>{{ heroSection.badge_highlight }}</b></div> -->
           <h1>
             {{ heroSection.headline_line_1 }}<br>
-            <span class="underline">{{ heroSection.headline_highlight }}
-              <svg viewBox="0 0 300 16" preserveAspectRatio="none" fill="none"><path d="M2 12C60 4 140 3 298 8" stroke="#EE6A2C" stroke-width="5" stroke-linecap="round"/></svg>
-            </span><br>
+            <span class="underline">{{ heroSection.headline_highlight }}</span><br>
             {{ heroSection.headline_line_2 }} <span class="ital">{{ heroSection.headline_italic }}</span>
           </h1>
           <p class="lede">{{ heroSection.lede }}</p>

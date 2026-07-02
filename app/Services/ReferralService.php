@@ -6,6 +6,7 @@ use App\Models\Coupon;
 use App\Models\Referral;
 use App\Models\ReferralClick;
 use App\Models\ReferralSetting;
+use App\Models\ReferralShare;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -154,13 +155,40 @@ class ReferralService
     }
 
     /**
+     * Record a copy/share of the referrer's own link (link_share mode only).
+     * Intentionally NOT de-duped — every share counts +1 — and may unlock a reward.
+     */
+    public function recordShare(User $referrer, ?string $channel = null): void
+    {
+        $settings = ReferralSetting::current();
+        if (! $settings->is_active || $settings->qualify_on !== 'link_share') {
+            return;
+        }
+
+        ReferralShare::create([
+            'referrer_id' => $referrer->id,
+            'channel'     => $channel,
+            'shared_at'   => now(),
+        ]);
+
+        $this->maybeRewardReferrer($referrer);
+    }
+
+    /**
      * The count that drives the referrer's reward + progress UI: link opens in
-     * link_click mode, otherwise qualified (or rewarded) referrals.
+     * link_click mode, copies/shares in link_share mode, otherwise qualified
+     * (or rewarded) referrals.
      */
     public function progressCount(User $referrer): int
     {
-        if (ReferralSetting::current()->qualify_on === 'link_click') {
+        $mode = ReferralSetting::current()->qualify_on;
+
+        if ($mode === 'link_click') {
             return ReferralClick::where('referrer_id', $referrer->id)->count();
+        }
+
+        if ($mode === 'link_share') {
+            return ReferralShare::where('referrer_id', $referrer->id)->count();
         }
 
         return $referrer->qualifiedReferralsCount();
@@ -225,6 +253,8 @@ class ReferralService
         DB::transaction(function () use ($referrer, $threshold, $settings) {
             if ($settings->qualify_on === 'link_click') {
                 $count = ReferralClick::where('referrer_id', $referrer->id)->lockForUpdate()->count();
+            } elseif ($settings->qualify_on === 'link_share') {
+                $count = ReferralShare::where('referrer_id', $referrer->id)->lockForUpdate()->count();
             } else {
                 $count = Referral::where('referrer_id', $referrer->id)
                     ->whereIn('status', ['qualified', 'rewarded'])
@@ -240,7 +270,7 @@ class ReferralService
                 $coupon = $this->mintRewardCoupon($referrer);
 
                 // Mark one not-yet-rewarded qualified referral (registration/paid modes);
-                // link_click rewards have no referee row to mark.
+                // link_click / link_share rewards have no referee row to mark.
                 Referral::where('referrer_id', $referrer->id)
                     ->where('status', 'qualified')
                     ->latest()

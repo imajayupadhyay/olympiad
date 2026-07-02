@@ -14,10 +14,21 @@ const props = defineProps({
 usePoll(['referral']);
 
 const referralProgressLabel = computed(() => ({
+    link_share: 'shares',
     link_click: 'link opens',
     registration: 'joined',
     first_paid_enrollment: 'enrolled',
 }[props.referral?.mode] || 'joined'));
+
+// In "copy/share the link" mode, copying the link counts toward the reward.
+// No-op in every other mode. Re-renders this page so the count updates instantly.
+const trackShare = (channel) => {
+    if (props.referral?.mode !== 'link_share') return;
+    router.post(route('student.referrals.track-share'), { channel }, {
+        preserveScroll: true,
+        preserveState: true,
+    });
+};
 
 const referralCopied = ref(false);
 const copyReferral = async () => {
@@ -27,6 +38,7 @@ const copyReferral = async () => {
         referralCopied.value = true;
         setTimeout(() => (referralCopied.value = false), 2000);
     } catch { /* clipboard unavailable */ }
+    trackShare('copy');
 };
 
 const page = usePage();
