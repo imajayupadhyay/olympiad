@@ -92,46 +92,8 @@
                     />
                   </div>
 
-                  <div v-else-if="field.type === 'list'" class="lg:col-span-2 border border-gray-100 rounded-2xl p-4">
-                    <div class="flex items-center justify-between gap-3 mb-4">
-                      <div>
-                        <h3 class="font-heading font-bold text-text-main text-sm">{{ field.label }}</h3>
-                        <p v-if="field.hint" class="text-text-muted text-xs mt-1">{{ field.hint }}</p>
-                      </div>
-                      <button type="button" @click="addItem(field)" class="bg-primary text-white px-3 py-2 rounded-xl text-xs font-semibold hover:bg-primary-light transition-colors">
-                        Add Item
-                      </button>
-                    </div>
-
-                    <div class="space-y-3">
-                      <div
-                        v-for="(item, index) in listFor(field.key)"
-                        :key="field.key + '-' + index"
-                        class="rounded-xl bg-gray-50 border border-gray-100 p-4"
-                      >
-                        <div class="flex items-center justify-between mb-3">
-                          <span class="font-number text-xs font-bold text-text-muted">#{{ index + 1 }}</span>
-                          <button type="button" @click="removeItem(field.key, index)" class="text-danger text-xs font-semibold hover:underline">Remove</button>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div v-for="child in field.fields" :key="child.key" :class="child.full ? 'md:col-span-2' : ''">
-                            <label class="block text-[11px] font-semibold text-text-muted mb-1">{{ child.label }}</label>
-                            <textarea
-                              v-if="child.type === 'textarea'"
-                              v-model="item[child.key]"
-                              rows="3"
-                              class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary bg-white resize-y"
-                            ></textarea>
-                            <input
-                              v-else
-                              v-model="item[child.key]"
-                              :type="child.type === 'number' ? 'number' : 'text'"
-                              class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary bg-white"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  <div v-else-if="field.type === 'list'" class="lg:col-span-2">
+                    <ContentListField :field="field" :items="listFor(field.key)" :icon-options="iconOptions" />
                   </div>
 
                   <div v-else class="lg:col-span-2 border border-gray-100 rounded-2xl p-4">
@@ -179,6 +141,17 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import ContentListField from './Components/ContentListField.vue';
+
+// Icon keys understood by the homepage (mirrors iconMap in Pages/Public/Home/Index.vue).
+// Shown with an emoji preview so the admin picks from a list instead of typing.
+const ICON_EMOJI = {
+  Trophy: '🏆', Students: '🎓', Medal: '🏅', Calendar: '📅', Target: '🎯', Certificate: '📜',
+  Brain: '🧠', Language: '🗣️', Rocket: '🚀', Math: '📐', Science: '🔬', World: '🌍',
+  Book: '📖', Hindi: 'अ', Civics: '🏛️', Computer: '💻', Puzzle: '🧩', Art: '🎨',
+  Register: '📝', Lightning: '⚡', Gift: '🎁', Books: '📚', Lock: '🔒',
+};
+const iconOptions = Object.keys(ICON_EMOJI).map((key) => ({ value: key, label: `${ICON_EMOJI[key]}  ${key}` }));
 
 const props = defineProps({
   sections: { type: Array, default: () => [] },
@@ -253,12 +226,26 @@ const schemas = {
     ],
   },
   subjects: {
-    description: 'Edit top copy directly. Subject tabs/cards are stored as JSON so groups, cards, colors and ordering can change freely.',
+    description: 'Edit the top copy, then manage the subject tabs (groups) and the subject cards inside each group — add, remove and reorder without touching any code.',
     fields: [
       { key: 'eyebrow', label: 'Eyebrow' },
       { key: 'title', label: 'Title' },
       { key: 'description', label: 'Description', type: 'textarea', full: true },
-      { key: 'groups', label: 'Subject Groups JSON', type: 'json', hint: 'Array of groups. Each group needs key, icon, label and subjects[]. Each subject can include name, icon, color, range and desc.' },
+      { key: 'groups', label: 'Subject Groups', type: 'list', item_label: 'Group',
+        hint: 'Each group is a tab on the homepage. Give it a label, an icon and a unique key, then add its subject cards.',
+        fields: [
+          { key: 'label', label: 'Group Label (tab)' },
+          { key: 'key', label: 'Group Key (unique, lowercase, no spaces)' },
+          { key: 'icon', label: 'Group Icon', type: 'select', options: 'icons' },
+          { key: 'subjects', label: 'Subjects in this group', type: 'list', item_label: 'Subject',
+            fields: [
+              { key: 'name', label: 'Subject Name' },
+              { key: 'icon', label: 'Icon', type: 'select', options: 'icons' },
+              { key: 'range', label: 'Class Range (e.g. Class 1-12)' },
+              { key: 'color', label: 'Accent Color', type: 'color' },
+              { key: 'desc', label: 'Short Description', type: 'textarea', full: true },
+            ] },
+        ] },
     ],
   },
   how_it_works: {
@@ -396,18 +383,6 @@ const selectSection = (key) => {
 const listFor = (key) => {
   if (!Array.isArray(form.content[key])) form.content[key] = [];
   return form.content[key];
-};
-
-const addItem = (field) => {
-  const item = {};
-  field.fields.forEach((child) => {
-    item[child.key] = child.type === 'number' ? 0 : '';
-  });
-  listFor(field.key).push(item);
-};
-
-const removeItem = (key, index) => {
-  listFor(key).splice(index, 1);
 };
 
 const applyJson = (key) => {
