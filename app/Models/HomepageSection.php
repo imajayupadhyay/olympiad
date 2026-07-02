@@ -301,6 +301,10 @@ class HomepageSection extends Model
     {
         $default = self::defaultFor($key);
 
-        return array_replace_recursive($default['content'] ?? [], array_filter($content, fn ($value) => $value !== null));
+        // Top-level replace only (NOT recursive): the admin's value for each key —
+        // including list arrays like `groups`/`items` — fully replaces the default,
+        // so removed list items stay removed. Missing keys still fall back to the
+        // default, which backfills any new fields added to defaults over time.
+        return array_replace($default['content'] ?? [], array_filter($content, fn ($value) => $value !== null));
     }
 }
