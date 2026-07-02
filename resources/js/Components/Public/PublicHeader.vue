@@ -113,6 +113,10 @@ onUnmounted(() => onScroll && window.removeEventListener('scroll', onScroll));
 .btn-primary:hover{ background:var(--saffron-dk); transform:translateY(-2px); box-shadow:0 18px 34px -10px var(--saffron); }
 .btn-ghost{ background:transparent; color:var(--ink); border-color:var(--ink-12); }
 .btn-ghost:hover{ border-color:var(--ink); background:var(--ink); color:var(--paper); transform:translateY(-2px); }
+/* `.ph a{color:inherit}` outranks `.btn-*` — re-assert button text colors for <a> buttons */
+.ph a.btn-primary{ color:#fff; }
+.ph a.btn-ghost{ color:var(--ink); }
+.ph a.btn-ghost:hover{ color:var(--paper); }
 
 .burger{ display:none; flex-direction:column; gap:5px; background:none; border:none; cursor:pointer; padding:8px; }
 .burger span{ width:24px; height:2px; background:var(--ink); border-radius:2px; transition:.3s; }
@@ -123,7 +127,11 @@ onUnmounted(() => onScroll && window.removeEventListener('scroll', onScroll));
 .mobile-menu{ position:fixed; inset:74px 0 auto 0; background:var(--paper); z-index:79; padding:20px 24px 30px; transform:translateY(-130%); transition:.4s cubic-bezier(.2,.8,.2,1); border-bottom:1px solid var(--paper-line); box-shadow:var(--shadow-md); }
 .mobile-menu.open{ transform:translateY(0); }
 .mobile-menu a{ display:block; padding:14px 4px; font:600 17px/1 var(--body); border-bottom:1px solid var(--paper-line); }
+/* the buttons at the foot of the menu: restore proper button look (centered, no divider) */
+.mobile-menu a.btn{ display:flex; align-items:center; justify-content:center; padding:15px 26px; font:700 15px/1 var(--body); border:1.5px solid transparent; text-align:center; }
+.mobile-menu a.btn-ghost{ border-color:rgba(10,16,36,.32); }
 .mobile-menu .btn{ width:100%; margin-top:18px; }
+.mobile-menu .btn + .btn{ margin-top:10px; }
 
 @media (max-width:860px){
     .nav__links, .nav-login{ display:none; }
