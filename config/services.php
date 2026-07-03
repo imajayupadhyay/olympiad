@@ -41,4 +41,15 @@ return [
         'webhook_secret' => env('RAZORPAY_WEBHOOK_SECRET'),
     ],
 
+    'brevo' => [
+        'api_key' => env('BREVO_API_KEY'),
+        'endpoint' => env('BREVO_ENDPOINT', 'https://api.brevo.com/v3/smtp/email'),
+        'sender_email' => env('BREVO_SENDER_EMAIL', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+        'sender_name' => env('BREVO_SENDER_NAME', env('MAIL_FROM_NAME', env('APP_NAME', 'National Olympiad Hunt'))),
+        'reply_to_email' => env('BREVO_REPLY_TO_EMAIL'),
+        'reply_to_name' => env('BREVO_REPLY_TO_NAME'),
+        'support_email' => env('SUPPORT_EMAIL', env('MAIL_FROM_ADDRESS')),
+        'support_phone' => env('SUPPORT_PHONE', '+91 72890 89009'),
+    ],
+
 ];

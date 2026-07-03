@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Certificate;
 use App\Models\Exam;
 use App\Models\Result;
+use App\Services\ManagedEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -83,7 +84,7 @@ class CertificateController extends Controller
         return back()->with('success', 'Certificate template uploaded successfully.');
     }
 
-    public function generate(Exam $exam)
+    public function generate(Exam $exam, ManagedEmailService $emails)
     {
         $template = Certificate::where('exam_id', $exam->id)->where('type', 'template')->first();
 
@@ -93,6 +94,7 @@ class CertificateController extends Controller
 
         $results = Result::where('exam_id', $exam->id)
             ->where('is_released', true)
+            ->with('user')
             ->get();
 
         if ($results->isEmpty()) {
@@ -101,7 +103,7 @@ class CertificateController extends Controller
 
         $generated = 0;
         foreach ($results as $result) {
-            Certificate::updateOrCreate(
+            $certificate = Certificate::updateOrCreate(
                 ['exam_id' => $exam->id, 'user_id' => $result->user_id, 'type' => 'student'],
                 [
                     'file_path'    => $template->file_path,
@@ -113,6 +115,15 @@ class CertificateController extends Controller
                 ]
             );
             $generated++;
+
+            if ($certificate->wasRecentlyCreated && $result->user) {
+                $emails->queue(
+                    'certificate_issued',
+                    $result->user,
+                    $emails->certificateVariables($result->user, $exam),
+                    ['related_type' => Certificate::class, 'related_id' => $certificate->id]
+                );
+            }
         }
 
         return back()->with('success', "{$generated} certificates made available to students.");

@@ -7,7 +7,7 @@ import { createApp, h } from 'vue';
 import { createPinia } from 'pinia';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 
-const appName = 'National Olympiad Hunt';
+const appName = 'Neoexam.org';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,

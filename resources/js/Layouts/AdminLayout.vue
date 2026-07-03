@@ -120,6 +120,15 @@
           Notifications
         </SidebarLink>
 
+        <SidebarLink :href="route('admin.emails')" :active="isActive('/admin/emails')">
+          <template #icon>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 8h18a2 2 0 002-2V8a2 2 0 00-2-2H3a2 2 0 00-2 2v6a2 2 0 002 2z"/>
+            </svg>
+          </template>
+          Emails
+        </SidebarLink>
+
         <SidebarLink :href="route('admin.content')" :active="isActive('/admin/content')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

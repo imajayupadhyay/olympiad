@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CertificateController;
 use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\ExamController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
@@ -70,6 +71,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
     Route::post('/notifications/send', [NotificationController::class, 'send'])->name('notifications.send');
     Route::delete('/notifications/{log}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    Route::get('/emails', [EmailTemplateController::class, 'index'])->name('emails');
+    Route::put('/emails/{template}', [EmailTemplateController::class, 'update'])->name('emails.update');
+    Route::patch('/emails/{template}/toggle', [EmailTemplateController::class, 'toggle'])->name('emails.toggle');
+    Route::post('/emails/{template}/test', [EmailTemplateController::class, 'sendTest'])->name('emails.test');
+    Route::get('/emails/{template}/preview', [EmailTemplateController::class, 'preview'])->name('emails.preview');
 
     Route::get('/content', [ContentController::class, 'index'])->name('content');
     Route::put('/content/homepage/{section}', [ContentController::class, 'update'])->name('content.homepage.update');

@@ -3,14 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Mail\NotificationBlast;
 use App\Models\ClassLevel;
 use App\Models\Exam;
 use App\Models\NotificationLog;
 use App\Models\StudentNotification;
 use App\Models\User;
+use App\Services\ManagedEmailService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -34,7 +33,7 @@ class NotificationController extends Controller
         ]);
     }
 
-    public function send(Request $request)
+    public function send(Request $request, ManagedEmailService $emails)
     {
         $data = $request->validate([
             'title'          => 'required|string|max:150',
@@ -89,8 +88,12 @@ class NotificationController extends Controller
 
         if (in_array($data['channel'], ['email', 'both'])) {
             foreach ($recipients as $student) {
-                Mail::to($student->email, $student->name)
-                    ->queue(new NotificationBlast($data['title'], $data['message']));
+                $emails->queue(
+                    'notification_blast',
+                    $student,
+                    $emails->notificationVariables($student, $data['title'], $data['message']),
+                    ['related_type' => NotificationLog::class, 'related_id' => $log->id, 'notification_log_id' => $log->id]
+                );
             }
         }
 

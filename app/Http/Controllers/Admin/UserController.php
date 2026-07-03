@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ClassLevel;
 use App\Models\User;
+use App\Services\ManagedEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
@@ -80,10 +81,18 @@ class UserController extends Controller
             'is_active'      => 'boolean',
         ]);
 
+        $plainPassword = $data['password'];
         $data['role']     = 'student';
-        $data['password'] = Hash::make($data['password']);
+        $data['password'] = Hash::make($plainPassword);
 
-        User::create($data);
+        $user = User::create($data);
+
+        app(ManagedEmailService::class)->queue(
+            'student_registered',
+            $user,
+            app(ManagedEmailService::class)->studentRegistrationVariables($user, $plainPassword),
+            ['related_type' => User::class, 'related_id' => $user->id, 'created_by_admin' => auth()->id()]
+        );
 
         return redirect()->route('admin.users.index')->with('success', 'Student account created successfully.');
     }

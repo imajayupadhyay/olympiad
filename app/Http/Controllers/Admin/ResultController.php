@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Models\Result;
+use App\Services\ManagedEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -98,14 +99,28 @@ class ResultController extends Controller
         return back()->with('success', "Results processed for {$attempts->count()} students. Ranks assigned.");
     }
 
-    public function release(Request $request, Exam $exam)
+    public function release(Request $request, Exam $exam, ManagedEmailService $emails)
     {
-        $count = Result::where('exam_id', $exam->id)->where('is_released', false)->count();
+        $results = Result::where('exam_id', $exam->id)
+            ->where('is_released', false)
+            ->with(['user', 'exam'])
+            ->get();
+
+        $count = $results->count();
 
         Result::where('exam_id', $exam->id)->update([
             'is_released' => true,
             'released_at' => now(),
         ]);
+
+        foreach ($results as $result) {
+            $emails->queue(
+                'result_released',
+                $result->user,
+                $emails->resultVariables($result),
+                ['related_type' => Result::class, 'related_id' => $result->id]
+            );
+        }
 
         return back()->with('success', "{$count} results released to students.");
     }

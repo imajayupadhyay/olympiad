@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\ClassLevel;
 use App\Models\User;
+use App\Services\ManagedEmailService;
 use App\Services\ReferralService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -63,6 +64,13 @@ class RegisteredUserController extends Controller
         ]);
 
         event(new Registered($user));
+
+        app(ManagedEmailService::class)->queue(
+            'student_registered',
+            $user,
+            app(ManagedEmailService::class)->studentRegistrationVariables($user, $data['password']),
+            ['related_type' => User::class, 'related_id' => $user->id]
+        );
 
         // Attribute this signup to a referrer if a referral code was carried in.
         if ($code = $request->session()->pull('referral_code')) {

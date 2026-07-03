@@ -201,6 +201,13 @@ class PaymentService
         $examIds = $payment->notes['exam_ids'] ?? [];
         $this->enrollments->enrollAfterPayment($payment->user, $payment, $examIds);
 
+        app(ManagedEmailService::class)->queue(
+            'payment_success',
+            $payment->user,
+            app(ManagedEmailService::class)->paymentVariables($payment->refresh()),
+            ['related_type' => Payment::class, 'related_id' => $payment->id]
+        );
+
         if ($payment->coupon_id && $payment->coupon) {
             $this->coupons->redeem($payment->coupon, $payment->user, $payment, (float) $payment->discount_amount);
         }
