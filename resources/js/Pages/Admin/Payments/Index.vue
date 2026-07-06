@@ -87,7 +87,7 @@
           <tr>
             <th class="text-left px-5 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">Receipt</th>
             <th class="text-left px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">Student</th>
-            <th class="text-left px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">Exams</th>
+            <th class="text-left px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">Exam &amp; Class</th>
             <th class="text-right px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">Amount</th>
             <th class="text-left px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">Date</th>
             <th class="text-left px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">Status</th>
@@ -107,8 +107,14 @@
             </td>
 
             <td class="px-4 py-3.5">
-              <span v-if="p.exams.length" class="text-text-main text-xs">{{ p.exams.join(', ') }}</span>
+              <div v-if="p.exams.length" class="flex flex-wrap gap-1 max-w-[240px]">
+                <span v-for="ex in p.exams" :key="ex"
+                      class="bg-primary/5 text-primary text-[11px] font-medium px-2 py-0.5 rounded-md">{{ ex }}</span>
+              </div>
               <span v-else class="text-text-muted text-xs">—</span>
+              <p v-if="p.class" class="mt-1 inline-flex items-center gap-1 text-[11px] text-text-muted">
+                <span class="w-1 h-1 rounded-full bg-gold"></span>{{ p.class }}
+              </p>
             </td>
 
             <td class="px-4 py-3.5 text-right">

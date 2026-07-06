@@ -1,0 +1,1774 @@
+[
+  {
+    "name": "A. M. Naik School",
+    "address": "Saki Vihar Road, Between L&T Gate No.1 & 2, Powai, Mumbai – 400 072"
+  },
+  {
+    "name": "AAJ Global Foundation School",
+    "address": "AAJ Global Park, Churamanipur, West Bengal 722122"
+  },
+  {
+    "name": "ABUDHABI INDIAN SCHOOL BRANCH 1",
+    "address": "BRANCH 1, P.O. BOX 79803, AL WATHBA SOUTH ABUDHABI , U.A.E.,"
+  },
+  {
+    "name": "ACTIVITY HIGH SCHOOL",
+    "address": "NEAR JASLOK HOSPITAL, 2 NOWROJI , GAMADIA ROAD, PEDDAR ROAD, CUMBALLA HILL,"
+  },
+  {
+    "name": "ADITYA BIRLA PUBLIC SCHOOL",
+    "address": "ULTRA TECH CEMENT LIMITED, BUDAWADA VILLAGE, JAGGAYYAPET MANDAL"
+  },
+  {
+    "name": "AIR FORCE SCHOOL",
+    "address": "AIR FORCE STATION , BIDAR,"
+  },
+  {
+    "name": "Air Force School -15 BRD",
+    "address": "Air force school 15 BRD , opp HDFC Bank ATM , vadsar , Gandhinagar"
+  },
+  {
+    "name": "AIR INDIA MODERN SCHOOL",
+    "address": "AIR INDIA HOUSING COLONY, SANTA CRUZ (EAST), KALINA"
+  },
+  {
+    "name": "AKU S ENGLISH MEDIUM SCHOOL",
+    "address": "AKU, S DREAMLAND, MAIN ROAD, KUPWAD, TALUKA-MIRAJ, SANGLI,"
+  },
+  {
+    "name": "ALLEN Career Institute",
+    "address": "Koramangala Campus, 41, 6th Block, 17th Main, 100 Ft. Road, Koramangala, near Malabar Gold,"
+  },
+  {
+    "name": "ALLEN Career Institute Overseas",
+    "address": "Salmiya Block 7 Hamad Al Mubarak Street,Beit Dickson Restaurant building 2nd Floor,Next to Avanti palace"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Adyar",
+    "address": "ALLEN Career Institute,Adyar campus Above Nalli Silks,City Towers, 7, 3rd Cross St, Kasturba Nagar, Adyar"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Banaswadi",
+    "address": "Banaswadi Campus, Bengaluru 311, 7th Main Rd, HRBR Layout 2nd Block, HRBR Layout, Kalyan Nagar,"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Bannerghaatta",
+    "address": "Bannerghatta Campus, Bengaluru 71, Panuranga Nagar, Bannerghatta Main Rd, near Adigas Restaurant, Bilekahalli, Bengaluru,"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Basaveshwara Nagar",
+    "address": "Basaveshwara Nagar Site No. 80, 1st Main Rd, opp. Gangamma Thimmaiah Inn And Convention Center, 3 Stage, Block 2, 3rd Stage, Basaveshwar Nagar,"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Coimbatore",
+    "address": "35, 7th street Tatabad, Gandhipuram"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Electronic City",
+    "address": "Kubera Building, 3rd & 4th Floor,1st Cross, Above of Croma Show Room, Neeladri Rd, Opposite Reliance Digital, Electronics City Phase 1"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Hebbal",
+    "address": "Hebbal Campus, Bengaluru 5th Main Rd, Vinayakanagar, Hebbal"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, HSR",
+    "address": "Hsr Layout Campus, Bengaluru 530 C/531 A, 19th Main Rd, Opposite poorva vantage apartments, sector 3, HSR Layout"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Hubballi",
+    "address": "Vidyanagar Campus,1st & 3rd Floor, Kalburgi Central, CTS No. 4614B/2B/1, Sundar Nagar Main Rd, Maiyan Timmasagar Area, Vidya Nagar, Hubballi Karnataka"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Indiranagar",
+    "address": "Indiranagar Campus, Bengaluru , 804, 1st Cross Rd, HAL 2nd Stage, Appareddipalya, Indiranagar"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Jalahalli",
+    "address": "JALAHALLI Campus, Bengaluru SG PLAZANo, 01, Gangamma Temple Rd, opp. Prestige Welling Park, Jalahalli"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Jayanagar",
+    "address": "JAYANAGAR (B2) BUILDING, 16/1-1, Pattalamma Temple Rd, Jayanagar East, Jayanagar 3rd Block, Near PN RAO showroom, Bangalore"
+  },
+  {
+    "name": "ALLEN CAREER INSTITUTE PVT LTD, KARAIKAL",
+    "address": "No: 63,Kamarajar Salai,Opposite to Govt.Hospital.Karaikal"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Mangaluru",
+    "address": "Vikas Group of Institutions Campus, City Point, Navabharath Circle, Kodialbail, Mangaluru, Karnataka"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Marathahalli",
+    "address": "ALLEN Career Institute, Marathahalli Campus, Bengaluru Commercial Complex, Ground Floor, Purva Riviera Driveway, Marathahalli, Bengaluru"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Mysuru",
+    "address": "B M Arcade, No.2923, 1st main, 5th Cross, saraswathipuram, opp. SVC Bank, Mysuru"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Puducherry",
+    "address": "VEDAM CAMPUS No. 372 & 374 Bharathi Street, Puducherry, Puducherry"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Rajarajeshwari Nagar",
+    "address": "ALLEN Career institute Private Limited, RR Nagar Campus, 2nd , 3rd, 4th Floor,#466/A, Ideal homes township, 80ft Road, Kanchenahalli, RR Nagar"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Sarjapur",
+    "address": "Sarjapura New Campus Survey No. 106/2, B. Hosahalli Road, Marathahalli - Sarjapur Rd, behind S2 Housing Avantikaa"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Tirupati (B1)",
+    "address": "AIR ROAD CAMPUS, #170, First Floor, Above MGB Bajaj, New Balaji Colony, AIR Bypass Road, Tirupati"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Whitefield",
+    "address": "No-918, Varthur Main Road Near Apnaday Market, Whitefield"
+  },
+  {
+    "name": "ALLEN Career Institute PVT LTD, Yelahanka",
+    "address": "Limited, 40/D Marilingiah Building1, 2nd Cross, Yelahanka New Town, KHB Colony Bangalore"
+  },
+  {
+    "name": "ALLEN Career Institute Pvt Ltd.",
+    "address": "One Biz Square, A-12 (a), Road No 1, Indraprastha Industrial Area,"
+  },
+  {
+    "name": "Allen Career Institute Pvt. Ltd",
+    "address": "R.K Commercial, PJ Antony Cross Road, next to Metro Station, behind Palarivattom"
+  },
+  {
+    "name": "Allen Institute",
+    "address": "Sadhav’ Plot No.317 Near NIA office Nagar"
+  },
+  {
+    "name": "ALLEN Overseas",
+    "address": "Jumeirah Lake Tower center , UNIT No S207 (393916) Second Floor Red Diamond Building DMCC,Jumeirah Lake Towers"
+  },
+  {
+    "name": "ALLEN PAAVAI",
+    "address": "Paavai Vidyashram, NH-7, R.Puliyampatti,,Puduchatram,District Namakkal,Pin Code-637018"
+  },
+  {
+    "name": "AMBIKA VIDYALAYA (CBSE)",
+    "address": "MANGALORE-PUTTUR-MADIKERI-MYSORE HIGHWAY BAPPALIGE, PUTTUR D.K."
+  },
+  {
+    "name": "Amity International School",
+    "address": "Amity University Campus Maharajpura, Airport road,"
+  },
+  {
+    "name": "AMRITA VIDYALAYAM, Ernakulam",
+    "address": "KUNNUMPURAM EDAPALLY NORTH P.O. Ernakulam DISTT ERNAKULAM"
+  },
+  {
+    "name": "AMRITA VIDYALAYAM, Pushp Vihar",
+    "address": "23/42a, Sector 7, Pushp Vihar, NEW DELHI"
+  },
+  {
+    "name": "AMS P. OBUL REDDY PUBLIC SCHOOL",
+    "address": "PRE PRIMARY DEPARTMENT, ROAD NO. 25, JUBILEE HILLS,"
+  },
+  {
+    "name": "ANANDA MARGA SCHOOL,GANKI",
+    "address": "PO+PS:KHOWAI, DIST:KHOWAI TRIPURA,"
+  },
+  {
+    "name": "ANGELS PARADISE ACADEMY, PUNE",
+    "address": "Future Tower No 56, Amanora Park Town, Hadapsar"
+  },
+  {
+    "name": "Ankuram Pre School",
+    "address": "Vijay Bhavan, Railway Road Muradnagar, UP 201206"
+  },
+  {
+    "name": "Anusayabai Poshattiwar english primary school",
+    "address": "Talodhi balapur District - Chandrapur (ms)"
+  },
+  {
+    "name": "Arati Pathbhaban (Kids' Zone)",
+    "address": "Monoharchak, Contai"
+  },
+  {
+    "name": "ARB INTERNATIONAL SCHOOL",
+    "address": "PALAKKAD ROAD, ZAMIN MUTHUR POLLACHI, COIMBATORE DISTRICT,"
+  },
+  {
+    "name": "ARMY PUBLIC SCHOOL",
+    "address": "BUILDING NO-2, SHIVAJI ROAD , AGRA CANTT. ,"
+  },
+  {
+    "name": "ARMY PUBLIC SCHOOL",
+    "address": "Near NEW BIRDWOOD LINES CANTT, BAREILLY CANTT"
+  },
+  {
+    "name": "Army Public School (MIC & S), Pre- Primary Wing",
+    "address": "MIC & S, Gate no -3, Solapur Road, Ahmednagar"
+  },
+  {
+    "name": "Army Public School -Pre Primary Wing",
+    "address": "Sultania Infantry (SI) Lines Bhopal"
+  },
+  {
+    "name": "ARMY PUBLIC SCHOOL ASC CENTRE & COLLEGE",
+    "address": "VICTORIYA LAYOUT , (OPPOSITE TO INDIA GARAGE) OLD AIRPORT ROAD, ASC CENTRE & COLLEGE , P.O.-AGARAM"
+  },
+  {
+    "name": "ARMY PUBLIC SCHOOL BHOPAL",
+    "address": "DRONANCHAL NEORI HILLS , PO MOTILAL NEHRU NAGAR BHOPAL"
+  },
+  {
+    "name": "ARMY PUBLIC SCHOOL CLEMENTTOWN",
+    "address": "A.P.S. , CLEMENT TOWN, DEHRADUN,"
+  },
+  {
+    "name": "ARMY PUBLIC SCHOOL HISSAR",
+    "address": "MILITARY STATION HISAR CANTT,"
+  },
+  {
+    "name": "ARMY PUBLIC SCHOOL, BATHINDA MIL. STN.",
+    "address": "BATHINDA MIL. STN., BHATINDA CANTT ,"
+  },
+  {
+    "name": "ARMY PUBLIC SCHOOL,FARIDKOT CANTT",
+    "address": "C/O 56, APO C/O HQ 16 ARTY BDE, FARIDKOT"
+  },
+  {
+    "name": "Ashmah International School",
+    "address": "Near H.No.115, S.A.S. Nagar, Sector 70, Sahibzada Ajit Singh Nagar, Punjab 160070"
+  },
+  {
+    "name": "ASIA PACIFIC WORLD SCHOOL (APWS)",
+    "address": "#39/2, Serenity Layout, Sarjapur Main Rd, Kaikondrahalli, Bengaluru, Karnataka - 560 035"
+  },
+  {
+    "name": "Assam Rifle Public School ( Primary )",
+    "address": "Saikari Bazaar,11Assam Rifles,Haflong,Dima Hassao,Haflong"
+  },
+  {
+    "name": "Assam Rifles Public School",
+    "address": "(Primary)LALITKOR , East Khasi Hills District"
+  },
+  {
+    "name": "Assam Rifles Public School (PRIMARY), silchar",
+    "address": "Jail road, Tarapur, Silchar"
+  },
+  {
+    "name": "ATUL VIDYALAYA",
+    "address": "AT AND POST ATUL VALSAD, DIST.VALSAD,"
+  },
+  {
+    "name": "Aventura International School",
+    "address": "Bhiwandi Rd, near gaondevi mandir, Sapna Industrial Estate, Pimpalghar, Gove, Maharashtra"
+  },
+  {
+    "name": "AVI INTERNATIONAL SCHOOL",
+    "address": "FORBESGANJ , ARARIA"
+  },
+  {
+    "name": "B.B.D. sr. sec. School,Biharipur",
+    "address": "vill- Biharipur, p.o.d.g.pura, teh- Rewari"
+  },
+  {
+    "name": "BACHPAN PLAY SCHOOL, CHALISGAON (JALGAON)",
+    "address": "Jahagirdar Wadi, Patels Buildings, Near Shri Krishna Theater, Chalisgaon, Jalgaon, Maharashtra- 424101"
+  },
+  {
+    "name": "Bal Bharati Public School",
+    "address": "APCPL-IGSTPP, JHARLI,"
+  },
+  {
+    "name": "BAL BHARATI PUBLIC SCHOOL,",
+    "address": "PRIMARY WING, PARWANA ROAD, PITAMPURA, NEW DELHI-110034"
+  },
+  {
+    "name": "BARODA HIGH SCHOOL, ALKAPURI, AFTERNOON SHIFT",
+    "address": "90/1 Alkapuri society , nr baroda high school, Alkapuri, Vadiwadi, Vadodara, Gujarat 390007"
+  },
+  {
+    "name": "Baselios Public School",
+    "address": "Refinery Township ,Jawaharnagar,Refinery Township,, Vadodara, Gujarat 391320"
+  },
+  {
+    "name": "BASIL WOODS INTERNATIONAL SCHOOL",
+    "address": "159/2, GUNJUR -- MUGALUR ROAD, HALASAHALLI VILLAGE"
+  },
+  {
+    "name": "BHAVAN'S GANGABUX KANORIA VIDYAMANDIR",
+    "address": "(SENIOR WING) BLOCK-FA, SECTOR-III SALT LAKE,"
+  },
+  {
+    "name": "Bhavans NTPC Vidya Mandir, Mouda",
+    "address": "Utkarsh nagar township, NTPC Mouda Ramtek Road, Nagpur - 441104"
+  },
+  {
+    "name": "BIDYA BHARATI GIRLS' HIGH SCHOOL",
+    "address": "23A/27 NB, BLOCK-B, NEW ALIPORE,"
+  },
+  {
+    "name": "BILL MEMORIAL ROTARY ENGLISH MEDIUM SCHOOL MUDHOL",
+    "address": "GOVINDPUR CIRCLE, MUDHOL"
+  },
+  {
+    "name": "BIRLA HIGH SCHOOL ( SENIOR SECTION )",
+    "address": "1, MOIRA STREET"
+  },
+  {
+    "name": "Birla Open Minds International School",
+    "address": "68,Walkeshwar Rd, Krishanaraj Society,,behind Gopi Birla Memorial School,shital baug Walkeshwar,Malabar Hill"
+  },
+  {
+    "name": "BIRLA PUBLIC SCHOOL, DOHA, QATAR",
+    "address": "P.O.BOX :24686 NEAR RELIGIOUS COMPLEX ABU HAMOUR, DOHA, QATAR"
+  },
+  {
+    "name": "BLUE BELLS MODEL SCHOOL",
+    "address": "SECTOR-4, URBAN ESTATE, (NEAR TUBEWELL NO.7)"
+  },
+  {
+    "name": "BUXI JAGABANDHU ENGLISH MEDIUM SCHOOL - II",
+    "address": "AT/PO : SATYABHAMAPUR, VIA - BALAKATI,"
+  },
+  {
+    "name": "CAPITOL PUBLIC SCHOOL",
+    "address": "9th Cross Rd, RBI Layout, JP Nagar 7th Phase, J. P. Nagar, Bengaluru, Kothnur, Karnataka 560078"
+  },
+  {
+    "name": "CARMEL CONVENT HIGH SCHOOL-CBSE",
+    "address": "M C C,MARUTHI NAGAR ,BEHIND DCP OFFICE"
+  },
+  {
+    "name": "CARMEL HIGH SCHOOL, KOLKATA",
+    "address": "41, GARIAHAT ROAD (SOUTH), KOLKATA,"
+  },
+  {
+    "name": "CARMEL JUNIOR COLLEGE",
+    "address": "OPPOSITE BAL VIHAR, SONARI, JAMSHEDPUR,"
+  },
+  {
+    "name": "CENTURION PUBLIC SCHOOL",
+    "address": "AT - ALLURI NAGAR, PO - R. SITAPUR , DIST.-GAJAPATI, ODISHA,"
+  },
+  {
+    "name": "CHILD CARE PRIMARY SCHOOL",
+    "address": "35/A, GOLD ROAD PAJIFOND, MARGAO, GOA,"
+  },
+  {
+    "name": "CHINMAYA VIDYALAYA - BANASHANKARI",
+    "address": "CA SITE 1, 6TH PHASE, 9TH BLOCK, BANASHANKARI ,"
+  },
+  {
+    "name": "CHINMAYA VIDYALAYA, VADUTHALA",
+    "address": "PALLIKKAVU TEMPLE ROAD, VADUTHALA,"
+  },
+  {
+    "name": "Chitkara International School",
+    "address": "UDYOG PATH SECTOR- 25 WEST, CHANDIGARH"
+  },
+  {
+    "name": "Chitkara International School, PANCHKULA",
+    "address": "Sector-28, Panchkula, Haryana, India"
+  },
+  {
+    "name": "CHRIST JYOTI SCHOOL (CBSE)",
+    "address": "PREMNAGAR, DHING ROAD, NAGAON,"
+  },
+  {
+    "name": "CITY INTERNATIONAL SCHOOL",
+    "address": "MANAS CITY, INDIRA NAGAR,"
+  },
+  {
+    "name": "CITY MONTESSORI SCHOOL",
+    "address": "ALIGANJ CAMPUS I, SECTOR-'0' , LUCKNOW"
+  },
+  {
+    "name": "CITY MONTESSORI SCHOOL - United World Campus",
+    "address": "183, Sector 15, Block C, Indira Nagar,"
+  },
+  {
+    "name": "CITY MONTESSORI SCHOOL, STATION ROAD CAMPUS",
+    "address": "VASUDHAIV KUTUMBUKAM BUILDING 11, Station Rd, near Chintel House, Udaiganj, Husainganj, Lucknow, Uttar Pradesh"
+  },
+  {
+    "name": "CLUNY CONVENT HIGH SCHOOL",
+    "address": "11TH MAIN ROAD, MALLESWARAM"
+  },
+  {
+    "name": "CONTAI PUBLIC SCHOOL",
+    "address": "DAKSHIN GOPINATHPUR , P.O. CONTAI . P.S - CONTAI, DIST.- PURBA MEDINIPUR"
+  },
+  {
+    "name": "CRANIUM PUBLIC SCHOOL",
+    "address": "PO - BARABATI, N.C. COLLEGE ROAD, PO. BAIDYARAJPUR"
+  },
+  {
+    "name": "Crimson Anisha Global School ( Cambridge Board )",
+    "address": "Life Republic Township, Hinjawadi - Kasarsai Rd, Hinjawadi, Marunji, Pimpri-Chinchwad"
+  },
+  {
+    "name": "Crimson Anisha Global School ( CBSE Board ).",
+    "address": "Life Republic Township, Hinjawadi - Kasarsai Rd, Hinjawadi, Marunji, Pimpri-Chinchwad"
+  },
+  {
+    "name": "D A V PUBLIC SCHOOL",
+    "address": "OPPOSITE TO D.M OFFICE,LIONS CLUB ROAD, KANYAPUR,PO- R.K MISSION,"
+  },
+  {
+    "name": "D N MODEL SR SEC SCHOOL",
+    "address": "Stadium Rd, Street Number 9, New Town, Moga, Punjab 142001"
+  },
+  {
+    "name": "D.A.V PUBLIC SCHOOL, KALINGA NAGAR",
+    "address": "KALINGA NAGAR, GHATIKIA BHUBANESWAR"
+  },
+  {
+    "name": "D.A.V. PUBLIC SCHOOL",
+    "address": "PUSHPANJALI ENCLAVE, OUTER RING ROAD,PITAM PURA,"
+  },
+  {
+    "name": "D.A.V. SENIOR SEC. PUBLIC SCHOOL",
+    "address": "MURLIDHAR DAV PUBLIC SCHOOL,NEAR JAGADHRI GATE AMBALA CITY. ,"
+  },
+  {
+    "name": "D.G.S.G PUBLIC SCHOOL",
+    "address": "ST NO 11,NEAR GURUDWARA ARJUN DEV JI, GILL CANAL,SHIMLAPURI"
+  },
+  {
+    "name": "DARATASSALAM INTERNATIONAL DELHI PUBLIC SCHOOL, IGCSE RIYADH",
+    "address": "PO BOX 242234 RIYADH - 11322 SAUDIA ARABIA"
+  },
+  {
+    "name": "DARATASSALAM INTERNATIONAL DELHI PUBLIC SCHOOL, RIYADH",
+    "address": "PO BOX 242234 RIYADH - 11322 SAUDIA ARABIA"
+  },
+  {
+    "name": "DAV RGTPP public School, khedar",
+    "address": "Rajiv Gandhi Thermal Power Plant Residential Colony, Khedar,"
+  },
+  {
+    "name": "Deens Academy, Gunjur",
+    "address": "48/2, Gunjur - Mugalur Road Kathriguppe, Village"
+  },
+  {
+    "name": "Deep Global School Jr. College",
+    "address": "Deep Campus ,Opp GR engineering company Boisar West , Saravali"
+  },
+  {
+    "name": "DELHI AREA PRIMARY SCHOOL -1",
+    "address": "PRATAP CHOWK DELHI CANTT,"
+  },
+  {
+    "name": "DELHI PRIVATE SCHOOL, L.L.C",
+    "address": "P O BOX 26005 , SHARJAH U A E,"
+  },
+  {
+    "name": "DELHI PUBLIC SCHOOL",
+    "address": "B-1, SECTOR-132, EXPRESSWAY GAUTAM BUDDH NAGAR,NOIDA-, NEAR J.P. HOSPITAL"
+  },
+  {
+    "name": "DELHI PUBLIC SCHOOL",
+    "address": "ELECTRONIC CITY, SURVEY # 33, BETTADASANPURA BEGUR HOBLI,"
+  },
+  {
+    "name": "DELHI PUBLIC SCHOOL , GHAZIABAD",
+    "address": "SITE NO -3 , MEERUT ROAD, GHAZIABAD,"
+  },
+  {
+    "name": "DELHI PUBLIC SCHOOL ,SECUNDERABAD",
+    "address": "SURVEY NO.625, DIAMOND POINT, SIKH ROAD, TARBUND TADBUND,SIKH VILLAGE,"
+  },
+  {
+    "name": "DELHI PUBLIC SCHOOL R.N. EXTENSION MORTA MEERUT ROAD GHAZIABAD",
+    "address": "851-852, VILLAGE MORTA, BEHIND HRIT COLLAGE, GHAZIABAD ,, UTTAR PRADESH"
+  },
+  {
+    "name": "DELHI PUBLIC SCHOOL, FARIDABAD",
+    "address": "SECTOR-19, MATHURA ROAD OLD FARIDABAD,"
+  },
+  {
+    "name": "DELHI PUBLIC SCHOOL, GUWAHATI",
+    "address": "OPP, TRUPATI BALAJI TEMPLE, (NEAR ISBT) AHOMGAON, NH - 37,"
+  },
+  {
+    "name": "Delhi Public School, Panvel",
+    "address": "27 Sangurli, Taluka Panvel, District Raigad"
+  },
+  {
+    "name": "DELHI PUBLIC SCHOOL, UDAIPUR",
+    "address": "BHUWANA , PRATAP NAGAR BYE-PASS NH -8"
+  },
+  {
+    "name": "DELHI PUBLIC SCHOOL, VASANT KUNJ",
+    "address": "SECTOR - C, POCKET - 5 VASANTKUNJ NEW DELHI"
+  },
+  {
+    "name": "DELHI PUBLIC SCHOOL, WHITEFIELD",
+    "address": "SURVEY NO. 123/124, MALLASANDRA VILLAGE HOSKOTE TALUK NEAR MVJ ENGINEERING COLLEGE"
+  },
+  {
+    "name": "DIAMOND JUBILEE HIGH SCHOOL(ICSE)",
+    "address": "39/43 , DIAMOND COMPLEX NESBIT ROAD MAZAGAON"
+  },
+  {
+    "name": "DON BOSCO ENGLISH MEDIUM SCHOOL",
+    "address": "DON BOSCO ROAD, KRISHNANAGAR"
+  },
+  {
+    "name": "DON BOSCO HIGH SCHOOL AND JUNIOR COLLEGE, LONAVLA",
+    "address": "DON BOSCO MARG NEW TUNGARLI ROAD, LONAVALA ,"
+  },
+  {
+    "name": "DON BOSCO SCHOOL ,BANDEL",
+    "address": "P.O. & DIST. HOOGHLY, BANDEL CITY HOOGHLY ,"
+  },
+  {
+    "name": "DOON PUBLIC SCHOOL",
+    "address": "SHIVPURI LINK ROAD, GWALIOR ,"
+  },
+  {
+    "name": "DOTS N DIGITS",
+    "address": "PADMALAYA GROUND FLOOR , 9/17, MAYILAI RENGANADAN STREET , T NAGAR"
+  },
+  {
+    "name": "DR. MAR THEOPHILUS SCHOOL",
+    "address": "14/1 , NEAR REGENCY, MEADOWS SOCIETY, DHANORIOPP. TO B.V. BHANDARI"
+  },
+  {
+    "name": "DR. MAR THEOPHILUS SCHOOL (Primary)",
+    "address": "Address:14/1 , NEAR REGENCY, MEADOWS SOCIETY, DHANORIOPP. TO B.V. BHANDARI, PUNE"
+  },
+  {
+    "name": "DR. PILLAI GLOBAL ACADEMY",
+    "address": "SECTOR-7, VIJAY MARG , KHANDA COLONY NEW PANVEL (W), NAVI MUMBAI,"
+  },
+  {
+    "name": "DR.PILLAI GLOBAL ACADEMY",
+    "address": "PLOT NO.1, RSC -48, BORIVALI (WEST) , GORAI -II , NEAR GORAI BUS DEPOT, MUMBAI"
+  },
+  {
+    "name": "DR.PILLAI GLOBAL ACADEMY - Pre primary",
+    "address": "PLOT NO.1, RSC -48, BORIVALI (WEST) , GORAI -II , NEAR GORAI BUS DEPOT, MUMBAI"
+  },
+  {
+    "name": "EBENEZER MATRIC HR. SEC. SCHOOL",
+    "address": "9TH STREET,TNHB KORATTUR, CHENNAI"
+  },
+  {
+    "name": "Eden International School",
+    "address": "Urban Life,, Talegaon Dabhade,"
+  },
+  {
+    "name": "EDUBRIDGE INTERNATIONAL SCHOOL",
+    "address": "ROBERT MONEY SCHOOL COMPOUND WADILAL A. PATEL MARG, NEXT TO QUEEN'S MARY SCHOOL, GRANT ROAD (EAST)"
+  },
+  {
+    "name": "EduMeta The I-school",
+    "address": "A-137, Sohna - Gurgaon Rd, Vipul World, Sector 48, Gurugram, Haryana"
+  },
+  {
+    "name": "EDWARDS ENGLISH SCHOOL",
+    "address": "P.O. BOX NO 1, JAMTARA OUT,"
+  },
+  {
+    "name": "EUROKIDS PRE-SCHOOL SHIMOGA-BHADRAVATHI",
+    "address": "Sy.No 34/1A5, T. Maruthi Rao Estate, Opposite to Shankarmatta, Sidharuda Nagara, Shivamogga District, Bhadravathi"
+  },
+  {
+    "name": "FATHER JOSEPH'S ENGLISH HIGH SCHOOL",
+    "address": "KASTURI PARK, NAVGHAR ROAD BHAYANDAR (E),"
+  },
+  {
+    "name": "FR. AGNEL SCHOOL",
+    "address": "GAUTAM NAGAR"
+  },
+  {
+    "name": "G D Goenka Global School",
+    "address": "S-3130, DLF3,Gurgaon, Haryana"
+  },
+  {
+    "name": "G D GOENKA PUBLIC SCHOOL",
+    "address": "BLOCK A,'VIPUL WORLD' , TIKRI, SECTOR 48, SOHNA ROAD, GURGAON"
+  },
+  {
+    "name": "G D GOENKA SCHOOL, SULTANPUR",
+    "address": "Sultanpur Somnath City Phase-1, Near Katawa Road, Chunaha"
+  },
+  {
+    "name": "G. D. GOENKA PUBLIC SCHOOL",
+    "address": "VILLAGE - RASALPUR, GAYA PATNA ROAD, P.S.- CHANDAUTI ,, Bihar, 823003"
+  },
+  {
+    "name": "G.D. GOENKA PUBLIC SCHOOL MODEL TOWN",
+    "address": "3A, Institutional Area, Model Town - III, Narthex"
+  },
+  {
+    "name": "G.E.I 'S Chhabildas English Medium School",
+    "address": "TILAK BLDG AKSHIKAR, NEAR IDEAL BOOK STALL, ST CHABIDAS ROAD, DADAR"
+  },
+  {
+    "name": "GD Goenka Public School",
+    "address": "Sector 10-A"
+  },
+  {
+    "name": "GEI'S BLOSSOM INTERNATIONAL SCHOOL,DOMBIVLI",
+    "address": "S.V. JOSHI VIDYA SANKUL, NEHRU ROAD DOMBIVLI, East DIST THANE-421201"
+  },
+  {
+    "name": "GEMS MILLENNIUM SCHOOL - SHARJAH",
+    "address": "SHARJAH SCHOOL ZONE AREA, SHARJAH PO BOX 31910 UNITED ARAB EMIRATES"
+  },
+  {
+    "name": "GENESIS SCHOOL",
+    "address": "OPP. TAHSILDAR OFFICE,SY NO'S.782,785,787&792, BEERAMGUDE AMEENPUR (M), SANGAREDDY"
+  },
+  {
+    "name": "GLOBAL INDIAN INTERNATIONAL SCHOOL(EAST COAST CAMPUS)",
+    "address": "82 CHEVIOT HILL, SIGLAP ROAD, SINGAPORE -459663"
+  },
+  {
+    "name": "GLORY STAR SCHOOL",
+    "address": "LAKHRA"
+  },
+  {
+    "name": "Gopal Govinda Academy",
+    "address": "20, River Side Rd, Cantonment, Kolkata, Barrackpur Cantonment, North 24 Parganas, West Bengal"
+  },
+  {
+    "name": "Graphic Era Global School",
+    "address": "Bell Rd, Clement Town, Bharu Wala Grant, Clement Town,"
+  },
+  {
+    "name": "GREEN LAWNS SCHOOL",
+    "address": "6, WORLI SEA FACE, A.G. KHAN ROAD, WORLI,"
+  },
+  {
+    "name": "GURUKUL ACADEMY",
+    "address": "ADJ TO BABA BHOOTHNATH ASHRAM INDIRA NAGAR,"
+  },
+  {
+    "name": "HAPPY HOURS SCHOOL",
+    "address": "AJIT BHAWAN NEAR CIRCUIT HOUSE, JODHPUR"
+  },
+  {
+    "name": "HELLO KIDS - SKYLINE",
+    "address": "68 , Tuljabhawani Society, Near Tuljabhawani Temple, Sane Guruji Vasahat, Radhanagari Road Kolhapur, Maharashtra., RADHANAGARI ROAD, KOLHAPUR-416011"
+  },
+  {
+    "name": "Hiranandani Trust School",
+    "address": "Hiranandani Fortune City, Bhokharpada, Tal - Panvel , District- Raigad , NH- 4 ,"
+  },
+  {
+    "name": "HOLY ANGELS' SCHOOL",
+    "address": "B-1120, Shalimar Garden Extension II,, Sabibabad P. O,"
+  },
+  {
+    "name": "HOLY ANGELS' SR. SEC. SCHOOL",
+    "address": "SECTOR -3, RAJINDER NAGAR, SAHIBABAD ,"
+  },
+  {
+    "name": "HOLY CHILD SR. SEC. SCHOOL",
+    "address": "TAGORE GARDEN, DELHI,"
+  },
+  {
+    "name": "HOLY CROSS SCHOOL",
+    "address": "KHASMALLICK, P.O. GOBINDAPUR, BARUIPUR"
+  },
+  {
+    "name": "HOLY FAMILY CONVENT SR. SEC. SCHOOL",
+    "address": "SHANTI NAGAR, KHURANA P.O.,"
+  },
+  {
+    "name": "HOLY FAMILY HIGH SCHOOL& JUNIOR COLLEGE - PRIMARY",
+    "address": "MAHAKALI CAVES ROAD, OPP.NELCO & TATA TECH, CHAKALA ANDHERI(E)"
+  },
+  {
+    "name": "HOLY FAMILY HIGH SCHOOL& JUNIOR COLLEGE - SECONDARY",
+    "address": "MAHAKALI CAVES ROAD, ANDHERI(E),"
+  },
+  {
+    "name": "Humble Donut International",
+    "address": "Shop no. 12, Sadashiv Puram, Opp. Rahul Estate, Near Greencity, Ambernath, (Mumbai) - 421501"
+  },
+  {
+    "name": "HUTCHINGS HIGH SCHOOL & JUNIOR COLLEGE",
+    "address": "7, Phayre Road, Pune - 411040."
+  },
+  {
+    "name": "HUTCHINGS HIGH SCHOOL & JUNIOR COLLEGE (Primary)",
+    "address": "7, Phayre Road, Pune - 411040., PUNE, Maharashtra,"
+  },
+  {
+    "name": "HYMAMSHU JYOTHI KALA PEETHA COMPOSITE PU COLLEGE",
+    "address": "4TH MAIN MALLESWARAM WEST"
+  },
+  {
+    "name": "IIT ASHRAM",
+    "address": "U G 1&2 CONCORD BUILDING, ABOVE OBC BANK R C DUTT ROAD, ALKAPURI"
+  },
+  {
+    "name": "INDIAN ENGLISH ACADEMY SCHOOL",
+    "address": "AL DHAHAK BIN QAYS STREET P O BOX 2150 SALMIYA 22022 , KUWAIT"
+  },
+  {
+    "name": "INDIRA NATIONAL SCHOOL",
+    "address": "S.NO .111/1/2 , OPP INDIRA INSTITUTE OFF PUNE MUMBAI HIGHWAY,TATHAWADE"
+  },
+  {
+    "name": "INDUS PUBLIC SCHOOL",
+    "address": "BARWALA ROAD MIRCHPUR,"
+  },
+  {
+    "name": "INFANT JESUS CONVENT SCHOOL",
+    "address": "PHASE 11, SECTOR 65, SAS NAGAR,"
+  },
+  {
+    "name": "INNOVATIVE INTERNATIONAL SCHOOL",
+    "address": "NEAR HILL VIEW ROAD, ISHWARIYA ROAD, KALAVAD ROAD"
+  },
+  {
+    "name": "INSIGHT ACADEMY",
+    "address": "#20, VASANTHAPURA MAIN ROAD OFF KANAKAPURA ROAD,"
+  },
+  {
+    "name": "Inspired Classes (Rahul Jha)",
+    "address": "Plot no 2579 sushant lok II SECTOR 57 NEAR MKM MARKET OPPOSITE POWER HOUSE"
+  },
+  {
+    "name": "International Indian School Dammam",
+    "address": "P O Box 3320, Al-Khobar – 31952, K.S.A"
+  },
+  {
+    "name": "Iqra International School",
+    "address": "AKRAMABAD, DODA"
+  },
+  {
+    "name": "IQRA INTERNATIONAL SCHOOL, DODA",
+    "address": "NEAR JAMIA MASJID AKRAMABAD DODA CITY J&K AREA PIN CODE 182202"
+  },
+  {
+    "name": "ISWK Cambridge International",
+    "address": "Next to ISWK Primary School, P.O. Box 1233, Postal Code 117, Al Wadi Al Kabir, Sultanate Of Oman"
+  },
+  {
+    "name": "J.B.LUDHANI HIGH SCHOOL",
+    "address": "EVERSHINE CITY"
+  },
+  {
+    "name": "Jayshree periwal global school",
+    "address": "Sector 36, NRI Road, Jagatpura, Jaipur - 303012"
+  },
+  {
+    "name": "JAYSHREE PERIWAL INTERNATIONAL Pre-Primary School - Nirman Nagar",
+    "address": "1-4, Padmavati 1 Colony, Nirman Nagar, Kings Road, RANI SATI NAGAR"
+  },
+  {
+    "name": "JBCN International School",
+    "address": "Nanepada Road, next to Senroofs, Mulund East, Mumbai"
+  },
+  {
+    "name": "JBCN International School – Borivali",
+    "address": "Plot CTS No 96, Remison Towers, Near Bhagwati Hospital, Baburao Ranade Marg, Opp. Union Bank Staff Quarters, Borivali (W), Mumbai – 400103"
+  },
+  {
+    "name": "Jigyaasa International Preschool and Daycare",
+    "address": "2nd Floor, Pristine Arcade, Near Pristine Prolife Phase 1, Above Nirmitee Furniture, Wakad, Pune"
+  },
+  {
+    "name": "JINDAL VIDYA MANDIR",
+    "address": "VPO -VASIND TALUKA SHAHAPUR, TAL -SHAHPUR, DIST - THANE,"
+  },
+  {
+    "name": "JINVANI BHARTI PUBLIC SCHOOL",
+    "address": "SECTOR 4 DWARKA,"
+  },
+  {
+    "name": "JSPM'S BLOSSOM PUBLIC SCHOOL, Tathawade",
+    "address": "S.No.82/2, Pune-Mumbai By-Pass Highway, Tathawade, Near Hinjewadi Infotech Park, Pune-411033"
+  },
+  {
+    "name": "JSPM'S BLOSSOM PUBLIC SCHOOL, Tathawade (Primary)",
+    "address": "JSPM'S BLOSSOM PUBLIC SCHOOL, Tathawade"
+  },
+  {
+    "name": "JUNIOR FOUNDATION ACADEMY",
+    "address": "KUMAR PUR - RAJABAZAR, WARD NO. 14, P.O : CONTAI,"
+  },
+  {
+    "name": "JUNIOR LEGENDS PRE SCHOOL",
+    "address": "PLOT NO.27,KGT NAGAR, KATTUPAKKAM,"
+  },
+  {
+    "name": "K.L.E. SOCIETY'S ENGLISH MEDIUM SCHOOL",
+    "address": "D. C. OFFICE ROAD, VIDYANAGAR, HAVERI ,"
+  },
+  {
+    "name": "Kaleidocare Early Childhood Care and Learning Centre",
+    "address": "A/57, 1194, GREEN LAND CHS, VEERA DESAI ROAD, ANDHERI (W) MUMBAI-400058"
+  },
+  {
+    "name": "KENDRIYA VIDYALAYA",
+    "address": "SAINIK VIHAR"
+  },
+  {
+    "name": "KENDRIYA VIDYALAYA DWARKA",
+    "address": "SHARDAPEETH COLLEGE CAMPUS, DWARKA, GUJRAT, 361335"
+  },
+  {
+    "name": "Kendriya Vidyalaya University of Hyderabad Campus",
+    "address": "UOH Campus, Gachibowli Rd, Serilingampally,"
+  },
+  {
+    "name": "KIDZEE MOUNT LITERA ZEE SCHOOL GOPAL NAGAR",
+    "address": "Plot No. 816, Gopal Nagar Hydernagar Village Kukatpally.. Beside Prajay Constructions, Water Works Road,, Hyderabad, Telangana"
+  },
+  {
+    "name": "KLE SCHOOL",
+    "address": "Lingaraj College Campus Belagavi"
+  },
+  {
+    "name": "KLE SCHOOL - SANKESHWAR",
+    "address": "AT: GAVANAL, POST KAMATNUR, CHIKKODI -GOTUR ROAD, SANKESHWAR,TALUKA HUKKERI"
+  },
+  {
+    "name": "KULACHI HANSRAJ MODEL SCHOOL",
+    "address": "SR .WING ASHOK VIHAR, PHASE -III"
+  },
+  {
+    "name": "LAKSHAY CONVENT SCHOOL",
+    "address": "VILLAGE AND POST OFFICE -MANJYAT,ARKI DISTRICT, SOLAN, HIMACHAL PRADESH-173208."
+  },
+  {
+    "name": "Learning Temple Academy",
+    "address": "T 15 16 - 3 rd floor, Shub Complex Shahibaug Ahmedabad - 380004"
+  },
+  {
+    "name": "Lodha Oakwood School",
+    "address": "off Eastern Freeway, Near BKC, Wadala"
+  },
+  {
+    "name": "Loknete Ramsheth Thakur Public School - CBSE",
+    "address": "Plot No. 40, Sector 6A, Kamothe, Panvel, Navi Mumbai, Maharashtra 410209"
+  },
+  {
+    "name": "LOKSEVA E SCHOOL & JUNIOR COLLEGE",
+    "address": "S.NO. - 129/2 + 148/1A PASHAN SUS ROAD,"
+  },
+  {
+    "name": "LORETO CONVENT SCHOOL [Secondary]",
+    "address": "R.C.F. TOWNSHIP, CHEMBUR, MUMBAI"
+  },
+  {
+    "name": "LORETO DAY SCHOOL - SEALDAH",
+    "address": "122, A.J.C. BOSE ROAD"
+  },
+  {
+    "name": "LORETO DAY SCHOOL, BOWBAZAR",
+    "address": "65, BEPIN BEHARI GANGULY STREET, KOLKATA"
+  },
+  {
+    "name": "LOYOLA INTERNATIONAL SCHOOL, OASIS CAMPUS",
+    "address": "P O Box 24622"
+  },
+  {
+    "name": "M. E. S. INDIAN SCHOOL (MAIN CAMPUS)",
+    "address": "PO BOX 3453 DOHA QATAR ARABIAN GULF C/O FIRST SECY EMBASSY OF INDIA DOHA QATAR"
+  },
+  {
+    "name": "M.A.V. VIDYASHRAM",
+    "address": "NO.10 A,VAIKAI STREET EXTN., GURUSAMY NAGAR SEMBAKKAM"
+  },
+  {
+    "name": "M.E.S INDIAN SCHOOL, ABU HAMOUR BRANCH",
+    "address": "DOHA QATAR, P.O. BOX NO. 47666"
+  },
+  {
+    "name": "M.E.S. BALSHIKSHAN MANDIR ENGLISH MEDIUM SCHOOL",
+    "address": "131, MAYUR COLONY, KOTHRUD,"
+  },
+  {
+    "name": "M.E.S. BALSHIKSHAN MANDIR ENGLISH MEDIUM SCHOOL ( SECONDARY SECTION )",
+    "address": "131, MAYUR COLONY, KOTHRUD"
+  },
+  {
+    "name": "MAHILA & NUTAN ENGLISH HIGH SCHOOL",
+    "address": "KESHAV ANANT NAIK SQUAR, DA COSTA ROAD , COMBA P.O.BOX-105,MARGAO SALCETE,"
+  },
+  {
+    "name": "MAPLE BEAR CANADIAN PRE-SCHOOL",
+    "address": "#71, CENTRAL EXCISE LAYOUT, NOBLE RESIDENCY ROAD, DODDAKAMMANAHALLI , OFF BANNERGHATTA ROAD"
+  },
+  {
+    "name": "Mary Memorial High School",
+    "address": "Girim Daund , Patas , Pune - 413801"
+  },
+  {
+    "name": "MCC PUBLIC SCHOOL",
+    "address": "#78, Harrington Rd, Chetpet"
+  },
+  {
+    "name": "Miranda Composite PU College",
+    "address": "C A 52, 6th Cross 10TH MAIN , HAL 3rd Stage,INDRANAGAR"
+  },
+  {
+    "name": "MJ WORLD SCHOOL",
+    "address": "manas tulsi Angan, tamabadmal road, shahapur"
+  },
+  {
+    "name": "MODERN CONVENT SCHOOL",
+    "address": "SECTOR 4, Dwarka"
+  },
+  {
+    "name": "MODERN MIDDLE EAST INTERNATIONAL SCHOOL",
+    "address": "KHURAIS BRANCH RD, AN NAHDAH, RIYADH 13221, KINGDOM OF SAUDI ARABIA"
+  },
+  {
+    "name": "MODERN SCHOOL",
+    "address": "POORVI MARG, VASANT VIHAR"
+  },
+  {
+    "name": "MOUNT CARMEL GIRLS HIGH SCHOOL",
+    "address": "AJNI CHOWK ,NAGPUR, AJNI NAGPUR,"
+  },
+  {
+    "name": "MOUNT CARMEL SCHOOL",
+    "address": "SECTOR 22 DWARKA,PHASE- 1,"
+  },
+  {
+    "name": "MOUNT CARMEL SCHOOL - Anand Niketan (4th to 12th )",
+    "address": "Senior School: A-21, Anand Niketan, New Delhi 110021"
+  },
+  {
+    "name": "MOUNT CARMEL SCHOOL - Anand Niketan (pre- 3rd class)",
+    "address": "Junior School: D Block, Anand Niketan, New Delhi 110021 India"
+  },
+  {
+    "name": "Mount Litera School International",
+    "address": "Gn Block , Behind Asian Heart Hospital, Near Uti Building, Bandra Kurla Complex, Bandra East,"
+  },
+  {
+    "name": "N.L.DALMIA HIGH SCHOOL",
+    "address": "SRISHTI, SECTOR-1,NEAR ROYAL COLLEGE, MIRA ROAD (E) THANE,"
+  },
+  {
+    "name": "Nanak Academy Purani Poonch",
+    "address": "Q38J+QXC, Mohalla Purani Poonch, Opp. Air Field, Poonch city, Jammu and Kashmir 185101, Purani Poonch, Poonch, Jammu and Kashmir 185101"
+  },
+  {
+    "name": "NAND VIDYA NIKETAN SCHOOL - Jamnagar",
+    "address": "DHICHDA RING ROAD NEAR SHRINATH PETROL PUMP,"
+  },
+  {
+    "name": "NATIONAL PUBLIC SCHOOL",
+    "address": "1036 A VTH BLOCK RAJAJINAGAR"
+  },
+  {
+    "name": "NATIONAL PUBLIC SCHOOL MARATHAHALLI",
+    "address": "SY No. 24, Balagere Rd, Devasthanagalu, Bengaluru, Karnataka"
+  },
+  {
+    "name": "National Public School Whitefield",
+    "address": "Whitefield 1/4 , KG&S and SRB Gurukul, Kumbena Agrahara, Kadugodi Post, Whitefield,"
+  },
+  {
+    "name": "National Public School-East",
+    "address": "SY No. 8/1, Chikkanayakanahalli Road off Sarjapur Road - Marathahalli, Road, Doddakannelli, Bengaluru"
+  },
+  {
+    "name": "NAVA NALANDA , SANTINIKETAN",
+    "address": "Paschimpally, Santiniketan,Bolpur"
+  },
+  {
+    "name": "NAVA NALANDA HIGH SCHOOL",
+    "address": "24 Kabir Road, Kolkata 700026"
+  },
+  {
+    "name": "Nava Nalanda Primary School",
+    "address": "2/1 Gobindapur Road, Kolkata"
+  },
+  {
+    "name": "NAVRACHANA VIDYANI VIDYALAYA",
+    "address": "NEAR SAMA SPORTS COMPLEX, SAMA, VADODARA,"
+  },
+  {
+    "name": "NEHRU WORLD SCHOOL",
+    "address": "E BLOCK, SHASTRI NAGAR"
+  },
+  {
+    "name": "NEW MILLENNIUM SCHOOL - BAHRAIN",
+    "address": "BUILDING :399 , ROAD :3009 , BLOCK : 330 , BUGHAZAL : OPP : ROYAL BAHRAIN HOSPITAL , MANAMA. KINGDOM OF BAHRAIN"
+  },
+  {
+    "name": "NIRMALA CONVENT SCHOOL",
+    "address": "SHIV PURI, BULANDSHAHAR,"
+  },
+  {
+    "name": "NIRMALA RANI SCHOOL ( ICSE )",
+    "address": "18TH CROSS, MALLESWARAM"
+  },
+  {
+    "name": "NITTE INTERNATIONAL SCHOOL",
+    "address": "NO. 12, MYLAPPANA HALLI , VILL - SHIVAKOTE POST HESARGHATTA, HOBLI,YELAHANKA"
+  },
+  {
+    "name": "Nivedita Vidyapith",
+    "address": "39, Park Road, Cantonment, Barrackpore"
+  },
+  {
+    "name": "Nivedita Vidyapith - Morning",
+    "address": "42 Middle Road, Barrackpore, Kolkata, West Bengal, KOLKATA, Kolkata, West Bengal, , India - 700120"
+  },
+  {
+    "name": "Nivedita Vidyapith Day Section",
+    "address": "42 Middle Road, Barrackpore, Kolkata, West Bengal"
+  },
+  {
+    "name": "NOTRE DAME ACADEMY",
+    "address": "PATLIPUTRA COLONY, BESIDE P&M MAL,"
+  },
+  {
+    "name": "NYATI SAMATA INTERNATIONAL SCHOOL",
+    "address": "EKLAHARE, TAL.SHRIRAMPUR DIST.AHMEDNAGAR"
+  },
+  {
+    "name": "O.P. Jindal School",
+    "address": "Chhendipada Road, SH-63, Jindal nagar, Angul - 759111"
+  },
+  {
+    "name": "OAKRIDGE INTERNATIONAL SCHOOL",
+    "address": "SURVEY NO-40, TIGALACHOWDENAHALLY VILLAGE VARTHUR ROAD, NEAR DOMMASANDRA CIRCLE SARJAPUR HOBLI, ANKAL TALUK"
+  },
+  {
+    "name": "OCIMUM INTERNATIONAL SCHOOL",
+    "address": "SURVEY NO: 72, HASMATHPET, BOWENPALLY, SECUNDERABAD"
+  },
+  {
+    "name": "Odisha Adarsha Vidyalaya, Jayantigiri, Jeypore",
+    "address": "Jayantigiri,Jeypore Dist-koraput"
+  },
+  {
+    "name": "ODM International School, Durgapur",
+    "address": "South, Grand Trunk Rd, Palasdiha, Durgapur, West Bengal"
+  },
+  {
+    "name": "ORCHARD SCHOOL",
+    "address": "IYER THOTTAM K.K.NAGAR TRICHY"
+  },
+  {
+    "name": "Orchid Juniors School",
+    "address": "33, Radha Swami Colony, Sector 3, Rewari"
+  },
+  {
+    "name": "OUR LADY OF DOLOURS [Primary]",
+    "address": "131 S.K. BOLE ROAD, DADAR (WEST)"
+  },
+  {
+    "name": "OUR LADY OF SALVATION HIGH SCHOOL [ Secondary ]",
+    "address": "131 S.K. BOLE ROAD, DADAR,"
+  },
+  {
+    "name": "P G GARODIA SCHOOL (ICSE)",
+    "address": "153, GARODIA NAGAR, GHATKOPAR (E),"
+  },
+  {
+    "name": "P V.G'S VIDYA BHAWAN , NO-2",
+    "address": "C.T.S. NO. 218 , BR. NATH , PAI NAGAR , GHATKOPAR (E)"
+  },
+  {
+    "name": "PACE JUNIOR SCIENCE COLLEGE. POWAI",
+    "address": "101, A WING, 1st FLOOR, SUPREME BUSINESS PARK, HIRANANDANI POWAI,"
+  },
+  {
+    "name": "Pacific World School",
+    "address": "HS-02, Tech Zone-4 Greater Noida (West) U.P."
+  },
+  {
+    "name": "Pawar Public School",
+    "address": "Dombivali, Mumbai Casa Rio,Palava,Kalyan Shil Phata Road"
+  },
+  {
+    "name": "PEARL ROSARY SCHOOL",
+    "address": "VILL - Bishnubati ,P.O - Bhata ,P.S Tarakeshwar , tarakeswar-bhimpur road"
+  },
+  {
+    "name": "Phoenix Greens International School",
+    "address": "Beside Krishna Goshala, Near TempusApartments, Kokapet, Rajendra Nagar Mandal"
+  },
+  {
+    "name": "PLATINUM JUBILEE SCHOOL",
+    "address": "AT POST GADCHIROLI"
+  },
+  {
+    "name": "PM SHRI KENDRIYA VIDYALAYA SHALIMAR BAGH (Morning Shift)",
+    "address": "POCKET A/N, NEAR CITY CENTRE MALL SHALIMAR BAGH,"
+  },
+  {
+    "name": "PODAR - ORT INTERNATIONAL SCHOOL,WORLI ( IB )",
+    "address": "PODAR-ORT SCHOOL BUILDING 68, WORLI HILL ESTATE,WORLI,"
+  },
+  {
+    "name": "PODAR INTERNATIONAL SCHOOL",
+    "address": "MATANA VILLAGE NEAR ALPINE INSTITUTE OF TECHNOLOGY,DEWAS ROAD"
+  },
+  {
+    "name": "PODAR INTERNATIONAL SCHOOL (CIE) NERUL [CAMBRIDGE BOARD]",
+    "address": "PLOT - 30, SECTOR - 36 ,SEAWOODS WEST PALM BEACH ROAD"
+  },
+  {
+    "name": "PODAR INTERNATIONAL SCHOOL [IB] [CIE]",
+    "address": "SARASWATI ROAD SANTACRUZ WEST 400054"
+  },
+  {
+    "name": "Podar Jumbo Kids",
+    "address": "Near Rajpipla Cross Road, Behind Versha Hotel, NH-8, Ankleshwar - 393002"
+  },
+  {
+    "name": "POORNA PRAJNA HIGH SCHOOL (SECONDARY SECTION)",
+    "address": "BHARUCHA ROAD, STATION ROAD, DAHISAR EAST,"
+  },
+  {
+    "name": "POORNAPRAJNA EDUCATION CENTRE,PRIMARY SECTION",
+    "address": "NO.6,PRIMARY SCHOOL, YELAHANKA NEW TOWN, BANGALORE"
+  },
+  {
+    "name": "PRESENTATION CONVENT SCHOOL",
+    "address": "PLOT NO - 85, SECTOR -27, NEERUL"
+  },
+  {
+    "name": "PRESENTATION CONVENT SENIOR SECONDARY SCHOOL",
+    "address": "GANDHI NAGAR , JAMMU (J & K),"
+  },
+  {
+    "name": "Prestige Kids (Pre School)",
+    "address": "S No 85, Shastri Campus, NDA Road, Shivane,"
+  },
+  {
+    "name": "Prestige Public School-CBSE",
+    "address": "Address - S No 85, Shastri Campus, NDA Road, Shivane"
+  },
+  {
+    "name": "PVG'S VIDYA BHAWAN HIGH SCHOOL, NO-1 & JUNIOR COLLEGE",
+    "address": "C.T.S NO.: 218, BR. NATH PAI NAGAR, GHATKOPAR(E)"
+  },
+  {
+    "name": "R. T. NAGAR PUBLIC SCHOOL",
+    "address": "NO 14 P, ARTILLERY ROAD RT NAGAR POST BOX NO. 3226,"
+  },
+  {
+    "name": "RAJ VIDYALAYA INTERNATIONAL SENIOR SECONDARY SCHOOL",
+    "address": "NO -33 UTHIRA NORTH STREET KUTTALAM (TK)"
+  },
+  {
+    "name": "Ramakrishna Vivekananda Mission Debarati Roy Memorial Institute.",
+    "address": "Ashram Road, Pallishree, P. O Sodepore District- 24 pgs. ( N) , Sodepur, West Bengal"
+  },
+  {
+    "name": "Ridvan Academy",
+    "address": "Saltila, Belonia"
+  },
+  {
+    "name": "Roots Country School",
+    "address": "Pinjore Urban Complex, DLF The Valley Sector 3 Kalka, Panchkula"
+  },
+  {
+    "name": "Rose Manor International School",
+    "address": "CENTRAL AVENUE ROAD, SANTACRUZ WEST, MUMBAI"
+  },
+  {
+    "name": "ROTARY CENTRAL SCHOOL, MOODBIDRI",
+    "address": "JYOTHINAGAR MOODBIDRI"
+  },
+  {
+    "name": "RPS INTERNATIONAL",
+    "address": "SOTANALA, BEHROR, Rajasthan"
+  },
+  {
+    "name": "RPS International School",
+    "address": "V.P.O Maheshwari, Dharuhera Bhiwadi Express way , Teh Dharuhera,"
+  },
+  {
+    "name": "RPS PUBLIC SCHOOL",
+    "address": "DHARUHERA CAMPUS, DHARUHERA-BHIWADI EXPRESS WAY,"
+  },
+  {
+    "name": "RPS SR.SEC. SCHOOL",
+    "address": "Satnali Road, KHATOD (PRT Wing)"
+  },
+  {
+    "name": "RYAN GLOBAL SCHOOL - CHEMBUR",
+    "address": "MARWALI VILLAGE, MAHUL ROAD, AZIZI BAUG, OPP. RCF POLICE STATION, CHEMBUR-400071"
+  },
+  {
+    "name": "RYAN INTERNATIONAL SCHOOL",
+    "address": "A–9, Sector – 25 Rohini, New Delhi – 110085"
+  },
+  {
+    "name": "Ryan International School - Chembur(E)-ICSE",
+    "address": "MARWALI VILLAGE, MAHUL ROAD, AZIZ BAUG , OPP. RCF POLICE STATION, CHEMBUR-400071"
+  },
+  {
+    "name": "Ryan International School - Goregaon(E)-ICSE",
+    "address": "NEXT TO RAJRUDRAM CHS, OPP.AARREY BHASKAR, NEAR LAKCHANDI APTS, GOKULDHAM, GOREGAON (E) Mumbai–400063"
+  },
+  {
+    "name": "Ryan International School - Ludhiana",
+    "address": "URBAN ESTATE, PHASE-II, JAMALPUR COLONY,"
+  },
+  {
+    "name": "Ryan International School - Rohini sec11 H3",
+    "address": "Block-H, Pocket-3, Sector-11,Rohini"
+  },
+  {
+    "name": "Ryan International School – Ambarnath, CBSE",
+    "address": "Ahuja Prasadam,MIDC Pipeline Road,Next To Golden Punjab Hall,Chikhliali Village,Ambernath-East,Mumbai-421501"
+  },
+  {
+    "name": "S .B .O .A PUBLIC SCHOOL",
+    "address": "PLOT NO-10, SECTOR - 5, NERUL ,"
+  },
+  {
+    "name": "S. M. CHOKSEY HIGH SCHOOL",
+    "address": "1983, CONVENT STREET, CAMP, PUNE,"
+  },
+  {
+    "name": "S.B.O.A. MATRIC. & HR. SEC. SCHOOL",
+    "address": "R-9, 17TH STREET ANNA NAGAR, WESTERN EXTENSION"
+  },
+  {
+    "name": "S.V.D.D. Primary English Medium School",
+    "address": "6, Hingwala Lane, Near- Kabhutar Khana, Beside Zaverben Poptlal Auditorium, Ghatkopar (E),"
+  },
+  {
+    "name": "SACRED HEART CONVENT INTERNATIONAL SCHOOL",
+    "address": "P.B. 370, Sarabha Nagar ,"
+  },
+  {
+    "name": "SACRED HEART CONVENT SCHOOL",
+    "address": "SEC--39, URBAN ESTATE , JAMALPUR , CHD. ROAD"
+  },
+  {
+    "name": "SACRED HEART SENIOR SECONDARY SCHOOL,KOTTAKKAL",
+    "address": "SANTHI NAGAR, PUTHUPARAMBU P.O, EDARIKODE, MALAPURAM , KERALA, INDIA"
+  },
+  {
+    "name": "SAGRITARA SCHOOL",
+    "address": "PREM NAGAR, P.O. HADDO, Port BlairSouth Andaman"
+  },
+  {
+    "name": "SAINT CAPITANIO SCHOOL",
+    "address": "KUARPAR, P.O. REGIONAL ENGINEERING COLLEGE , DISTT. COCHAR SILCHAR"
+  },
+  {
+    "name": "SAINT PETER'S SCHOOL",
+    "address": "Mahinagar, Balurghat"
+  },
+  {
+    "name": "Saint Soldier Divine School",
+    "address": "SECTOR 16, PANCHKULA,"
+  },
+  {
+    "name": "SALWAN PUBLIC SCHOOL",
+    "address": "MAYUR VIHAR, PHASE III,"
+  },
+  {
+    "name": "SALWAN PUBLIC SCHOOL (MORNING)",
+    "address": "OLD RAJINDER NAGAR"
+  },
+  {
+    "name": "SALWAN PUBLIC SCHOOL TRONICA CITY",
+    "address": "SECTOR, C-7, TRANS DELHI, SIGNATURE CITY,"
+  },
+  {
+    "name": "Samata International School",
+    "address": "At/Post - Kokamthan, Tal- Kopargaon, Dist- Ahmednagar, Maharashtra, 423601"
+  },
+  {
+    "name": "Sample School (For Testing)",
+    "address": "Bhikaji Cama Place"
+  },
+  {
+    "name": "SANE GURUJI ENGLISH MEDIUM SCHOOL [Primary]",
+    "address": "BHIKOBA WAMAN PATHARE MARG,SHIVAJI PARK, DADAR WEST"
+  },
+  {
+    "name": "SANE GURUJI ENGLISH MEDIUM SCHOOL [Secondary]",
+    "address": "BHIKOBA WAMAN PATHARE MARG,SHIVAJI PARK, DADAR WEST"
+  },
+  {
+    "name": "sankha jyoti public school",
+    "address": "AT. KHINDO, PO. KULUMA, RENGALI DAM SITE, DIST. ANGUL - 759105"
+  },
+  {
+    "name": "SANSKRITI KINDERGARTEN",
+    "address": "No.20B,Cart Track Road, Gopalakrishnan Street ,Opposite to kala flats"
+  },
+  {
+    "name": "Sarvodaya Kanya Vidyalaya, Sultanpur",
+    "address": "Main Gali, Main Market Rd, Sultanpur, New Delhi,"
+  },
+  {
+    "name": "SCHILLER INSTITUTE SENIOR SECONDARY SCHOOL",
+    "address": "R-6/GMP , RAJ NAGAR, GHAZIABAD,"
+  },
+  {
+    "name": "SCHOLARS ACADEMY",
+    "address": "59&60, SECTOR 1-G, ALAKAAPOOR TOWNSHIP, NEKNAMPUR ,"
+  },
+  {
+    "name": "SCHOLARS INTERNATIONAL SCHOOL",
+    "address": "ROAD NO-89 , ALKAPOOR TOWNSHIP, SECTOR I C PUPPALAGUDA, NEAR MANIKONDA"
+  },
+  {
+    "name": "SCOTTISH HIGH INTERNATIONAL SCHOOL",
+    "address": "G-BLOCK,SECTOR-57, SUSHANT LOK-II, (SENIOR SCHOOL)"
+  },
+  {
+    "name": "Shah Satnam Ji girl's school",
+    "address": "SRI GURUSAR MODIA"
+  },
+  {
+    "name": "SHAHEED RAMAKISHAN G.S.S.S. khanpur khurd",
+    "address": "Jhajjar"
+  },
+  {
+    "name": "Shannen The World School",
+    "address": "GOTRI, opp. WATER TANK, Gotri, Vadodara, Gujarat 390021"
+  },
+  {
+    "name": "Shemrock Shivalik City Kharar",
+    "address": "Shemrock Primary Sector 127, Shivalik City, Kharar"
+  },
+  {
+    "name": "SHIKSHA ACADEMY PUBLIC SCHOOL",
+    "address": "GHUMARWIN"
+  },
+  {
+    "name": "SHIVALIK PUBLIC SCHOOL",
+    "address": "SHAHEED SAWA SINGH , THIKRIWALA NAGAR,"
+  },
+  {
+    "name": "Shree Fattechand Jain Jr College",
+    "address": "Pawana nagar Chinchwad, Fattechand marg,"
+  },
+  {
+    "name": "Shree. Shivaji English Medium School,",
+    "address": "Bachpan Play School Premises, Patel's Building, Jahagirdar Wadi, Near A. B. High School, Chalisgaon . District: Jalgaon."
+  },
+  {
+    "name": "Shri Ram Global School",
+    "address": "188-j Sarabha Nagar"
+  },
+  {
+    "name": "SHRI SHIKSHAYATAN SCHOOL",
+    "address": "JUNIOR SECTION, 11, LORD SINHA ROAD,"
+  },
+  {
+    "name": "SHRI SHIKSHAYATAN SCHOOL (Sr. Section)",
+    "address": "11, LORD SINHA ROAD"
+  },
+  {
+    "name": "Shri Swami vivekananda shikshan sanstha english medium school",
+    "address": "Loni kalbhor ,Near pruthviraj kapoor Highschool,loni kalbhor"
+  },
+  {
+    "name": "SHRI SWAROOP PUBLIC SR SEC SCHOOL",
+    "address": "JAIPUR PILANI HIGHWAY ROAD BAGAR WARD NO 07"
+  },
+  {
+    "name": "SIDDHARTH INTERNATIONAL SCHOOL",
+    "address": "6.5 KM STONE, TOSHAM ROAD, DABRA ROAD, HISSAR,"
+  },
+  {
+    "name": "Sinhgad Spring Dale School,Ambegaon",
+    "address": "S. NO. 10/1, HISSA NO. 1, AMBEGAON (BK), NARHE, PUNE"
+  },
+  {
+    "name": "Sinhgad Spring Dale School,Ambegaon (Primary)",
+    "address": "Address:S. NO. 10/1, HISSA NO. 1, AMBEGAON (BK), NARHE, PUNE, PUNE, Pune, Maharashtra, , India"
+  },
+  {
+    "name": "SISHU GRIHA JUNIOR SCHOOL (MALLESHPALYA)",
+    "address": "143/1, 5TH MAIN ROAD, 6TH CROSS, MALLESHPALYA NEW THIPPASANDRA POST"
+  },
+  {
+    "name": "Sishu Griha Senior School (Thippasandra)",
+    "address": "NO.3, HAL 3RD STAGE NEW THIPPASANDRA POST ,"
+  },
+  {
+    "name": "SLOKA THE HYDERABAD WALDORF SCHOOL",
+    "address": "Behind Vidya Jyothi Institute of Technology, Aziznagar X roads,sy. no. 21(Chilkur Balaji Temple road) Moinabad Mandal"
+  },
+  {
+    "name": "Smt KN Patel International School (CBSE)",
+    "address": "Shayona Green, KNPIS Shankus Green Memories Party Plot Lane, Besides, Gota"
+  },
+  {
+    "name": "Smt KN Patel International School (GSEB)",
+    "address": "Shayona Green, KNPIS Shankus Green Memories Party Plot Lane, Besides, Gota"
+  },
+  {
+    "name": "SMT. SULOCHANADEVI SINGHANIA SCHOOL",
+    "address": "POKHRAN ROAD NO 1, JEKEGRAM, (WEST),"
+  },
+  {
+    "name": "Smt. Sunitidevi singhania school",
+    "address": "Jekegram, Pokhran road no 2, thane west"
+  },
+  {
+    "name": "Sona Valliappa Public School",
+    "address": "Sona Campus, Junction Main Rd"
+  },
+  {
+    "name": "SOU TARABAI SHANKARLAL MUTHA KANYA PRASHALA AND JR COLLEGE",
+    "address": "NEAR CHAFEKAR CHOWK, CHINCHWADGAON, PUNE"
+  },
+  {
+    "name": "Sri Vivekananda Vidya Kendra",
+    "address": "Sri Ramakrishna Road, Sir M.Vishveshwaraiah Extension, Hoskote, Bangalore Rural Dist. – 562 114"
+  },
+  {
+    "name": "ST AGNES SCHOOL C B S E)",
+    "address": "MALLIKATTE, BENDOOR, MANGALURU ,"
+  },
+  {
+    "name": "ST EDMUND'S SCHOOL",
+    "address": "LAITUMKHRAH, SHILLONG,"
+  },
+  {
+    "name": "St Thomas Girls Senior Secandary School",
+    "address": "17A, Ajmal Khan Road, Karol Bagh,"
+  },
+  {
+    "name": "St Xavier English Medium School,ICSE,",
+    "address": "Manickpur,Vasai West.401202,Dist .Palghar,Maharashtra."
+  },
+  {
+    "name": "ST. AGNES HIGH SCHOOL ICSE",
+    "address": "CLARE ROAD, BYCULLA , MUMBAI,"
+  },
+  {
+    "name": "St. Amos's Preschool",
+    "address": "5, 16TH MAIN ROAD, NEXT TO ROYAL MERIDIAN LAYOUT, MARUTHI LAYOUT, BEGUR"
+  },
+  {
+    "name": "St. Anne's School",
+    "address": "Ranaghat Krishnanagar bypass, Vill-barasat Christian para PO-Bhaduri"
+  },
+  {
+    "name": "ST. ANTHONY GIRLS' HIGH SCHOOL",
+    "address": "ST. ANTHONY ROAD, NEAR OLPS CHURCH, CHEMBUR,"
+  },
+  {
+    "name": "ST. ANTHONY HIGH SCHOOL",
+    "address": "KHARODI MALVANI, MALAD , NEAR MALVANI CHURCH, MALAD WEST,"
+  },
+  {
+    "name": "ST. ANTHONY SCHOOL",
+    "address": "Kayesthapara,Jamtara"
+  },
+  {
+    "name": "ST. BEDE'S ACADEMY",
+    "address": "NO. 37, SANTHOME HIGH ROAD, SANTHOME,"
+  },
+  {
+    "name": "ST. COLUMBA'S SCHOOL",
+    "address": "1, ASHOK PLACE, NEAR GOLE DAKHANA, GOLE MARKET"
+  },
+  {
+    "name": "ST. GREGORIOS SCHOOL",
+    "address": "PLOT -12, SECTOR 11 , METRO STATION, DWARKA,"
+  },
+  {
+    "name": "ST. JOHN'S HIGH SCHOOL",
+    "address": "SECTOR - 26"
+  },
+  {
+    "name": "ST. JOSEPH'S COLLEGE",
+    "address": "69, Bepin Behari Ganguly Street , BOWBAZAR"
+  },
+  {
+    "name": "ST. JUDE'S HIGH SCHOOL",
+    "address": "NR. NUTAN DNYAN MANDIR HIGH SCHOOL,KATEMANAVALI, KALYAN EAST, D-WARD / TISGAON, KALYAN,DIST- THANE,"
+  },
+  {
+    "name": "ST. MARY'S HIGH SCHOOL",
+    "address": "NEW COOCHBEHAR, DIST-COOCH BEHAR,"
+  },
+  {
+    "name": "ST. MARY'S SCHOOL",
+    "address": "RATHBARI, MALDA-732101"
+  },
+  {
+    "name": "ST. MATHEWS ACADEMY",
+    "address": "Handewadi Road Urlidevachi Pune"
+  },
+  {
+    "name": "ST. PAUL'S SCHOOL",
+    "address": "P.O. BOX NO. 42, NEW LAMKA , CHURACHANDPUR,"
+  },
+  {
+    "name": "St. Stephen's Iconic School",
+    "address": "NUTANGRAM-PIRTALA, P.O. TAALGAACHHI, P.S. & DIST. MURSHIDABAD, WEST BENGAL-742149."
+  },
+  {
+    "name": "ST. VINCENT PALLOTTI SCHOOL",
+    "address": "PADAPPACHAI, ARUMANAI"
+  },
+  {
+    "name": "ST. VINCENT'S HIGH SCHOOL AND JUNIOR COLLEGE",
+    "address": "2005/6 ST. VINCENT STREET, PUNE CAMP"
+  },
+  {
+    "name": "St. Wilfred's School",
+    "address": "Plot No 5/6 Sector 2 Ulwe"
+  },
+  {
+    "name": "ST. XAVIER'S HIGH SCHOOL,KEDARGAURI",
+    "address": "231, KEDARGAURI RAAD, CHHAKA, OLD TOWN, BHUBANESHWAR,"
+  },
+  {
+    "name": "ST.CECILIA'S PUBLIC SCHOOL",
+    "address": "F-BLOCK VIKAS PURI"
+  },
+  {
+    "name": "ST.CHARLES HIGH SCHOOL",
+    "address": "ST.THOMAS TOWN HENNUR MAIN ROAD LINGARAJAPURAM,"
+  },
+  {
+    "name": "ST.FRANCIS DE SALES SCHOOL",
+    "address": "5TH MILE SHAANWADI NAGAR ROAD"
+  },
+  {
+    "name": "ST.JOSEPH CONVENT SCHOOL",
+    "address": "BILAKHED, BELGANGA(VIA) JALGAON, MAHARASHTRA,424116"
+  },
+  {
+    "name": "St.Thomas English High School.",
+    "address": "Ammu Nagar, Chikan Ghar, Kalyan, Maharashtra"
+  },
+  {
+    "name": "ST.XAVIER'S SCHOOL BHATINDA",
+    "address": "POWER HOUSE ROAD"
+  },
+  {
+    "name": "SWISS COTTAGE SCHOOL",
+    "address": "SALAHPUR-BIJWASAN, (OPP. SECT.-23 AND PALAM VIHAR),"
+  },
+  {
+    "name": "Symbi Stars school",
+    "address": "Plot No. 470/1 & 2, CTS No. 1089/1 & 2, Opp Chittaranjan Vatika Hare Krishna Ma, Model Colony, Shivajinagar, Pune, Maharashtra"
+  },
+  {
+    "name": "TECHNO INDIA GROUP PUBLIC SCHOOL-BOLPUR",
+    "address": "PRANTIK TOWNSHIP NEAR SSDA WATER TANK BOLPUR"
+  },
+  {
+    "name": "Thakur Bhagwanidevi Musafir Public school",
+    "address": "Tiwari Road Naigaon East Taluka Vasai District Palghar"
+  },
+  {
+    "name": "THAKUR COLLEGE OF SCIENCE & COMMERCE",
+    "address": "THAKUR VILLAGE, SAMATA NAGAR, SHYAM NARAYAN MARG, KANDIVALI (E)"
+  },
+  {
+    "name": "THAKUR RAMNARAYAN PUBLIC SCHOOL",
+    "address": "Thakur Ramnarayan Educational Campus, Swami Vivekananda Marg, Anand Nagar, Dahisar East, Mumbai"
+  },
+  {
+    "name": "the academy school",
+    "address": "Sr. No . 31/32, Thathwade Road, Dange Chowk Rd, Pune"
+  },
+  {
+    "name": "THE ADITYA BIRLA PUBLIC SCHOOL",
+    "address": "GCW TOWNSHIP, KOVAYA, TALUKA-RAJULA,"
+  },
+  {
+    "name": "THE ALEXANDRA GIRLS' ENGLISH INSTITUTION",
+    "address": "31, HAZARIMAL SOMANI MARG, FORT,"
+  },
+  {
+    "name": "THE ANDHRA EDUCATION SOCIETY'S HIGH SCHOOL",
+    "address": "Ram janki mandir koyla gali chandni aagar koyla gali Antop Hill bharni naka koyla gali Antop Hill wadala"
+  },
+  {
+    "name": "THE ASSAM VALLEY SCHOOL",
+    "address": "BALIPARA, DIST:-SONITPUR,"
+  },
+  {
+    "name": "THE ASSEMBLY OF GOD CHURCH SCHOOL",
+    "address": "125/1 PARK STREET BUNTAIN EDUCATION CENTER,"
+  },
+  {
+    "name": "THE BAI AVABAI F. PETIT GIRLS' HIGH SCHOOL",
+    "address": "14, PALI HILL BANDRA union park"
+  },
+  {
+    "name": "THE BRIGADE SCHOOL",
+    "address": "CAMPUS @ BRIGADE MILLENNIUM,J P NAGAR 7TH PHASE,"
+  },
+  {
+    "name": "THE BRIGADE SCHOOL ,MAHADEVAPURA",
+    "address": "NO.9, 4TH CROSS ROAD,GARUDACHAR PALYA, WHITE FIELD MAIN ROAD,MAHADEVA PURA,"
+  },
+  {
+    "name": "THE CATHEDRAL & JOHN CONNON MIDDLE SCHOOL",
+    "address": "4, MAHARSHI DADHICHI MARG, MUMBAI,"
+  },
+  {
+    "name": "THE INDIAN PUBLIC SCHOOL",
+    "address": "Hiranandani Parks, Thriveni Nagar, Oragadam,"
+  },
+  {
+    "name": "The Indian Public School (TIPS) - International Board Karur Main Campus",
+    "address": "379/1 & 379/2, Pazhamapuram, Poolampalayam, PO, Punnam, Tamil Nadu 639136"
+  },
+  {
+    "name": "THE INDIAN PUBLIC SCHOOL - TSPA campus",
+    "address": "PLOT NO. 23 & 24, NEAR TSPA JUNCTION, PEERANCHERU"
+  },
+  {
+    "name": "The Indian Public School Bengaluru",
+    "address": "# 78/4/1, Vidya Nidhi Opposite Manyata Tech Park Gate-1,HBR Layout, Nagavara,"
+  },
+  {
+    "name": "THE INDIAN PUBLIC SCHOOL, Chennai Main",
+    "address": "NO. 50/51, FIRST MAIN ROAD PERUNGUDI INDUSTRIAL ESTATE PERUNGUDI"
+  },
+  {
+    "name": "THE INDIAN PUBLIC SCHOOL, Chennai North – Ambattur",
+    "address": "No 1A/4, 2nd St, Vanchi Nagar, Sidco Industrial Estate, Ambattur,"
+  },
+  {
+    "name": "THE INDIAN PUBLIC SCHOOL, Coimbatore Main",
+    "address": "Main Campus #193, Sathy Road,S.S.Kulam Post, Coimbatore, Tamil Nadu – 641107"
+  },
+  {
+    "name": "THE INDIAN PUBLIC SCHOOL, KOCHI",
+    "address": "FR. ABEL NAGAR,THALAKKOTTU MOOLA ROAD, EDACHIRA, THENGODE P.O. KAKKANAD KOCHI"
+  },
+  {
+    "name": "THE INDIAN PUBLIC SCHOOL, Tirupur Main",
+    "address": "NO.10/720, PARK AVENUE, ARULPURAM (POST), TIRUPUR, PALLADAM ROAD"
+  },
+  {
+    "name": "The J. B. Vachha High School For Parsi Girls",
+    "address": "MANCHERJI JOSHI ROAD, PARSI COLONY, DADAR,"
+  },
+  {
+    "name": "THE KING'S SCHOOL",
+    "address": "854, MUGALLI SAO JOSE DE AREAL,SALCETTE ,"
+  },
+  {
+    "name": "THE KING'S SCHOOL, KOTTIYAM, KOLLAM",
+    "address": "KING'S NAGAR, KOTTIYAM (P.O.) KOLLAM, KERALA, INDIA"
+  },
+  {
+    "name": "The Maple School",
+    "address": "Near Govt. Employees Colony, Sector 18"
+  },
+  {
+    "name": "The Millennium School, Patiala",
+    "address": "H no 33 North Avenue Bhadson Road Patiala"
+  },
+  {
+    "name": "THE NEWTOWN SCHOOL",
+    "address": "PLOT NO. DD 257, ACTION AREA 1"
+  },
+  {
+    "name": "THE SANSKAAR VALLEY SCHOOL",
+    "address": "CHANDANPURA, P.O. - SURAJ NAGAR, near Kerwa Dam ,BHOPAL (M.P)"
+  },
+  {
+    "name": "THE SCHOLARS' INTERNATIONAL SCHOOL",
+    "address": "P O BOX. 201308, DOHA, QATAR,"
+  },
+  {
+    "name": "THE SCHRAM ACADEMY - Maduravoyal",
+    "address": "Kanchipuram - Chennai Rd, Kamaraj Nagar, Maduravoyal, Chennai, Tamil Nadu 600095"
+  },
+  {
+    "name": "The Shri Ram Universal School",
+    "address": "2-59/1/JM/104, Financial District,Nanakramguda, Gachibowli,Serilingampally"
+  },
+  {
+    "name": "THE SOVEREIGN SCHOOL",
+    "address": "PHASE-III, POCKET-17 SECTOR-24,ROHINI,"
+  },
+  {
+    "name": "THE SPRINGFIELD KINDERGARTEN AL MATAR",
+    "address": "POST BOX 55346 DOHA QATAR"
+  },
+  {
+    "name": "THE SPRINGFIELD KINDERGARTEN AL WAKRAH QATAR",
+    "address": "AL KHAIL STREET, BUILDING NO: 10 & 12,, STREET NO: 879, ZONE: 90, AL WAKRAH QATAR"
+  },
+  {
+    "name": "The Springfield Primary School",
+    "address": "Building No. 40 & 42, Street No. 1038, Zone 90, AL-WAKRA, Doha Qatar"
+  },
+  {
+    "name": "THEJOMAYA EDUCATIONAL SERVICES PVT. LTD.",
+    "address": "Thejomaya Educational Services Pvt Ltd., 1A Cedar wood 4th Main Road, Raja Annamalaipuram Chennai 28."
+  },
+  {
+    "name": "UDAIPUR ENGLISH MEDIUM HIGHER SECONDARY SCHOOL",
+    "address": "SOUTH-EAST CORNER OF JAGANNATH DIGHI, P.O.RADHAKISHOREPUR ,"
+  },
+  {
+    "name": "Unacademy Centre Noida",
+    "address": "Unacademy 1st Floor, Plot 56A , 16 Block C, Sector-62, Landmark (Near Satyam Fashion Institute)"
+  },
+  {
+    "name": "Unicosmos International School",
+    "address": "Golf Course Rd, Sushant Lok 2, Sector 55, Gurugram"
+  },
+  {
+    "name": "Unique Academy",
+    "address": "A 1502, Safal Twins, NEar China Bristo, S T Road, Deonar,"
+  },
+  {
+    "name": "UNIVERSITY OF HYDERABAD CAMPUS SCHOOL",
+    "address": "HYDERABAD UNIVERSITY, DR. C.R. RAO ROAD CENTRAL UNIVERSITY, GACHIBOWLI NEAR STATE BANK OF INDIA ATM"
+  },
+  {
+    "name": "UPADHYAY PUBLIC SCHOOL",
+    "address": "D-BLOCK VINOD NAGAR"
+  },
+  {
+    "name": "USHA MARTIN SCHOOL, MALDA",
+    "address": "NH 34 Shimuldhab ,Near Malda Water ParkPost Office – Bheema Digh"
+  },
+  {
+    "name": "Utpal Shanghvi Global School",
+    "address": "IC colony,Off Link Road Borivali west"
+  },
+  {
+    "name": "VANA VANI MATRICULATION HIGHER SECONDARY SCHOOL",
+    "address": "IIT Campus, Sardar Vallababhai Patel Road, Adyar"
+  },
+  {
+    "name": "VELAMMAL MATRICULATION HIGHER SEC. SCHOOL",
+    "address": "VELAMMAL GARDENS, THIRUPPUVANAM, SIVAGANGAI"
+  },
+  {
+    "name": "VIDHYASHRAM PUBLIC SCHOOL",
+    "address": "PAOTA 'B' ROAD, JODHPUR, RAJASTHAN"
+  },
+  {
+    "name": "VIKHE PATIL MEMORIAL SCHOOL, LOHEGAON",
+    "address": "SR. NO - 44/6, VIKHE PATIL NAGAR LOHEGAON"
+  },
+  {
+    "name": "VISHWA JYOTI CONVENT SCHOOL",
+    "address": "AT .PO. TALODHI (BA), TAH. - NAGBHIR,"
+  },
+  {
+    "name": "WITTY INTERNATIONAL SCHOOL",
+    "address": "PAWAN BAUG ROAD, OFF. S.V. ROAD, ADJACENT TO TECHNIPLEX, OFF. S.V. ROAD, ADJACENT TO TECHNIPLEX, MALAD( WEST)"
+  },
+  {
+    "name": "YADAVINDRA PUBLIC SCHOOL",
+    "address": "SECTOR - 51, PHASE - 8, S.A.S NAGAR, MOHALI"
+  }
+]

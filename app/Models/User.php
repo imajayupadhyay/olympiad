@@ -20,8 +20,8 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name', 'email', 'role', 'password',
-        'class_level_id', 'phone', 'dob', 'school', 'city', 'state', 'photo', 'is_active',
+        'name', 'email', 'role', 'password', 'password_changed_at',
+        'class_level_id', 'phone', 'dob', 'school', 'school_address', 'city', 'pincode', 'state', 'photo', 'is_active',
         'referral_code', 'referred_by',
     ];
 
@@ -174,8 +174,52 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'password_changed_at' => 'datetime',
             'dob' => 'date',
             'is_active' => 'boolean',
+        ];
+    }
+
+    /**
+     * True while the student is still on the auto-generated password that was
+     * emailed at registration (they have not set one of their own yet).
+     */
+    public function usingGeneratedPassword(): bool
+    {
+        return is_null($this->password_changed_at);
+    }
+
+    /**
+     * Profile-completion breakdown used to drive the engagement progress bar.
+     * Core fields (name/email/class) are always present from registration; the
+     * rest are what the student fills in later on their profile page.
+     *
+     * @return array{percent:int, filled:int, total:int, missing:list<string>}
+     */
+    public function profileCompletion(): array
+    {
+        $fields = [
+            'Full name'     => filled($this->name),
+            'Email'         => filled($this->email),
+            'Class'         => filled($this->class_level_id),
+            'Phone'          => filled($this->phone),
+            'Date of birth'  => filled($this->dob),
+            'School'         => filled($this->school),
+            'School address' => filled($this->school_address),
+            'City'           => filled($this->city),
+            'PIN code'       => filled($this->pincode),
+            'State'          => filled($this->state),
+            'Photo'          => filled($this->photo),
+        ];
+
+        $total  = count($fields);
+        $filled = count(array_filter($fields));
+
+        return [
+            'percent' => (int) round($filled / $total * 100),
+            'filled'  => $filled,
+            'total'   => $total,
+            'missing' => array_keys(array_filter($fields, fn ($ok) => ! $ok)),
         ];
     }
 }

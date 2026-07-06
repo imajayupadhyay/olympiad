@@ -12,7 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -42,25 +42,26 @@ class RegisteredUserController extends Controller
             'email'          => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'phone'          => 'nullable|string|max:15',
             'class_level_id' => 'required|exists:class_levels,id',
-            'dob'            => 'nullable|date|before:today',
             'school'         => 'nullable|string|max:200',
-            'city'           => 'nullable|string|max:100',
+            'school_address' => 'nullable|string|max:255',
             'state'          => 'nullable|string|max:100',
-            'password'       => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
+
+        // Password is auto-generated (not collected on the form) and emailed to the
+        // student; they can change it later from Profile → Change Password.
+        $plainPassword = Str::password(12, letters: true, numbers: true, symbols: false);
 
         $user = User::create([
             'name'           => $data['name'],
             'email'          => $data['email'],
             'phone'          => $data['phone'] ?? null,
             'class_level_id' => $data['class_level_id'],
-            'dob'            => $data['dob'] ?? null,
             'school'         => $data['school'] ?? null,
-            'city'           => $data['city'] ?? null,
+            'school_address' => $data['school_address'] ?? null,
             'state'          => $data['state'] ?? null,
             'role'           => 'student',
             'is_active'      => true,
-            'password'       => Hash::make($data['password']),
+            'password'       => Hash::make($plainPassword),
         ]);
 
         event(new Registered($user));
@@ -68,7 +69,7 @@ class RegisteredUserController extends Controller
         app(ManagedEmailService::class)->queue(
             'student_registered',
             $user,
-            app(ManagedEmailService::class)->studentRegistrationVariables($user, $data['password']),
+            app(ManagedEmailService::class)->studentRegistrationVariables($user, $plainPassword),
             ['related_type' => User::class, 'related_id' => $user->id]
         );
 

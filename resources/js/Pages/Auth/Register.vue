@@ -1,68 +1,28 @@
 <script setup>
 import AuthLayout from '@/Layouts/AuthLayout.vue';
 import Stepper from './Onboarding/Components/Stepper.vue';
+import SchoolAutocomplete from '@/Components/SchoolAutocomplete.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
 
 defineProps({
     classLevels: { type: Array, default: () => [] },
     states: { type: Array, default: () => [] },
 });
 
+// Short form — date of birth and city are collected later on the profile page.
+// school_address is auto-filled when a school is picked from the suggestions.
 const form = useForm({
     name: '',
     email: '',
     phone: '',
     class_level_id: '',
-    dob: '',
     school: '',
-    city: '',
+    school_address: '',
     state: '',
-    password: '',
-    password_confirmation: '',
-});
-
-const showPassword = ref(false);
-
-// Date of birth as three dropdowns (no calendar). Composed into form.dob (YYYY-MM-DD).
-const dobDay = ref('');
-const dobMonth = ref('');
-const dobYear = ref('');
-
-const months = [
-    { v: '01', l: 'Jan' }, { v: '02', l: 'Feb' }, { v: '03', l: 'Mar' },
-    { v: '04', l: 'Apr' }, { v: '05', l: 'May' }, { v: '06', l: 'Jun' },
-    { v: '07', l: 'Jul' }, { v: '08', l: 'Aug' }, { v: '09', l: 'Sep' },
-    { v: '10', l: 'Oct' }, { v: '11', l: 'Nov' }, { v: '12', l: 'Dec' },
-];
-
-const thisYear = new Date().getFullYear();
-const years = Array.from({ length: 28 }, (_, i) => thisYear - 3 - i); // e.g. 2023 → 1996
-
-// Days available depend on the chosen month/year (28–31), so Feb never offers 30/31.
-const maxDay = computed(() => {
-    if (!dobMonth.value) return 31;
-    const y = dobYear.value ? Number(dobYear.value) : 2000; // leap-safe fallback
-    return new Date(y, Number(dobMonth.value), 0).getDate();
-});
-const days = computed(() => Array.from({ length: maxDay.value }, (_, i) => i + 1));
-
-// Drop an out-of-range day if the month/year change shrinks the month.
-watch(maxDay, (max) => {
-    if (dobDay.value && Number(dobDay.value) > max) dobDay.value = '';
-});
-
-// Keep form.dob in sync; empty until all three are picked (field is optional).
-watch([dobDay, dobMonth, dobYear], () => {
-    form.dob = (dobDay.value && dobMonth.value && dobYear.value)
-        ? `${dobYear.value}-${dobMonth.value}-${String(dobDay.value).padStart(2, '0')}`
-        : '';
 });
 
 const submit = () => {
-    form.post(route('register'), {
-        onFinish: () => form.reset('password', 'password_confirmation'),
-    });
+    form.post(route('register'));
 };
 </script>
 
@@ -121,45 +81,6 @@ const submit = () => {
                 </div>
 
                 <div class="field">
-                    <label for="dob-day">Date of birth</label>
-                    <div class="control dob">
-                        <select id="dob-day" class="dob-part" v-model="dobDay" aria-label="Day of birth">
-                            <option value="" disabled>Day</option>
-                            <option v-for="d in days" :key="d" :value="d">{{ d }}</option>
-                        </select>
-                        <select class="dob-part" v-model="dobMonth" aria-label="Month of birth">
-                            <option value="" disabled>Month</option>
-                            <option v-for="m in months" :key="m.v" :value="m.v">{{ m.l }}</option>
-                        </select>
-                        <select class="dob-part" v-model="dobYear" aria-label="Year of birth">
-                            <option value="" disabled>Year</option>
-                            <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
-                        </select>
-                    </div>
-                    <p v-if="form.errors.dob" class="err">{{ form.errors.dob }}</p>
-                </div>
-            </div>
-
-            <div class="field">
-                <label for="school">School</label>
-                <div class="control">
-                    <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg></span>
-                    <input id="school" type="text" v-model="form.school" placeholder="School name" />
-                </div>
-                <p v-if="form.errors.school" class="err">{{ form.errors.school }}</p>
-            </div>
-
-            <div class="grid-2">
-                <div class="field">
-                    <label for="city">City</label>
-                    <div class="control">
-                        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
-                        <input id="city" type="text" v-model="form.city" placeholder="City" />
-                    </div>
-                    <p v-if="form.errors.city" class="err">{{ form.errors.city }}</p>
-                </div>
-
-                <div class="field">
                     <label for="state">State</label>
                     <div class="control">
                         <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6Z"/><path d="M9 4v14M15 6v14"/></svg></span>
@@ -173,26 +94,24 @@ const submit = () => {
             </div>
 
             <div class="field">
-                <label for="password">Password</label>
-                <div class="control">
-                    <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
-                    <input :type="showPassword ? 'text' : 'password'" id="password" v-model="form.password" required autocomplete="new-password" placeholder="Min. 8 characters" />
-                    <button type="button" class="toggle" @click="showPassword = !showPassword" :aria-label="showPassword ? 'Hide password' : 'Show password'">
-                        <svg v-if="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 7 10 7a13.2 13.2 0 0 1-1.67 2.36M6.6 6.6A13.2 13.2 0 0 0 2 11s3.5 7 10 7a9.1 9.1 0 0 0 4.1-.94"/><path d="m2 2 20 20"/></svg>
-                    </button>
-                </div>
-                <p v-if="form.errors.password" class="err">{{ form.errors.password }}</p>
+                <label for="school">School</label>
+                <SchoolAutocomplete
+                    id="school"
+                    v-model="form.school"
+                    v-model:address="form.school_address"
+                    placeholder="Start typing your school name…"
+                />
+                <p v-if="form.school_address" class="hint">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21s-7-5.3-7-11a7 7 0 0 1 14 0c0 5.7-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                    {{ form.school_address }}
+                </p>
+                <p v-if="form.errors.school" class="err">{{ form.errors.school }}</p>
             </div>
 
-            <div class="field">
-                <label for="password_confirmation">Confirm password</label>
-                <div class="control">
-                    <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><path d="m9 16 2 2 4-4"/></svg></span>
-                    <input :type="showPassword ? 'text' : 'password'" id="password_confirmation" v-model="form.password_confirmation" required autocomplete="new-password" placeholder="Re-enter password" />
-                </div>
-                <p v-if="form.errors.password_confirmation" class="err">{{ form.errors.password_confirmation }}</p>
-            </div>
+            <p class="pw-note">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                A secure password will be created for you and emailed after sign-up. You can change it anytime from your profile.
+            </p>
 
             <button type="submit" class="cta" :class="{ busy: form.processing }" :disabled="form.processing">
                 <span>{{ form.processing ? 'Saving…' : 'Save & Next →' }}</span>
@@ -232,15 +151,24 @@ const submit = () => {
 .control select { cursor: pointer; appearance: none; -webkit-appearance: none; }
 .control input::placeholder { color: rgba(10,16,36,.32); }
 
-/* Date of birth: three equal dropdowns, no calendar */
-.control.dob { padding-left: .3rem; }
-.control.dob .dob-part { flex: 1; min-width: 0; padding: .75rem .5rem; text-align: center; }
-.control.dob .dob-part:not(:last-child) { border-right: 1px solid #F0E6D2; }
 .toggle { border: 0; background: transparent; cursor: pointer; padding: 0 .8rem; color: rgba(10,16,36,.4); display: grid; place-items: center; }
 .toggle:hover { color: #EE6A2C; }
 .toggle svg { width: 17px; height: 17px; }
 
 .err { color: #DC2626; font-size: .78rem; margin: 0; }
+
+.hint { display: flex; align-items: flex-start; gap: .35rem; margin: 0; font-size: .78rem; color: #168A66; }
+.hint svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 2px; }
+
+.pw-note {
+    display: flex; align-items: flex-start; gap: .55rem;
+    margin: .2rem 0 0; padding: .7rem .8rem;
+    background: rgba(238,106,44,.06);
+    border: 1px solid rgba(238,106,44,.18);
+    border-radius: 12px;
+    font-size: .82rem; line-height: 1.4; color: rgba(10,16,36,.62);
+}
+.pw-note svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; color: #C9501A; }
 
 .cta {
     position: relative; overflow: hidden;

@@ -1,13 +1,14 @@
 <script setup>
 import StudentLayout from '@/Layouts/StudentLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { usePoll } from '@/composables/usePoll';
 
 const props = defineProps({
     myExams: { type: Array, default: () => [] },
     stats: { type: Object, default: () => ({}) },
     referral: { type: Object, default: null },
+    onboarding: { type: Object, default: () => ({}) },
 });
 
 // Keep the referral widget counters fresh (≤5s) without a manual refresh.
@@ -63,6 +64,36 @@ const statCards = computed(() => [
 ]);
 
 const startExam = (examId) => router.post(route('student.exams.start', examId));
+
+/* ── First-login onboarding modal ──────────────────────────────
+   Shown while the student is still on the auto-generated password we emailed.
+   Nudges them to secure the account + finish their profile, then sends them
+   to the profile page. "Maybe later" hides it for the rest of this session. */
+const profile = computed(() => props.onboarding?.profile ?? { percent: 0, filled: 0, total: 0, missing: [] });
+const dismissKey = computed(() => `noh_pw_nudge_${user.value?.id ?? 'anon'}`);
+
+const showOnboarding = ref(false);
+onMounted(() => {
+    let dismissed = false;
+    try { dismissed = sessionStorage.getItem(dismissKey.value) === '1'; } catch { /* ignore */ }
+    if (props.onboarding?.must_change_password && !dismissed) {
+        showOnboarding.value = true;
+        // Fill the progress bar from 0 on the next frame so it animates in.
+        requestAnimationFrame(() => { barWidth.value = profile.value.percent; });
+    }
+});
+
+const barWidth = ref(0);
+
+const dismissOnboarding = () => {
+    showOnboarding.value = false;
+    try { sessionStorage.setItem(dismissKey.value, '1'); } catch { /* ignore */ }
+};
+
+const goToProfile = () => {
+    dismissOnboarding();
+    router.visit(props.onboarding.profile_url);
+};
 </script>
 
 <template>
@@ -144,6 +175,48 @@ const startExam = (examId) => router.post(route('student.exams.start', examId));
                 <Link :href="route('student.referrals')" class="refer-cta">Refer friends →</Link>
             </div>
         </section>
+
+        <!-- first-login onboarding modal -->
+        <Teleport to="body">
+            <Transition name="onb">
+                <div v-if="showOnboarding" class="onb-overlay" @click.self="dismissOnboarding">
+                    <div class="onb-card" role="dialog" aria-modal="true" aria-labelledby="onb-title">
+                        <button class="onb-x" @click="dismissOnboarding" aria-label="Close">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+                        </button>
+
+                        <div class="onb-badge">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                        </div>
+
+                        <h3 id="onb-title" class="onb-title">Secure your <span class="ital">account</span></h3>
+                        <p class="onb-sub">
+                            You're signed in with the temporary password we emailed you. Set your own
+                            password and finish your profile to unlock the full experience.
+                        </p>
+
+                        <!-- profile completion -->
+                        <div class="onb-prog">
+                            <div class="onb-prog-top">
+                                <span>Profile completeness</span>
+                                <strong>{{ profile.percent }}%</strong>
+                            </div>
+                            <div class="onb-bar"><span class="onb-bar-fill" :style="{ width: barWidth + '%' }"></span></div>
+                            <p class="onb-prog-meta">
+                                {{ profile.filled }} of {{ profile.total }} details added<template v-if="profile.missing.length"> · still needs:</template>
+                            </p>
+                            <div v-if="profile.missing.length" class="onb-chips">
+                                <span v-for="m in profile.missing.slice(0, 4)" :key="m" class="onb-chip">{{ m }}</span>
+                                <span v-if="profile.missing.length > 4" class="onb-chip more">+{{ profile.missing.length - 4 }}</span>
+                            </div>
+                        </div>
+
+                        <button class="onb-cta" @click="goToProfile">Change password &amp; complete profile →</button>
+                        <button class="onb-later" @click="dismissOnboarding">Maybe later</button>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
     </StudentLayout>
 </template>
 
@@ -211,4 +284,50 @@ const startExam = (examId) => router.post(route('student.exams.start', examId));
 
 @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+/* ── onboarding modal ── */
+.onb-overlay { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 1.2rem;
+    background: rgba(10,16,36,.55); backdrop-filter: blur(6px) saturate(140%); }
+.onb-card { position: relative; width: 100%; max-width: 440px; background: #fff; border-radius: 26px;
+    padding: 2rem 1.8rem 1.6rem; text-align: center; box-shadow: 0 40px 90px -30px rgba(10,16,36,.55);
+    border: 1px solid #F0E6D2; overflow: hidden; }
+.onb-card::before { content: ""; position: absolute; top: -80px; right: -60px; width: 220px; height: 220px;
+    background: radial-gradient(circle, rgba(238,106,44,.16), transparent 70%); pointer-events: none; }
+
+.onb-x { position: absolute; top: 1rem; right: 1rem; width: 32px; height: 32px; display: grid; place-items: center;
+    border: 0; border-radius: 10px; background: #F3E9D6; color: #5B6373; cursor: pointer; transition: background .2s, color .2s; }
+.onb-x:hover { background: #EADFC8; color: #0A1024; }
+.onb-x svg { width: 15px; height: 15px; }
+
+.onb-badge { width: 62px; height: 62px; margin: .2rem auto 1rem; border-radius: 18px; display: grid; place-items: center;
+    color: #fff; background: linear-gradient(135deg, #F2854E, #EE6A2C); box-shadow: 0 16px 30px -12px rgba(238,106,44,.7); }
+.onb-badge svg { width: 28px; height: 28px; }
+
+.onb-title { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.5rem; color: #0A1024; margin: 0 0 .5rem; }
+.onb-title .ital { font-style: italic; color: #C9501A; }
+.onb-sub { color: rgba(10,16,36,.62); font-size: .9rem; line-height: 1.5; margin: 0 auto 1.3rem; max-width: 340px; }
+
+.onb-prog { text-align: left; background: #FBF6EC; border: 1px solid #EADFC8; border-radius: 16px; padding: 1rem 1.1rem; margin-bottom: 1.3rem; }
+.onb-prog-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: .5rem; }
+.onb-prog-top span { font-size: .82rem; font-weight: 600; color: #5B6373; }
+.onb-prog-top strong { font-family: "Space Grotesk", monospace; font-size: 1.15rem; color: #C9501A; }
+.onb-bar { height: 9px; border-radius: 999px; background: #EADFC8; overflow: hidden; }
+.onb-bar-fill { display: block; height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, #F2C84B, #D6991F); transition: width 1s cubic-bezier(.2,.7,.2,1); }
+.onb-prog-meta { font-size: .78rem; color: #9aa0ad; margin: .55rem 0 0; }
+.onb-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.onb-chip { font-size: .74rem; font-weight: 600; color: #5B6373; background: #fff; border: 1px solid #EADFC8;
+    padding: .25rem .6rem; border-radius: 999px; }
+.onb-chip.more { color: #C9501A; }
+
+.onb-cta { width: 100%; border: 0; cursor: pointer; color: #fff; font-weight: 700; font-size: .94rem;
+    padding: .85rem 1rem; border-radius: 14px; background: linear-gradient(135deg, #1B2748, #0A1024);
+    box-shadow: 0 16px 34px -14px rgba(10,16,36,.6); transition: transform .15s, box-shadow .2s; }
+.onb-cta:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -14px rgba(10,16,36,.7); }
+.onb-later { margin-top: .7rem; border: 0; background: transparent; cursor: pointer; color: #9aa0ad; font-size: .85rem; font-weight: 600; }
+.onb-later:hover { color: #5B6373; text-decoration: underline; }
+
+.onb-enter-active, .onb-leave-active { transition: opacity .25s ease; }
+.onb-enter-from, .onb-leave-to { opacity: 0; }
+.onb-enter-active .onb-card { animation: fadeUp .35s cubic-bezier(.2,.7,.2,1) both; }
 </style>

@@ -56,7 +56,9 @@ const detailsForm = useForm({
     class_level_id: props.profile.class_level_id ?? '',
     dob: props.profile.dob ? String(props.profile.dob).slice(0, 10) : '',
     school: props.profile.school ?? '',
+    school_address: props.profile.school_address ?? '',
     city: props.profile.city ?? '',
+    pincode: props.profile.pincode ?? '',
     state: props.profile.state ?? '',
 });
 
@@ -81,7 +83,7 @@ const savePassword = () => {
 
 /* ── profile completeness ── */
 const completeness = computed(() => {
-    const fields = ['name', 'email', 'phone', 'class_level_id', 'dob', 'school', 'city', 'state'];
+    const fields = ['name', 'email', 'phone', 'class_level_id', 'dob', 'school', 'school_address', 'city', 'pincode', 'state'];
     const filled = fields.filter((f) => {
         const v = props.profile[f];
         return v !== null && v !== '' && v !== undefined;
@@ -230,12 +232,23 @@ watch(
                     <p v-if="detailsForm.errors.school" class="err">{{ detailsForm.errors.school }}</p>
                 </div>
 
-                <div class="field col-6">
+                <div class="field col-12">
+                    <label>School address</label>
+                    <input type="text" v-model="detailsForm.school_address" placeholder="Street, area, landmark" />
+                    <p v-if="detailsForm.errors.school_address" class="err">{{ detailsForm.errors.school_address }}</p>
+                </div>
+
+                <div class="field col-4">
                     <label>City</label>
                     <input type="text" v-model="detailsForm.city" placeholder="City" />
                     <p v-if="detailsForm.errors.city" class="err">{{ detailsForm.errors.city }}</p>
                 </div>
-                <div class="field col-6">
+                <div class="field col-4">
+                    <label>PIN code</label>
+                    <input type="text" inputmode="numeric" maxlength="6" v-model="detailsForm.pincode" placeholder="6-digit PIN" />
+                    <p v-if="detailsForm.errors.pincode" class="err">{{ detailsForm.errors.pincode }}</p>
+                </div>
+                <div class="field col-4">
                     <label>State</label>
                     <select v-model="detailsForm.state">
                         <option value="" disabled>Select state</option>
@@ -412,8 +425,9 @@ export default { data: () => ({ icons }) };
 .form-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 1.1rem; }
 .col-12 { grid-column: span 12; }
 .col-6 { grid-column: span 6; }
+.col-4 { grid-column: span 4; }
 .col-3 { grid-column: span 3; }
-@media (max-width: 640px) { .col-6, .col-3 { grid-column: span 12; } }
+@media (max-width: 640px) { .col-6, .col-4, .col-3 { grid-column: span 12; } }
 
 .field { display: grid; gap: .4rem; }
 .field label { font-size: .82rem; font-weight: 600; color: #0A1024; }

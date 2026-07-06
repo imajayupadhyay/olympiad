@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Exam;
 use App\Models\Payment;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -13,7 +14,11 @@ class PaymentController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Payment::with(['user:id,name,email,phone', 'enrollments.exam:id,name'])->latest();
+        $query = Payment::with([
+            'user:id,name,email,phone,class_level_id',
+            'user.classLevel:id,label',
+            'enrollments.exam:id,name',
+        ])->latest();
 
         if ($request->filled('search')) {
             $s = trim($request->search);
@@ -37,7 +42,19 @@ class PaymentController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $rows = $query->paginate(20)->withQueryString()->through(fn (Payment $p) => [
+        $payments = $query->paginate(20)->withQueryString();
+
+        // Unpaid "created" orders have no enrollments yet — the chosen exams live in
+        // the payment's notes ({"exam_ids":[...]}). Resolve those names in one query.
+        $noteExamIds = $payments->getCollection()
+            ->flatMap(fn (Payment $p) => data_get($p->notes, 'exam_ids', []))
+            ->filter()->unique()->values();
+
+        $examNames = $noteExamIds->isNotEmpty()
+            ? Exam::whereIn('id', $noteExamIds)->pluck('name', 'id')
+            : collect();
+
+        $rows = $payments->through(fn (Payment $p) => [
             'id'          => $p->id,
             'amount'      => (float) $p->amount,
             'currency'    => $p->currency,
@@ -49,7 +66,11 @@ class PaymentController extends Controller
             'created_at'  => $p->created_at,
             'paid_at'     => $p->paid_at,
             'student'     => $p->user ? ['name' => $p->user->name, 'email' => $p->user->email] : null,
-            'exams'       => $p->enrollments->map(fn ($e) => $e->exam?->name)->filter()->values(),
+            'class'       => $p->user?->classLevel?->label,
+            'exams'       => $p->enrollments->isNotEmpty()
+                ? $p->enrollments->map(fn ($e) => $e->exam?->name)->filter()->values()
+                : collect(data_get($p->notes, 'exam_ids', []))
+                    ->map(fn ($id) => $examNames[$id] ?? null)->filter()->values(),
         ]);
 
         return Inertia::render('Admin/Payments/Index', [

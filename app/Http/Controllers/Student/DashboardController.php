@@ -72,6 +72,11 @@ class DashboardController extends Controller
                 'certificates' => Certificate::where('user_id', $user->id)->where('type', 'student')->count(),
             ],
             'referral' => $this->referralWidget($user),
+            'onboarding' => [
+                'must_change_password' => $user->usingGeneratedPassword(),
+                'profile'              => $user->profileCompletion(),
+                'profile_url'          => route('student.profile'),
+            ],
         ]);
     }
 

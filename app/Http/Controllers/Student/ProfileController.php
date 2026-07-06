@@ -39,7 +39,9 @@ class ProfileController extends Controller
             'class_level_id' => 'required|exists:class_levels,id',
             'dob'            => 'nullable|date|before:today',
             'school'         => 'nullable|string|max:200',
+            'school_address' => 'nullable|string|max:255',
             'city'           => 'nullable|string|max:100',
+            'pincode'        => 'nullable|digits:6',
             'state'          => 'nullable|string|max:100',
         ]);
 
@@ -98,6 +100,7 @@ class ProfileController extends Controller
 
         $request->user()->update([
             'password' => Hash::make($validated['password']),
+            'password_changed_at' => now(),
         ]);
 
         return back()->with('success', 'Password changed successfully.');

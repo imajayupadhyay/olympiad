@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Public\ExamController;
 use App\Http\Controllers\Public\HomeController;
+use App\Http\Controllers\Public\SchoolController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -13,3 +14,6 @@ Route::get('/blog', [HomeController::class, 'blog'])->name('blog');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 Route::get('/pricing', [HomeController::class, 'pricing'])->name('pricing');
 Route::get('/faq', [HomeController::class, 'faq'])->name('faq');
+
+// School autocomplete for the registration form (public — no auth).
+Route::get('/schools/search', [SchoolController::class, 'search'])->name('schools.search');
