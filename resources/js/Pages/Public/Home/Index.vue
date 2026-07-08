@@ -298,73 +298,61 @@
       </div>
     </section>
 
-    <!-- ============ REGISTER FORM ============ -->
-    <section v-if="registerSection.is_enabled" class="section register" id="register">
+    <!-- ============ CONTACT US ============ -->
+    <section v-if="contactSection.is_enabled" class="section register" id="contact">
       <div class="wrap reg-grid">
         <div class="reg-copy" data-reveal>
-          <span class="eyebrow">{{ registerSection.eyebrow }}</span>
-          <h2>{{ registerSection.title }}</h2>
-          <p>{{ registerSection.description }}</p>
+          <span class="eyebrow">{{ contactSection.eyebrow }}</span>
+          <h2>{{ contactSection.title }}</h2>
+          <p>{{ contactSection.description }}</p>
           <div class="reg-feats">
-            <div class="reg-feat" v-for="f in regFeats" :key="f.title">
-              <div class="reg-feat__ic">{{ iconFor(f.icon) }}</div>
-              <div><b>{{ f.title }}</b><small>{{ f.sub }}</small></div>
+            <div class="reg-feat" v-for="d in contactDetails" :key="d.title">
+              <div class="reg-feat__ic">{{ iconFor(d.icon) }}</div>
+              <div><b>{{ d.title }}</b><small>{{ d.sub }}</small></div>
             </div>
           </div>
         </div>
 
         <div class="form-card glass" data-reveal>
           <form v-if="!submitted" @submit.prevent="submitForm" novalidate>
-            <h3>{{ registerSection.form_title }}</h3>
-            <p>{{ registerSection.form_description }}</p>
+            <h3>{{ contactSection.form_title }}</h3>
+            <p>{{ contactSection.form_description }}</p>
 
-            <div class="field" :class="{ err: errors.name }">
-              <label>Student Full Name</label>
-              <input type="text" v-model="form.name" placeholder="e.g. Aarav Mehta" @input="clearErr('name')" />
-              <span class="msg">Please enter the student's name.</span>
+            <div class="field" :class="{ err: form.errors.name }">
+              <label>Full Name</label>
+              <input type="text" v-model="form.name" placeholder="e.g. Aarav Mehta" @input="form.clearErrors('name')" />
+              <span class="msg">{{ form.errors.name || "Please enter your name." }}</span>
             </div>
 
-            <div class="field-row">
-              <div class="field" :class="{ err: errors.klass }">
-                <label>Class</label>
-                <select v-model="form.klass" @change="clearErr('klass')">
-                  <option value="">Select…</option>
-                  <option v-for="c in 12" :key="c">Class {{ c }}</option>
-                </select>
-                <span class="msg">Choose a class.</span>
-              </div>
-              <div class="field" :class="{ err: errors.subject }">
-                <label>First Subject</label>
-                <select v-model="form.subject" @change="clearErr('subject')">
-                  <option value="">Select…</option>
-                  <option v-for="s in subjectOptions" :key="s">{{ s }}</option>
-                </select>
-                <span class="msg">Choose a subject.</span>
-              </div>
+            <div class="field" :class="{ err: form.errors.email }">
+              <label>Email</label>
+              <input type="email" v-model="form.email" placeholder="you@email.com" @input="form.clearErrors('email')" />
+              <span class="msg">{{ form.errors.email || "Enter a valid email address." }}</span>
             </div>
 
-            <div class="field" :class="{ err: errors.email }">
-              <label>Parent Email</label>
-              <input type="email" v-model="form.email" placeholder="parent@email.com" @input="clearErr('email')" />
-              <span class="msg">Enter a valid email address.</span>
+            <div class="field" :class="{ err: form.errors.phone }">
+              <label>Phone</label>
+              <input type="tel" v-model="form.phone" placeholder="10-digit mobile" maxlength="10" @input="form.clearErrors('phone')" />
+              <span class="msg">{{ form.errors.phone || "Enter a valid phone number." }}</span>
             </div>
 
-            <div class="field" :class="{ err: errors.phone }">
-              <label>Mobile Number</label>
-              <input type="tel" v-model="form.phone" placeholder="10-digit mobile" maxlength="10" @input="clearErr('phone')" />
-              <span class="msg">Enter a valid 10-digit number.</span>
+            <div class="field" :class="{ err: form.errors.message }">
+              <label>Message</label>
+              <textarea v-model="form.message" rows="4" placeholder="How can we help you?" @input="form.clearErrors('message')"></textarea>
+              <span class="msg">{{ form.errors.message || "Please enter a message." }}</span>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-shine">{{ registerSection.button_label }}
+            <button type="submit" class="btn btn-primary btn-shine" :disabled="form.processing">
+              {{ form.processing ? 'Sending…' : contactSection.button_label }}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
-            <p class="form-note">{{ registerSection.note }}</p>
+            <p class="form-note">{{ contactSection.note }}</p>
           </form>
 
           <div v-else class="form-success show">
             <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="#168A66" opacity=".12"/><circle cx="32" cy="32" r="22" fill="#168A66"/><path d="M22 32l7 7 13-14" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <h3 class="h-serif">{{ registerSection.success_title }}</h3>
-            <p>{{ registerSection.success_description }}</p>
+            <h3 class="h-serif">{{ contactSection.success_title }}</h3>
+            <p>{{ contactSection.success_description }}</p>
           </div>
         </div>
       </div>
@@ -414,7 +402,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import PublicHeader from '@/Components/Public/PublicHeader.vue';
 import AppLogo from '@/Components/Shared/AppLogo.vue';
 import SeoHead from '@/Components/Shared/SeoHead.vue';
@@ -437,7 +425,7 @@ const defaultContent = {
   rewards: { is_enabled: true, tiers: [] },
   testimonials: { is_enabled: true, items: [] },
   faq: { is_enabled: true, items: [] },
-  register: { is_enabled: true, features: [], subject_options: [] },
+  contact: { is_enabled: true, details: [] },
   final_cta: { is_enabled: true },
   footer: { is_enabled: true, socials: [], columns: [] },
 };
@@ -453,7 +441,7 @@ const examsSection = section('exams');
 const rewardsSection = section('rewards');
 const testimonialsSection = section('testimonials');
 const faqSection = section('faq');
-const registerSection = section('register');
+const contactSection = section('contact');
 const finalCtaSection = section('final_cta');
 const footerSection = section('footer');
 
@@ -462,6 +450,7 @@ const iconMap = {
   Brain: '🧠', Language: '🗣️', Rocket: '🚀', Math: '📐', Science: '🔬', World: '🌍',
   Book: '📖', Hindi: 'A', Civics: '🏛️', Computer: '💻', Puzzle: '🧩', Art: '🎨',
   Register: '📝', Lightning: '⚡', Gift: '🎁', Books: '📚', Lock: '🔒',
+  Mail: '📧', Phone: '📞', Clock: '⏱️', Pin: '📍',
 };
 const iconFor = (icon) => iconMap[icon] || icon || '';
 
@@ -486,8 +475,7 @@ const testimonials = asArray(testimonialsSection.items);
 const faqs = asArray(faqSection.items);
 const openFaq = ref(0);
 
-const regFeats = asArray(registerSection.features);
-const subjectOptions = asArray(registerSection.subject_options);
+const contactDetails = asArray(contactSection.details);
 
 /* ---------- nav / scroll state ---------- */
 const rootEl       = ref(null);
@@ -578,18 +566,14 @@ const onTouchEnd = (e, which) => {
   else { if (dx < -40) testNext(); else if (dx > 40) testPrev(); }
 };
 
-/* ---------- register form ---------- */
-const form = reactive({ name: '', klass: '', subject: '', email: '', phone: '' });
-const errors = reactive({ name: false, klass: false, subject: false, email: false, phone: false });
+/* ---------- contact form ---------- */
+const form = useForm({ name: '', email: '', phone: '', message: '' });
 const submitted = ref(false);
-const clearErr = (k) => { errors[k] = false; };
 function submitForm() {
-  errors.name    = form.name.trim().length < 2;
-  errors.klass   = form.klass === '';
-  errors.subject = form.subject === '';
-  errors.email   = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
-  errors.phone   = !/^\d{10}$/.test(form.phone.trim());
-  if (!Object.values(errors).some(Boolean)) submitted.value = true;
+  form.post(route('contact.store'), {
+    preserveScroll: true,
+    onSuccess: () => { submitted.value = true; form.reset(); },
+  });
 }
 
 /* ---------- lifecycle ---------- */
@@ -628,7 +612,7 @@ onMounted(() => {
   }
 
   /* scrollspy — active nav */
-  const sections = ['home', 'subjects', 'how', 'exams', 'rewards', 'faq', 'register']
+  const sections = ['home', 'subjects', 'how', 'exams', 'rewards', 'faq', 'contact']
     .map((id) => document.getElementById(id)).filter(Boolean);
   const spyIO = new IntersectionObserver((entries) => {
     entries.forEach((e) => { if (e.isIntersecting) activeSection.value = e.target.id; });
@@ -949,10 +933,11 @@ onUnmounted(() => {
 .form-card > form > p{ font-size:14px; color:var(--ink-55); margin-bottom:26px; }
 .field{ margin-bottom:18px; }
 .field label{ display:block; font:600 12.5px/1 var(--body); letter-spacing:.04em; color:var(--ink-70); margin-bottom:8px; text-transform:uppercase; }
-.field input,.field select{ width:100%; font:500 15px/1 var(--body); padding:14px 16px; border-radius:12px; border:1.5px solid var(--paper-line); background:rgba(255,255,255,.6); color:var(--ink); transition:.2s; }
-.field input::placeholder{ color:var(--ink-35); }
-.field input:focus,.field select:focus{ outline:none; border-color:var(--saffron); background:#fff; box-shadow:0 0 0 4px rgba(238,106,44,.12); }
-.field.err input,.field.err select{ border-color:var(--saffron-dk); background:rgba(201,80,26,.05); }
+.field input,.field select,.field textarea{ width:100%; font:500 15px/1 var(--body); padding:14px 16px; border-radius:12px; border:1.5px solid var(--paper-line); background:rgba(255,255,255,.6); color:var(--ink); transition:.2s; }
+.field textarea{ line-height:1.5; resize:vertical; min-height:104px; font-family:var(--body); }
+.field input::placeholder,.field textarea::placeholder{ color:var(--ink-35); }
+.field input:focus,.field select:focus,.field textarea:focus{ outline:none; border-color:var(--saffron); background:#fff; box-shadow:0 0 0 4px rgba(238,106,44,.12); }
+.field.err input,.field.err select,.field.err textarea{ border-color:var(--saffron-dk); background:rgba(201,80,26,.05); }
 .field .msg{ font-size:12px; color:var(--saffron-dk); margin-top:6px; display:none; }
 .field.err .msg{ display:block; }
 .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }

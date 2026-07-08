@@ -18,6 +18,7 @@ const navLinks = [
     { id: 'exams', label: 'Exams', to: '/exams' },
     { id: 'rewards', label: 'Rewards' },
     { id: 'faq', label: 'FAQ' },
+    { id: 'contact', label: 'Contact' },
 ];
 
 const scrolled = ref(false);

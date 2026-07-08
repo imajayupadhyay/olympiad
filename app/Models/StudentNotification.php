@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class StudentNotification extends Model
 {
     protected $fillable = [
-        'user_id', 'notification_log_id', 'title', 'message', 'is_read', 'read_at',
+        'user_id', 'notification_log_id', 'title', 'message', 'link', 'is_read', 'read_at',
     ];
 
     protected $casts = [

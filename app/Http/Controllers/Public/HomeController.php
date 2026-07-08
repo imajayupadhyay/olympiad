@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\HomepageSection;
+use App\Models\Lead;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -57,6 +60,24 @@ class HomeController extends Controller
     public function contact(): Response
     {
         return Inertia::render('Public/Contact/Index');
+    }
+
+    public function submitContact(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'name'    => 'required|string|max:120',
+            'email'   => 'required|email|max:190',
+            'phone'   => 'nullable|string|max:20',
+            'message' => 'required|string|max:2000',
+        ]);
+
+        Lead::create([
+            ...$data,
+            'source'     => 'homepage_contact',
+            'ip_address' => $request->ip(),
+        ]);
+
+        return back()->with('success', 'Thanks for reaching out — we will reply within 24 hours.');
     }
 
     public function pricing(): Response

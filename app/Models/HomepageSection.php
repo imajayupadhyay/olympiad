@@ -232,7 +232,7 @@ class HomepageSection extends Model
                     'aside_title' => 'Still curious?',
                     'aside_description' => 'Our support team replies within a few hours, every day of the week.',
                     'contact_label' => 'Talk to us',
-                    'contact_url' => '#register',
+                    'contact_url' => '#contact',
                     'support_email' => 'care@olympiadhunt.in',
                     'support_phone' => '+91 98765 43210 · Mon-Sun',
                     'items' => [
@@ -243,24 +243,25 @@ class HomepageSection extends Model
                 ],
             ],
             [
-                'key' => 'register',
-                'title' => 'Registration CTA/Form',
+                // Replaces the old "register" CTA/form block. The homepage now renders a
+                // Contact Us form here; submissions are captured as leads (admin → Forms).
+                'key' => 'contact',
+                'title' => 'Contact Us Section',
                 'content' => [
-                    'eyebrow' => 'Your seat awaits',
-                    'title' => 'Create your free student account today',
-                    'description' => 'It takes under two minutes. Register now and get instant access to free practice tests while you choose your first olympiad.',
-                    'form_title' => 'Register in 2 minutes',
-                    'form_description' => 'Join 1,20,000+ students already on the Hunt.',
-                    'button_label' => 'Create My Free Account',
-                    'note' => 'By registering you agree to our Terms & Privacy Policy.',
-                    'success_title' => 'Welcome aboard!',
-                    'success_description' => 'Your free account is ready. Check your email to verify and start practising right away.',
-                    'features' => [
-                        ['icon' => 'Gift', 'title' => 'Free to join', 'sub' => 'No payment until you enroll for an exam'],
-                        ['icon' => 'Books', 'title' => 'Free practice tests', 'sub' => 'Sharpen up before the real competition'],
-                        ['icon' => 'Lock', 'title' => 'Safe & private', 'sub' => 'Your data is encrypted and never shared'],
+                    'eyebrow' => 'Get in touch',
+                    'title' => "We'd love to hear from you",
+                    'description' => 'Questions about exams, payments or your account? Send us a message and our team will get back to you.',
+                    'form_title' => 'Send us a message',
+                    'form_description' => 'Fill in the form and we will respond shortly.',
+                    'button_label' => 'Send Message',
+                    'note' => 'We respect your privacy. Your details are never shared.',
+                    'success_title' => 'Message sent!',
+                    'success_description' => 'Thanks for reaching out — our team will get back to you within 24 hours.',
+                    'details' => [
+                        ['icon' => 'Mail', 'title' => 'Email us', 'sub' => 'care@olympiadhunt.in'],
+                        ['icon' => 'Phone', 'title' => 'Call us', 'sub' => '+91 98765 43210 · Mon–Sun'],
+                        ['icon' => 'Clock', 'title' => 'Response time', 'sub' => 'We reply within 24 hours'],
                     ],
-                    'subject_options' => ['Mathematics', 'Science', 'English', 'Computers', 'General Knowledge', 'Reasoning'],
                 ],
             ],
             [

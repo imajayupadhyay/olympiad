@@ -1,6 +1,6 @@
 <script setup>
-import { Link, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import SeoHead from '@/Components/Shared/SeoHead.vue';
 import AppLogo from '@/Components/Shared/AppLogo.vue';
 
@@ -23,14 +23,54 @@ const nav = [
     { label: 'Dashboard',    href: '/student/dashboard',    match: '/student/dashboard',    icon: 'grid' },
     { label: 'Exams',        href: '/student/exams',        match: '/student/exams',        icon: 'doc'  },
     { label: 'Results',      href: '/student/results',      match: '/student/results',      icon: 'chart'},
-    { label: 'Leaderboard',  href: '/student/leaderboard',  match: '/student/leaderboard',  icon: 'crown'},
     { label: 'Certificates', href: '/student/certificates', match: '/student/certificates', icon: 'medal'},
-    { label: 'Practice',     href: '/student/practice',     match: '/student/practice',     icon: 'bolt' },
     { label: 'Payments',     href: '/student/payments',     match: '/student/payments',     icon: 'card' },
+    { label: 'Support',      href: '/student/support',      match: '/student/support',      icon: 'support' },
     { label: 'Refer & Earn', href: '/student/refer',        match: '/student/refer',        icon: 'gift' },
 ];
 
 const isActive = (m) => page.url.startsWith(m);
+
+/* ── Notification bell ── */
+const bellRef = ref(null);
+const bellOpen = ref(false);
+const unread = computed(() => page.props.notifications_unread ?? 0);
+const recent = computed(() => page.props.recent_notifications ?? []);
+
+const relativeTime = (value) => {
+    if (!value) return '';
+    const then = new Date(value);
+    const diff = Math.floor((Date.now() - then.getTime()) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+    return then.toLocaleDateString();
+};
+
+const openNotification = (n) => {
+    bellOpen.value = false;
+    const done = () => { if (n.link) router.visit(n.link); };
+    if (!n.is_read) {
+        router.patch(`/student/notifications/${n.id}/read`, {}, {
+            preserveScroll: true, preserveState: true, onFinish: done,
+        });
+    } else {
+        done();
+    }
+};
+
+const markAllRead = () => {
+    router.patch('/student/notifications/read-all', {}, { preserveScroll: true, preserveState: true });
+};
+
+const onDocClick = (e) => {
+    if (bellOpen.value && bellRef.value && !bellRef.value.contains(e.target)) {
+        bellOpen.value = false;
+    }
+};
+onMounted(() => document.addEventListener('click', onDocClick));
+onBeforeUnmount(() => document.removeEventListener('click', onDocClick));
 </script>
 
 <template>
@@ -88,10 +128,42 @@ const isActive = (m) => page.url.startsWith(m);
                 </div>
 
                 <div class="topbar-right">
-                    <button class="bell" aria-label="Notifications">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
-                        <span class="bell-dot"></span>
-                    </button>
+                    <div class="bell-wrap" ref="bellRef">
+                        <button class="bell" aria-label="Notifications" @click="bellOpen = !bellOpen">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
+                            <span v-if="unread > 0" class="bell-badge">{{ unread > 9 ? '9+' : unread }}</span>
+                        </button>
+
+                        <div v-if="bellOpen" class="bell-menu">
+                            <div class="bell-menu-head">
+                                <strong>Notifications</strong>
+                                <button v-if="unread > 0" type="button" class="mark-all" @click="markAllRead">Mark all read</button>
+                            </div>
+
+                            <div v-if="recent.length === 0" class="bell-empty">
+                                <span>You're all caught up.</span>
+                            </div>
+
+                            <ul v-else class="bell-list">
+                                <li
+                                    v-for="n in recent"
+                                    :key="n.id"
+                                    class="bell-item"
+                                    :class="{ unread: !n.is_read }"
+                                    @click="openNotification(n)"
+                                >
+                                    <span v-if="!n.is_read" class="dot"></span>
+                                    <div class="bell-item-body">
+                                        <strong>{{ n.title }}</strong>
+                                        <p>{{ n.message }}</p>
+                                        <small>{{ relativeTime(n.created_at) }}</small>
+                                    </div>
+                                </li>
+                            </ul>
+
+                            <Link href="/student/notifications" class="bell-viewall" @click="bellOpen = false">View all notifications</Link>
+                        </div>
+                    </div>
                     <div class="who">
                         <div class="who-text">
                             <strong>{{ user?.name }}</strong>
@@ -122,6 +194,7 @@ const icons = {
     medal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="15" r="6"/><path d="M9 9 7 2m8 7 2-7M10.5 13.5 12 12l1.5 1.5"/></svg>',
     bolt:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>',
     card:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>',
+    support:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/><path d="M8 9h8M8 13h5"/></svg>',
     gift:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v9h14v-9"/><path d="M12 8S10 3 7.5 4.5 9 8 12 8Zm0 0s2-5 4.5-3.5S15 8 12 8Z"/></svg>',
     user:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
     logout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>',
@@ -214,10 +287,38 @@ export default { data: () => ({ icons }) };
 .hamburger svg { width: 24px; height: 24px; }
 
 .topbar-right { display: flex; align-items: center; gap: 1rem; }
+.bell-wrap { position: relative; }
 .bell { position: relative; border: 0; background: #fff; border: 1px solid var(--paper-line); border-radius: 11px; padding: .5rem; cursor: pointer; color: rgba(10,16,36,.65); transition: color .2s, transform .15s; }
 .bell:hover { color: var(--saffron); transform: translateY(-1px); }
 .bell svg { width: 19px; height: 19px; display: block; }
-.bell-dot { position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: var(--saffron); box-shadow: 0 0 0 2px #fff; }
+.bell-badge {
+    position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px;
+    border-radius: 9px; background: var(--saffron); color: #fff;
+    font-family: "Space Grotesk", monospace; font-size: .68rem; font-weight: 700;
+    display: grid; place-items: center; box-shadow: 0 0 0 2px #fff;
+}
+
+.bell-menu {
+    position: absolute; top: calc(100% + 10px); right: 0; width: 340px; max-width: calc(100vw - 2rem);
+    background: #fff; border: 1px solid var(--paper-line); border-radius: 16px;
+    box-shadow: 0 30px 70px -24px rgba(10,16,36,.4); overflow: hidden; z-index: 50;
+}
+.bell-menu-head { display: flex; align-items: center; justify-content: space-between; padding: .9rem 1rem; border-bottom: 1px solid var(--paper-line); }
+.bell-menu-head strong { font-family: "Fraunces", serif; font-size: 1rem; color: var(--ink); }
+.mark-all { border: 0; background: transparent; color: var(--saffron); font-size: .78rem; font-weight: 600; cursor: pointer; }
+.mark-all:hover { text-decoration: underline; }
+.bell-empty { padding: 1.6rem 1rem; text-align: center; color: rgba(10,16,36,.5); font-size: .85rem; }
+.bell-list { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow-y: auto; }
+.bell-item { display: flex; gap: .6rem; padding: .8rem 1rem; cursor: pointer; border-bottom: 1px solid #F3E9D6; transition: background .15s; }
+.bell-item:hover { background: #FBF6EC; }
+.bell-item.unread { background: rgba(238,106,44,.05); }
+.bell-item .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--saffron); margin-top: .4rem; flex-shrink: 0; }
+.bell-item-body { min-width: 0; }
+.bell-item-body strong { display: block; font-size: .85rem; color: var(--ink); font-weight: 700; margin-bottom: .1rem; }
+.bell-item-body p { margin: 0 0 .2rem; font-size: .8rem; color: rgba(10,16,36,.65); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bell-item-body small { font-size: .7rem; color: rgba(10,16,36,.45); }
+.bell-viewall { display: block; padding: .8rem 1rem; text-align: center; font-size: .82rem; font-weight: 600; color: var(--saffron); text-decoration: none; background: #FBF6EC; }
+.bell-viewall:hover { background: #F3E9D6; }
 
 .who { display: flex; align-items: center; gap: .65rem; }
 .who-text { display: none; flex-direction: column; line-height: 1.2; text-align: right; }

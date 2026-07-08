@@ -120,6 +120,21 @@
           Notifications
         </SidebarLink>
 
+        <SidebarLink :href="route('admin.support.index')" :active="isActive('/admin/support')">
+          <template #icon>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12a8 8 0 01-11.6 7.15L3 21l1.85-6.4A8 8 0 1121 12z"/>
+            </svg>
+          </template>
+          <span class="flex items-center justify-between flex-1">
+            Support
+            <span
+              v-if="$page.props.admin_support_unread > 0"
+              class="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-white text-[10px] font-bold font-number"
+            >{{ $page.props.admin_support_unread > 9 ? '9+' : $page.props.admin_support_unread }}</span>
+          </span>
+        </SidebarLink>
+
         <SidebarLink :href="route('admin.emails')" :active="isActive('/admin/emails')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -136,6 +151,15 @@
             </svg>
           </template>
           Content
+        </SidebarLink>
+
+        <SidebarLink :href="route('admin.forms.index')" :active="isActive('/admin/forms')">
+          <template #icon>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </template>
+          Forms
         </SidebarLink>
 
         <p class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">Settings</p>

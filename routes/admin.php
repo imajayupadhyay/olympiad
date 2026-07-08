@@ -7,12 +7,14 @@ use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\ExamController;
+use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\ReferralController;
 use App\Http\Controllers\Admin\ReferralSettingController;
 use App\Http\Controllers\Admin\ResultController;
+use App\Http\Controllers\Admin\SupportController;
 use App\Http\Controllers\Admin\Settings\ClassLevelController;
 use App\Http\Controllers\Admin\Settings\QuestionCategoryController;
 use App\Http\Controllers\Admin\Settings\SubjectController;
@@ -72,11 +74,19 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/notifications/send', [NotificationController::class, 'send'])->name('notifications.send');
     Route::delete('/notifications/{log}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
+    Route::get('/support', [SupportController::class, 'index'])->name('support.index');
+    Route::get('/support/{ticket}', [SupportController::class, 'show'])->name('support.show');
+    Route::post('/support/{ticket}/reply', [SupportController::class, 'reply'])->name('support.reply');
+    Route::patch('/support/{ticket}/status', [SupportController::class, 'updateStatus'])->name('support.status');
+
     Route::get('/emails', [EmailTemplateController::class, 'index'])->name('emails');
     Route::put('/emails/{template}', [EmailTemplateController::class, 'update'])->name('emails.update');
     Route::patch('/emails/{template}/toggle', [EmailTemplateController::class, 'toggle'])->name('emails.toggle');
     Route::post('/emails/{template}/test', [EmailTemplateController::class, 'sendTest'])->name('emails.test');
     Route::get('/emails/{template}/preview', [EmailTemplateController::class, 'preview'])->name('emails.preview');
+
+    Route::get('/forms', [LeadController::class, 'index'])->name('forms.index');
+    Route::delete('/forms/{lead}', [LeadController::class, 'destroy'])->name('forms.destroy');
 
     Route::get('/content', [ContentController::class, 'index'])->name('content');
     Route::put('/content/homepage/{section}', [ContentController::class, 'update'])->name('content.homepage.update');

@@ -79,6 +79,11 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\StudentNotification::class);
     }
 
+    public function supportTickets()
+    {
+        return $this->hasMany(\App\Models\SupportTicket::class);
+    }
+
     public function enrollments()
     {
         return $this->hasMany(\App\Models\ExamEnrollment::class);

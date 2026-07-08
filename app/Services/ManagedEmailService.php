@@ -222,6 +222,15 @@ class ManagedEmailService
         ]);
     }
 
+    public function supportTicketVariables(User $user, \App\Models\SupportTicket $ticket, string $replySnippet): array
+    {
+        return $this->variablesForUser($user, [
+            'ticket_subject' => $ticket->subject,
+            'reply_snippet' => $replySnippet,
+            'ticket_url' => route('student.support.show', $ticket->id),
+        ]);
+    }
+
     protected function variablesForUser(User $user, array $variables = []): array
     {
         $user->loadMissing('classLevel');

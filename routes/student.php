@@ -10,6 +10,8 @@ use App\Http\Controllers\Student\LeaderboardController;
 use App\Http\Controllers\Student\PracticeController;
 use App\Http\Controllers\Student\PaymentController;
 use App\Http\Controllers\Student\ReferralController;
+use App\Http\Controllers\Student\SupportController;
+use App\Http\Controllers\Student\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->group(function () {
@@ -41,6 +43,15 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
     Route::get('/practice', [PracticeController::class, 'index'])->name('practice');
 
     Route::get('/refer', [ReferralController::class, 'index'])->name('referrals');
+
+    Route::get('/support', [SupportController::class, 'index'])->name('support');
+    Route::post('/support', [SupportController::class, 'store'])->name('support.store');
+    Route::get('/support/{ticket}', [SupportController::class, 'show'])->name('support.show');
+    Route::post('/support/{ticket}/reply', [SupportController::class, 'reply'])->name('support.reply');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
 
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments');
     Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');

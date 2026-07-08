@@ -12,6 +12,7 @@ Route::post('/exams/enroll', [ExamController::class, 'enroll'])->name('exams.enr
 Route::get('/results', [HomeController::class, 'results'])->name('results');
 Route::get('/blog', [HomeController::class, 'blog'])->name('blog');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
+Route::post('/contact', [HomeController::class, 'submitContact'])->name('contact.store');
 Route::get('/pricing', [HomeController::class, 'pricing'])->name('pricing');
 Route::get('/faq', [HomeController::class, 'faq'])->name('faq');
 
