@@ -150,6 +150,7 @@ const ICON_EMOJI = {
   Brain: '🧠', Language: '🗣️', Rocket: '🚀', Math: '📐', Science: '🔬', World: '🌍',
   Book: '📖', Hindi: 'अ', Civics: '🏛️', Computer: '💻', Puzzle: '🧩', Art: '🎨',
   Register: '📝', Lightning: '⚡', Gift: '🎁', Books: '📚', Lock: '🔒',
+  Mail: '📧', Phone: '📞', Clock: '⏱️', Pin: '📍',
 };
 const iconOptions = Object.keys(ICON_EMOJI).map((key) => ({ value: key, label: `${ICON_EMOJI[key]}  ${key}` }));
 
@@ -306,7 +307,8 @@ const schemas = {
       ] },
     ],
   },
-  register: {
+  contact: {
+    description: 'Controls the homepage Get in touch section copy, contact detail rows, form text and success message.',
     fields: [
       { key: 'eyebrow', label: 'Eyebrow' },
       { key: 'title', label: 'Title' },
@@ -317,12 +319,11 @@ const schemas = {
       { key: 'note', label: 'Legal Note', full: true },
       { key: 'success_title', label: 'Success Title' },
       { key: 'success_description', label: 'Success Description', type: 'textarea', full: true },
-      { key: 'features', label: 'Feature Bullets', type: 'list', fields: [
-        { key: 'icon', label: 'Icon' },
+      { key: 'details', label: 'Contact Details', type: 'list', fields: [
+        { key: 'icon', label: 'Icon', type: 'select', options: 'icons' },
         { key: 'title', label: 'Title' },
         { key: 'sub', label: 'Subtitle' },
       ] },
-      { key: 'subject_options', label: 'Subject Options JSON', type: 'json', hint: 'Array of subject names shown in the registration form subject dropdown.' },
     ],
   },
   final_cta: {
