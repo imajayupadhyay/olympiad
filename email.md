@@ -142,10 +142,15 @@ Triggered after payment fulfilment/enrolment:
 - Razorpay verified payment path
 - Razorpay webhook paid path
 - Fully discounted coupon enrolment path
+- Admin manual olympiad assignment payment path
+- Admin pending-payment reconciliation path
 
-File changed:
+Files changed:
 
 - `app/Services/PaymentService.php`
+- `app/Services/ManagedEmailService.php`
+- `app/Http/Controllers/Admin/UserController.php`
+- `app/Http/Controllers/Admin/PaymentController.php`
 
 ### Exam Reminder
 
