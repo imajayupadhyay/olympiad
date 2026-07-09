@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Coupon;
+use App\Models\Exam;
 use App\Models\Payment;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Razorpay\Api\Api;
 
 /**
@@ -177,6 +179,75 @@ class PaymentService
         }
     }
 
+    public function recordManualExamPayment(User $user, Exam $exam, User $admin, ?string $reference = null, ?string $note = null): Payment
+    {
+        return DB::transaction(function () use ($user, $exam, $admin, $reference, $note) {
+            $amount = (float) $exam->fee_amount;
+
+            $payment = Payment::create([
+                'user_id' => $user->id,
+                'amount' => $amount,
+                'gross_amount' => $amount,
+                'discount_amount' => 0,
+                'currency' => $exam->fee_currency,
+                'status' => 'paid',
+                'gateway' => 'manual',
+                'method' => 'manual_admin',
+                'is_manual' => true,
+                'recorded_by_admin_id' => $admin->id,
+                'manually_recorded_at' => now(),
+                'manual_reference' => $reference,
+                'manual_note' => $note,
+                'notes' => [
+                    'manual' => true,
+                    'source' => 'admin_assignment',
+                    'exam_ids' => [$exam->id],
+                    'recorded_by_admin_id' => $admin->id,
+                ],
+                'paid_at' => now(),
+            ]);
+
+            $this->enrollments->enrollAfterPayment($user, $payment, [$exam->id], 'manual_payment');
+            $this->completePaidSideEffects($payment);
+
+            return $payment->refresh();
+        });
+    }
+
+    public function reconcileManually(Payment $payment, User $admin, ?string $reference = null, ?string $note = null): Payment
+    {
+        return DB::transaction(function () use ($payment, $admin, $reference, $note) {
+            $payment->refresh();
+
+            if ($payment->status === 'paid') {
+                return $payment;
+            }
+
+            $notes = $payment->notes ?? [];
+            $notes['manual'] = true;
+            $notes['source'] = 'admin_reconciliation';
+            $notes['recorded_by_admin_id'] = $admin->id;
+
+            $payment->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+                'method' => 'manual_reconcile',
+                'is_manual' => true,
+                'recorded_by_admin_id' => $admin->id,
+                'manually_recorded_at' => now(),
+                'manual_reference' => $reference,
+                'manual_note' => $note,
+                'notes' => $notes,
+            ]);
+
+            $examIds = $payment->notes['exam_ids'] ?? [];
+            $this->enrollments->enrollAfterPayment($payment->user, $payment, $examIds, 'manual_reconcile');
+            $this->completePaidSideEffects($payment);
+
+            return $payment->refresh();
+        });
+    }
+
     /** Persist the final discount + recomputed payable amount. */
     protected function setDiscount(Payment $payment, Coupon $coupon, float $discount): void
     {
@@ -201,6 +272,11 @@ class PaymentService
         $examIds = $payment->notes['exam_ids'] ?? [];
         $this->enrollments->enrollAfterPayment($payment->user, $payment, $examIds);
 
+        $this->completePaidSideEffects($payment);
+    }
+
+    protected function completePaidSideEffects(Payment $payment): void
+    {
         app(ManagedEmailService::class)->queue(
             'payment_success',
             $payment->user,

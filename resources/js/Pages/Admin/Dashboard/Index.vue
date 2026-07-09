@@ -281,10 +281,12 @@ const ic = {
   exam:     '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>',
   question: '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
   attempts: '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>',
+  revenue: '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-2.761 0-5-.895-5-2s2.239-2 5-2 5 .895 5 2-2.239 2-5 2zm-5 2c0 1.105 2.239 2 5 2s5-.895 5-2m-10 4c0 1.105 2.239 2 5 2s5-.895 5-2m-10 4c0 1.105 2.239 2 5 2s5-.895 5-2"/></svg>',
 };
 const kpis = computed(() => [
   { label: 'Total Students', value: (props.stats.totalStudents || 0).toLocaleString(), color: '#131C3D', icon: ic.students, deltaUp: props.stats.newToday > 0, sub: props.stats.newToday > 0 ? `+${props.stats.newToday} today` : `${props.stats.activeStudents || 0} active` },
   { label: 'Active Exams',   value: props.stats.activeExams || 0, color: '#EE6A2C', icon: ic.exam, deltaUp: false, sub: `${props.stats.totalExams || 0} total` },
+  { label: 'Revenue',        value: inrCompact(props.stats.totalRevenue || 0), color: '#168A66', icon: ic.revenue, deltaUp: props.stats.revenueMonth > 0, sub: `${inrCompact(props.stats.revenueMonth || 0)} this month` },
   { label: 'Questions',      value: (props.stats.totalQuestions || 0).toLocaleString(), color: '#168A66', icon: ic.question, deltaUp: false, sub: `${props.stats.activeQuestions || 0} active` },
   { label: 'Exam Attempts',  value: (props.stats.totalAttempts || 0).toLocaleString(), color: '#D6991F', icon: ic.attempts, deltaUp: props.stats.attemptsWeek > 0, sub: props.stats.attemptsWeek > 0 ? `+${props.stats.attemptsWeek} this week` : 'all time' },
 ]);
@@ -335,4 +337,10 @@ const diffTotal = computed(() => props.charts.difficulty.reduce((a, d) => a + d.
 const avatarColors = ['#131C3D', '#EE6A2C', '#168A66', '#6C3FA0', '#2C49A6', '#DC2626', '#D6991F'];
 const avatarColor = (name) => avatarColors[(name?.charCodeAt(0) || 0) % avatarColors.length];
 const formatDate = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+const inrCompact = (amount) => new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+}).format(Number(amount) || 0);
 </script>

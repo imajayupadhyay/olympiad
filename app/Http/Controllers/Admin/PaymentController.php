@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\Payment;
+use App\Services\PaymentService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,6 +19,7 @@ class PaymentController extends Controller
             'user:id,name,email,phone,class_level_id',
             'user.classLevel:id,label',
             'enrollments.exam:id,name',
+            'recordedByAdmin:id,name',
         ])->latest();
 
         if ($request->filled('search')) {
@@ -25,6 +27,7 @@ class PaymentController extends Controller
             $query->where(function ($q) use ($s) {
                 $q->where('razorpay_order_id', 'like', "%{$s}%")
                   ->orWhere('razorpay_payment_id', 'like', "%{$s}%")
+                  ->orWhere('manual_reference', 'like', "%{$s}%")
                   ->orWhere('id', $s)
                   ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%")->orWhere('email', 'like', "%{$s}%"));
             });
@@ -61,6 +64,10 @@ class PaymentController extends Controller
             'status'      => $p->status,
             'gateway'     => $p->gateway,
             'method'      => $p->method,
+            'is_manual'   => (bool) $p->is_manual,
+            'manual_reference' => $p->manual_reference,
+            'manual_note' => $p->manual_note,
+            'recorded_by' => $p->recordedByAdmin?->only(['id', 'name']),
             'order_id'    => $p->razorpay_order_id,
             'payment_id'  => $p->razorpay_payment_id,
             'created_at'  => $p->created_at,
@@ -97,6 +104,31 @@ class PaymentController extends Controller
         $payment->load(['user', 'enrollments.exam:id,name']);
 
         return view('receipts.payment', ['payment' => $payment]);
+    }
+
+    public function reconcile(Request $request, Payment $payment, PaymentService $payments)
+    {
+        $data = $request->validate([
+            'manual_reference' => ['nullable', 'string', 'max:100'],
+            'manual_note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        if ($payment->status !== 'created') {
+            return back()->with('info', 'Only pending payments can be manually reconciled.');
+        }
+
+        if (empty($payment->notes['exam_ids'] ?? [])) {
+            return back()->with('error', 'This pending payment has no olympiads attached to enroll.');
+        }
+
+        $payments->reconcileManually(
+            $payment,
+            $request->user(),
+            $data['manual_reference'] ?? null,
+            $data['manual_note'] ?? null,
+        );
+
+        return back()->with('success', 'Payment marked paid and olympiad access granted.');
     }
 
     public function refund($payment)

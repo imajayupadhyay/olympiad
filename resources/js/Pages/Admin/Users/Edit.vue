@@ -141,6 +141,121 @@
           </div>
         </div>
 
+        <!-- Olympiad Assignment -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-5">
+            <div>
+              <h2 class="font-heading font-bold text-text-main text-sm flex items-center gap-2">
+                <span class="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">4</span>
+                Olympiad Assignments
+              </h2>
+              <p class="text-text-muted text-xs mt-1">Assign a published olympiad directly to this student without checkout.</p>
+            </div>
+            <span class="bg-gray-100 text-text-muted text-xs font-semibold px-2.5 py-1 rounded-lg font-number w-fit">
+              {{ activeEnrollments.length }} active
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Published Olympiad</label>
+              <select
+                v-model="assignForm.exam_id"
+                class="w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white text-text-main"
+                :class="assignForm.errors.exam_id ? 'border-danger bg-danger/5' : 'border-gray-200'"
+              >
+                <option value="">Select olympiad to assign</option>
+                <option v-for="exam in availableExams" :key="exam.id" :value="exam.id">
+                  {{ exam.name }} — {{ exam.class_level?.label || 'No class' }} — {{ exam.subject?.name || 'No subject' }}
+                </option>
+              </select>
+              <p v-if="assignForm.errors.exam_id" class="text-danger text-xs mt-1">{{ assignForm.errors.exam_id }}</p>
+              <p v-else-if="!availableExams.length" class="text-text-muted text-xs mt-1">No published olympiads are available to assign.</p>
+            </div>
+            <div class="flex items-end">
+              <button
+                type="button"
+                @click="assignExam"
+                :disabled="assignForm.processing || !assignForm.exam_id"
+                class="w-full lg:w-auto bg-accent text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-accent-dark transition-colors disabled:opacity-60 shadow-sm"
+              >
+                {{ assignForm.processing ? 'Assigning…' : 'Assign Olympiad' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            <div>
+              <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Payment Reference</label>
+              <input
+                v-model="assignForm.manual_reference"
+                type="text"
+                class="w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary"
+                :class="assignForm.errors.manual_reference ? 'border-danger bg-danger/5' : 'border-gray-200'"
+                placeholder="UTR / receipt / transaction id"
+              />
+              <p v-if="assignForm.errors.manual_reference" class="text-danger text-xs mt-1">{{ assignForm.errors.manual_reference }}</p>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Admin Note</label>
+              <input
+                v-model="assignForm.manual_note"
+                type="text"
+                class="w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary"
+                :class="assignForm.errors.manual_note ? 'border-danger bg-danger/5' : 'border-gray-200'"
+                placeholder="Optional note"
+              />
+              <p v-if="assignForm.errors.manual_note" class="text-danger text-xs mt-1">{{ assignForm.errors.manual_note }}</p>
+            </div>
+          </div>
+
+          <div class="mt-5">
+            <h3 class="font-heading font-bold text-text-main text-xs uppercase tracking-wider mb-3">Current Associations</h3>
+
+            <div v-if="enrollments.length" class="space-y-3">
+              <div
+                v-for="enrollment in enrollments"
+                :key="enrollment.id"
+                class="rounded-xl border border-gray-100 bg-gray-50/70 p-4"
+              >
+                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                      <h4 class="font-heading font-bold text-text-main text-sm">{{ enrollment.exam?.name || 'Deleted exam' }}</h4>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="statusClass(enrollment.status)">
+                        {{ enrollment.status.replace('_', ' ') }}
+                      </span>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                        {{ sourceLabel(enrollment.enrollment_source) }}
+                      </span>
+                    </div>
+                    <p class="text-text-muted text-xs">
+                      {{ enrollment.exam?.subject?.name || 'Subject not set' }}
+                      <span class="mx-1">•</span>
+                      {{ enrollment.exam?.class_level?.label || 'Class not set' }}
+                      <span class="mx-1">•</span>
+                      {{ enrollment.enrolled_at ? formatDate(enrollment.enrolled_at) : 'No date' }}
+                    </p>
+                  </div>
+
+                  <button
+                    v-if="enrollment.status === 'enrolled'"
+                    type="button"
+                    @click="cancelEnrollment(enrollment)"
+                    class="text-danger border border-danger/20 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-danger/5 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div v-else class="rounded-xl border border-dashed border-gray-200 py-8 text-center text-text-muted text-sm">
+              No olympiads assigned yet.
+            </div>
+          </div>
+        </div>
+
         <!-- Submit -->
         <div class="flex items-center gap-3 pb-6">
           <button type="submit" :disabled="form.processing"
@@ -159,17 +274,22 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { Link, useForm } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
   student:     Object,
   classLevels: Array,
   states:      Array,
+  enrollments: { type: Array, default: () => [] },
+  assignableExams: { type: Array, default: () => [] },
 });
 
 const showPwd = ref(false);
+const activeEnrollments = computed(() => props.enrollments.filter((enrollment) => enrollment.status === 'enrolled'));
+const activeExamIds = computed(() => new Set(activeEnrollments.value.map((enrollment) => enrollment.exam?.id).filter(Boolean)));
+const availableExams = computed(() => props.assignableExams.filter((exam) => !activeExamIds.value.has(exam.id)));
 
 const form = useForm({
   name:                  props.student.name,
@@ -185,7 +305,44 @@ const form = useForm({
   is_active:             props.student.is_active,
 });
 
+const assignForm = useForm({
+  exam_id: '',
+  manual_reference: '',
+  manual_note: '',
+});
+
 const submit = () => {
   form.put(route('admin.users.update', props.student.id));
 };
+
+const assignExam = () => {
+  assignForm.post(route('admin.users.enrollments.store', props.student.id), {
+    preserveScroll: true,
+    onSuccess: () => assignForm.reset(),
+  });
+};
+
+const cancelEnrollment = (enrollment) => {
+  if (!confirm(`Cancel assignment for "${enrollment.exam?.name || 'this olympiad'}"?`)) return;
+
+  router.patch(route('admin.users.enrollments.cancel', [props.student.id, enrollment.id]), {}, {
+    preserveScroll: true,
+  });
+};
+
+const formatDate = (d) =>
+  new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+const sourceLabel = (source) => ({
+  admin: 'Admin assigned',
+  payment: 'Paid checkout',
+  free: 'Free checkout',
+  checkout: 'Checkout',
+}[source] || 'Enrollment');
+
+const statusClass = (status) => ({
+  enrolled: 'bg-success/10 text-success',
+  pending_payment: 'bg-amber-100 text-amber-700',
+  cancelled: 'bg-danger/10 text-danger',
+}[status] || 'bg-gray-100 text-text-muted');
 </script>

@@ -90,17 +90,66 @@
       <!-- Right: Activity sections -->
       <div class="lg:col-span-2 space-y-5">
 
-        <!-- Exam Enrollments placeholder -->
+        <!-- Exam Enrollments -->
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <div class="flex items-center justify-between mb-4">
             <h3 class="font-heading font-bold text-text-main text-sm">Exam Enrollments</h3>
-            <span class="bg-gray-100 text-text-muted text-xs font-semibold px-2.5 py-1 rounded-lg font-number">0</span>
+            <span class="bg-gray-100 text-text-muted text-xs font-semibold px-2.5 py-1 rounded-lg font-number">{{ activeEnrollments.length }}</span>
           </div>
-          <div class="py-10 text-center text-text-muted text-sm">
+
+          <div v-if="enrollments.length" class="space-y-3">
+            <div
+              v-for="enrollment in enrollments"
+              :key="enrollment.id"
+              class="rounded-2xl border border-gray-100 p-4 bg-gray-50/60"
+            >
+              <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                    <h4 class="font-heading font-bold text-text-main text-sm">{{ enrollment.exam?.name || 'Deleted exam' }}</h4>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="statusClass(enrollment.status)">
+                      {{ enrollment.status.replace('_', ' ') }}
+                    </span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                      {{ sourceLabel(enrollment.enrollment_source) }}
+                    </span>
+                  </div>
+                  <p class="text-text-muted text-xs">
+                    {{ enrollment.exam?.subject?.name || 'Subject not set' }}
+                    <span class="mx-1">•</span>
+                    {{ enrollment.exam?.class_level?.label || 'Class not set' }}
+                    <span v-if="enrollment.exam?.exam_code" class="mx-1">•</span>
+                    <span v-if="enrollment.exam?.exam_code" class="font-number">{{ enrollment.exam.exam_code }}</span>
+                  </p>
+                </div>
+                <div class="text-left sm:text-right">
+                  <p class="font-number font-bold text-text-main text-sm">{{ formatCurrency(enrollment.amount, enrollment.currency) }}</p>
+                  <p class="text-text-muted text-xs">{{ enrollment.exam?.duration_minutes || 0 }} min</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 text-xs">
+                <div>
+                  <p class="text-text-muted mb-0.5">Enrolled On</p>
+                  <p class="font-number text-text-main">{{ enrollment.enrolled_at ? formatDate(enrollment.enrolled_at) : '—' }}</p>
+                </div>
+                <div>
+                  <p class="text-text-muted mb-0.5">Exam Starts</p>
+                  <p class="font-number text-text-main">{{ enrollment.exam?.starts_at ? formatDate(enrollment.exam.starts_at) : 'Not scheduled' }}</p>
+                </div>
+                <div>
+                  <p class="text-text-muted mb-0.5">Assigned By</p>
+                  <p class="text-text-main">{{ enrollment.assigned_by?.name || (enrollment.enrollment_source === 'admin' ? 'Admin' : 'Self / Checkout') }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="py-10 text-center text-text-muted text-sm">
             <svg class="w-10 h-10 mx-auto mb-3 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
-            No enrollments yet — available once the exam room is live.
+            No olympiads assigned yet.
           </div>
         </div>
 
@@ -184,14 +233,16 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
   student: Object,
+  enrollments: { type: Array, default: () => [] },
 });
 
+const activeEnrollments = computed(() => props.enrollments.filter((enrollment) => enrollment.status === 'enrolled'));
 const showToggleModal = ref(false);
 const doToggle = () => {
   router.patch(route('admin.users.toggle', props.student.id), {
@@ -206,4 +257,20 @@ const initials = (name) =>
 
 const formatDate = (d) =>
   new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+const formatCurrency = (amount, currency = 'INR') =>
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(Number(amount) || 0);
+
+const sourceLabel = (source) => ({
+  admin: 'Admin assigned',
+  payment: 'Paid checkout',
+  free: 'Free checkout',
+  checkout: 'Checkout',
+}[source] || 'Enrollment');
+
+const statusClass = (status) => ({
+  enrolled: 'bg-success/10 text-success',
+  pending_payment: 'bg-amber-100 text-amber-700',
+  cancelled: 'bg-danger/10 text-danger',
+}[status] || 'bg-gray-100 text-text-muted');
 </script>

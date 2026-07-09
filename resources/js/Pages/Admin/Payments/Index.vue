@@ -99,6 +99,9 @@
             <td class="px-5 py-3.5">
               <p class="font-number text-xs font-semibold text-text-main">NOH-{{ String(p.id).padStart(6, '0') }}</p>
               <p v-if="p.payment_id" class="text-text-muted text-[11px] font-number truncate max-w-[130px]">{{ p.payment_id }}</p>
+              <span v-if="p.is_manual" class="inline-flex mt-1 bg-accent/10 text-accent text-[10px] font-bold px-2 py-0.5 rounded-full">
+                Manual
+              </span>
             </td>
 
             <td class="px-4 py-3.5">
@@ -119,6 +122,7 @@
 
             <td class="px-4 py-3.5 text-right">
               <span class="font-number text-sm font-semibold text-text-main">{{ inr(p.amount) }}</span>
+              <p class="text-text-muted text-[11px] capitalize">{{ p.method || p.gateway }}</p>
             </td>
 
             <td class="px-4 py-3.5 text-text-muted text-xs font-number whitespace-nowrap">
@@ -142,6 +146,14 @@
                   </svg>
                   Receipt
                 </a>
+                <button
+                  v-else-if="p.status === 'created'"
+                  type="button"
+                  @click="openReconcile(p)"
+                  class="text-success hover:text-green-700 text-xs font-semibold px-2 py-1 rounded-lg hover:bg-success/5 transition-colors"
+                >
+                  Reconcile
+                </button>
                 <span v-else class="text-text-muted/50 text-xs px-2 py-1">—</span>
               </div>
             </td>
@@ -169,12 +181,61 @@
       </div>
     </div>
 
+    <div v-if="reconcileTarget" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.5)">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+        <h3 class="font-heading font-bold text-text-main text-base mb-2">Reconcile Pending Payment</h3>
+        <p class="text-text-muted text-sm mb-5">
+          Mark NOH-{{ String(reconcileTarget.id).padStart(6, '0') }} as paid and grant access to the attached olympiad(s).
+        </p>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Reference / UTR / Note ID</label>
+            <input
+              v-model="reconcileForm.manual_reference"
+              type="text"
+              class="w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary"
+              :class="reconcileForm.errors.manual_reference ? 'border-danger bg-danger/5' : 'border-gray-200'"
+              placeholder="Optional"
+            />
+            <p v-if="reconcileForm.errors.manual_reference" class="text-danger text-xs mt-1">{{ reconcileForm.errors.manual_reference }}</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Admin Note</label>
+            <textarea
+              v-model="reconcileForm.manual_note"
+              rows="3"
+              class="w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary resize-y"
+              :class="reconcileForm.errors.manual_note ? 'border-danger bg-danger/5' : 'border-gray-200'"
+              placeholder="Example: Payment verified in Razorpay dashboard."
+            ></textarea>
+            <p v-if="reconcileForm.errors.manual_note" class="text-danger text-xs mt-1">{{ reconcileForm.errors.manual_note }}</p>
+          </div>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button @click="closeReconcile" type="button" class="flex-1 bg-gray-100 text-text-main py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-colors">
+            Cancel
+          </button>
+          <button
+            @click="submitReconcile"
+            type="button"
+            :disabled="reconcileForm.processing"
+            class="flex-1 bg-success text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-60"
+          >
+            {{ reconcileForm.processing ? 'Reconciling…' : 'Mark Paid' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
   </AdminLayout>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
-import { Link, router } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
@@ -189,6 +250,11 @@ const filterForm = ref({
   date_from: props.filters.date_from || '',
   date_to:   props.filters.date_to   || '',
 });
+const reconcileTarget = ref(null);
+const reconcileForm = useForm({
+  manual_reference: '',
+  manual_note: '',
+});
 
 const hasFilters = computed(() =>
   filterForm.value.search || filterForm.value.status ||
@@ -202,6 +268,27 @@ const applyFilters = () => {
 const clearFilters = () => {
   filterForm.value = { search: '', status: '', date_from: '', date_to: '' };
   applyFilters();
+};
+
+const openReconcile = (payment) => {
+  reconcileTarget.value = payment;
+  reconcileForm.reset();
+  reconcileForm.clearErrors();
+};
+
+const closeReconcile = () => {
+  reconcileTarget.value = null;
+  reconcileForm.reset();
+  reconcileForm.clearErrors();
+};
+
+const submitReconcile = () => {
+  if (!reconcileTarget.value) return;
+
+  reconcileForm.patch(route('admin.payments.reconcile', reconcileTarget.value.id), {
+    preserveScroll: true,
+    onSuccess: closeReconcile,
+  });
 };
 
 const inr = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

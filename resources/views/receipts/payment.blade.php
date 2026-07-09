@@ -91,6 +91,10 @@
                 <h4>Payment Details</h4>
                 <p>Date: {{ optional($payment->paid_at ?? $payment->created_at)->format('d M Y, h:i A') }}</p>
                 <p>Method: {{ ucfirst($payment->method ?? $payment->gateway) }}</p>
+                @if($payment->is_manual)
+                    <p>Recorded: Manual entry</p>
+                    @if($payment->manual_reference)<p class="mono">Reference: {{ $payment->manual_reference }}</p>@endif
+                @endif
                 <p class="mono">Order: {{ $payment->razorpay_order_id ?? '—' }}</p>
                 <p class="mono">Payment: {{ $payment->razorpay_payment_id ?? '—' }}</p>
             </div>

@@ -21,6 +21,11 @@ class Payment extends Model
         'razorpay_payment_id',
         'razorpay_signature',
         'method',
+        'is_manual',
+        'recorded_by_admin_id',
+        'manually_recorded_at',
+        'manual_reference',
+        'manual_note',
         'notes',
         'paid_at',
     ];
@@ -29,6 +34,8 @@ class Payment extends Model
         'amount'          => 'decimal:2',
         'gross_amount'    => 'decimal:2',
         'discount_amount' => 'decimal:2',
+        'is_manual'       => 'boolean',
+        'manually_recorded_at' => 'datetime',
         'notes'           => 'array',
         'paid_at'         => 'datetime',
     ];
@@ -41,6 +48,11 @@ class Payment extends Model
     public function coupon(): BelongsTo
     {
         return $this->belongsTo(Coupon::class);
+    }
+
+    public function recordedByAdmin(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recorded_by_admin_id');
     }
 
     public function enrollments(): HasMany

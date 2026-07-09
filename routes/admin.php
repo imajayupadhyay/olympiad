@@ -36,6 +36,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     Route::resource('users', UserController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
     Route::patch('/users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
+    Route::post('/users/{user}/enrollments', [UserController::class, 'assignExam'])->name('users.enrollments.store');
+    Route::patch('/users/{user}/enrollments/{enrollment}/cancel', [UserController::class, 'cancelEnrollment'])->name('users.enrollments.cancel');
     Route::resource('questions', QuestionController::class);
     Route::resource('exams', ExamController::class);
     Route::post('/exams/{exam}/duplicate', [ExamController::class, 'duplicate'])->name('exams.duplicate');
@@ -58,6 +60,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments');
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
+    Route::patch('/payments/{payment}/reconcile', [PaymentController::class, 'reconcile'])->name('payments.reconcile');
     Route::post('/payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund');
 
     Route::get('/coupons', [CouponController::class, 'index'])->name('coupons');

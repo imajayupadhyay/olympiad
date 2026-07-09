@@ -172,7 +172,7 @@ class ManagedEmailService
             'olympiad_name' => $examNames->count() === 1 ? $examNames->first() : config('app.name'),
             'exam_names' => $examNames->join(', '),
             'amount_paid' => $this->money((float) $payment->amount, $payment->currency),
-            'transaction_id' => $payment->razorpay_payment_id ?: $payment->razorpay_order_id ?: 'N/A',
+            'transaction_id' => $payment->razorpay_payment_id ?: $payment->razorpay_order_id ?: $payment->manual_reference ?: 'N/A',
             'payment_datetime' => optional($payment->paid_at)->timezone(config('app.timezone'))->format('d M Y, h:i A') ?: now()->format('d M Y, h:i A'),
             'payment_method' => $payment->method ?: $payment->gateway ?: 'Razorpay',
             'payment_gateway' => Str::headline($payment->gateway ?: 'Razorpay'),

@@ -54,26 +54,27 @@ class EnrollmentService
      *
      * @return Collection<int, ExamEnrollment>
      */
-    public function enrollAfterPayment(User $user, Payment $payment, array $examIds): Collection
+    public function enrollAfterPayment(User $user, Payment $payment, array $examIds, string $source = 'payment'): Collection
     {
         $exams = $this->resolveExams($examIds, $user);
 
-        return $exams->map(fn (Exam $exam) => $this->createEnrollment($user, $exam, $payment));
+        return $exams->map(fn (Exam $exam) => $this->createEnrollment($user, $exam, $payment, $source));
     }
 
     /**
      * Idempotent enrolment: re-confirms an existing row or creates a new one.
      */
-    protected function createEnrollment(User $user, Exam $exam, ?Payment $payment = null): ExamEnrollment
+    protected function createEnrollment(User $user, Exam $exam, ?Payment $payment = null, ?string $source = null): ExamEnrollment
     {
         return ExamEnrollment::updateOrCreate(
             ['user_id' => $user->id, 'exam_id' => $exam->id],
             [
-                'payment_id'  => $payment?->id,
-                'status'      => 'enrolled',
-                'amount'      => (float) $exam->fee_amount,
-                'currency'    => $exam->fee_currency,
-                'enrolled_at' => now(),
+                'payment_id'        => $payment?->id,
+                'status'            => 'enrolled',
+                'enrollment_source' => $source ?: ($payment ? 'payment' : 'free'),
+                'amount'            => (float) $exam->fee_amount,
+                'currency'          => $exam->fee_currency,
+                'enrolled_at'       => now(),
             ]
         );
     }

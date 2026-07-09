@@ -8,6 +8,7 @@ use App\Models\ClassLevel;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Models\NotificationLog;
+use App\Models\Payment;
 use App\Models\Question;
 use App\Models\Result;
 use App\Models\Subject;
@@ -39,7 +40,11 @@ class DashboardController extends Controller
             'certsIssued'      => Certificate::where('type', 'student')->count(),
             'notificationsSent'=> NotificationLog::count(),
             'totalReach'       => (int) NotificationLog::sum('recipient_count'),
-            'totalRevenue'     => 0, // payments module pending
+            'totalRevenue'     => (float) Payment::where('status', 'paid')->sum('amount'),
+            'revenueMonth'     => (float) Payment::where('status', 'paid')
+                ->whereMonth('paid_at', now()->month)
+                ->whereYear('paid_at', now()->year)
+                ->sum('amount'),
         ];
 
         /* ── Registrations trend (last 14 days) ────────────────────── */
