@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Models\Coupon;
 use App\Models\Exam;
+use App\Models\ExamAttempt;
 use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Razorpay\Api\Api;
 
 /**
@@ -243,6 +245,54 @@ class PaymentService
             $examIds = $payment->notes['exam_ids'] ?? [];
             $this->enrollments->enrollAfterPayment($payment->user, $payment, $examIds, 'manual_reconcile');
             $this->completePaidSideEffects($payment);
+
+            return $payment->refresh();
+        });
+    }
+
+    public function downgrade(Payment $payment, User $admin, ?string $note = null): Payment
+    {
+        return DB::transaction(function () use ($payment, $admin, $note) {
+            $payment->refresh();
+
+            if (! in_array($payment->status, ['created', 'paid'], true)) {
+                return $payment;
+            }
+
+            $activeEnrollments = $payment->enrollments()
+                ->where('status', 'enrolled')
+                ->get(['id', 'exam_id']);
+
+            if ($activeEnrollments->isNotEmpty()) {
+                $hasAttempt = ExamAttempt::where('user_id', $payment->user_id)
+                    ->whereIn('exam_id', $activeEnrollments->pluck('exam_id'))
+                    ->exists();
+
+                if ($hasAttempt) {
+                    throw ValidationException::withMessages([
+                        'payment' => 'This payment cannot be downgraded because the student has already attempted one of the linked olympiads.',
+                    ]);
+                }
+
+                $payment->enrollments()
+                    ->whereIn('id', $activeEnrollments->pluck('id'))
+                    ->update(['status' => 'cancelled']);
+            }
+
+            $previousStatus = $payment->status;
+            $notes = $payment->notes ?? [];
+            $notes['downgrade'] = [
+                'previous_status' => $previousStatus,
+                'by_admin_id' => $admin->id,
+                'at' => now()->toIso8601String(),
+                'note' => $note,
+            ];
+
+            $payment->update([
+                'status' => $previousStatus === 'paid' ? 'refunded' : 'failed',
+                'manual_note' => $note ?: $payment->manual_note,
+                'notes' => $notes,
+            ]);
 
             return $payment->refresh();
         });

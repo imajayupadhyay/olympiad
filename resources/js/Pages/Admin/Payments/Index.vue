@@ -147,14 +147,22 @@
                   Receipt
                 </a>
                 <button
-                  v-else-if="p.status === 'created'"
+                  v-if="p.status === 'created'"
                   type="button"
                   @click="openReconcile(p)"
                   class="text-success hover:text-green-700 text-xs font-semibold px-2 py-1 rounded-lg hover:bg-success/5 transition-colors"
                 >
-                  Reconcile
+                  Verify
                 </button>
-                <span v-else class="text-text-muted/50 text-xs px-2 py-1">—</span>
+                <button
+                  v-if="['created', 'paid'].includes(p.status)"
+                  type="button"
+                  @click="openDowngrade(p)"
+                  class="text-danger hover:text-red-700 text-xs font-semibold px-2 py-1 rounded-lg hover:bg-danger/5 transition-colors"
+                >
+                  Downgrade
+                </button>
+                <span v-if="!['created', 'paid'].includes(p.status)" class="text-text-muted/50 text-xs px-2 py-1">—</span>
               </div>
             </td>
           </tr>
@@ -183,7 +191,7 @@
 
     <div v-if="reconcileTarget" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.5)">
       <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-        <h3 class="font-heading font-bold text-text-main text-base mb-2">Reconcile Pending Payment</h3>
+        <h3 class="font-heading font-bold text-text-main text-base mb-2">Verify Pending Payment</h3>
         <p class="text-text-muted text-sm mb-5">
           Mark NOH-{{ String(reconcileTarget.id).padStart(6, '0') }} as paid and grant access to the attached olympiad(s).
         </p>
@@ -224,7 +232,43 @@
             :disabled="reconcileForm.processing"
             class="flex-1 bg-success text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors disabled:opacity-60"
           >
-            {{ reconcileForm.processing ? 'Reconciling…' : 'Mark Paid' }}
+            {{ reconcileForm.processing ? 'Verifying…' : 'Verify Payment' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="downgradeTarget" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.5)">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+        <h3 class="font-heading font-bold text-text-main text-base mb-2">Downgrade Payment</h3>
+        <p class="text-text-muted text-sm mb-5">
+          Downgrade NOH-{{ String(downgradeTarget.id).padStart(6, '0') }}. Paid payments move to refunded and linked olympiad access is cancelled. Pending payments move out of the pending queue.
+        </p>
+
+        <div>
+          <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Admin Note</label>
+          <textarea
+            v-model="downgradeForm.manual_note"
+            rows="3"
+            class="w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary resize-y"
+            :class="downgradeForm.errors.manual_note || downgradeForm.errors.payment ? 'border-danger bg-danger/5' : 'border-gray-200'"
+            placeholder="Example: Refunded, testing user, or access withdrawn."
+          ></textarea>
+          <p v-if="downgradeForm.errors.manual_note" class="text-danger text-xs mt-1">{{ downgradeForm.errors.manual_note }}</p>
+          <p v-if="downgradeForm.errors.payment" class="text-danger text-xs mt-1">{{ downgradeForm.errors.payment }}</p>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button @click="closeDowngrade" type="button" class="flex-1 bg-gray-100 text-text-main py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-colors">
+            Cancel
+          </button>
+          <button
+            @click="submitDowngrade"
+            type="button"
+            :disabled="downgradeForm.processing"
+            class="flex-1 bg-danger text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-60"
+          >
+            {{ downgradeForm.processing ? 'Downgrading…' : 'Downgrade' }}
           </button>
         </div>
       </div>
@@ -253,6 +297,10 @@ const filterForm = ref({
 const reconcileTarget = ref(null);
 const reconcileForm = useForm({
   manual_reference: '',
+  manual_note: '',
+});
+const downgradeTarget = ref(null);
+const downgradeForm = useForm({
   manual_note: '',
 });
 
@@ -288,6 +336,27 @@ const submitReconcile = () => {
   reconcileForm.patch(route('admin.payments.reconcile', reconcileTarget.value.id), {
     preserveScroll: true,
     onSuccess: closeReconcile,
+  });
+};
+
+const openDowngrade = (payment) => {
+  downgradeTarget.value = payment;
+  downgradeForm.reset();
+  downgradeForm.clearErrors();
+};
+
+const closeDowngrade = () => {
+  downgradeTarget.value = null;
+  downgradeForm.reset();
+  downgradeForm.clearErrors();
+};
+
+const submitDowngrade = () => {
+  if (!downgradeTarget.value) return;
+
+  downgradeForm.post(route('admin.payments.refund', downgradeTarget.value.id), {
+    preserveScroll: true,
+    onSuccess: closeDowngrade,
   });
 };
 

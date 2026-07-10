@@ -131,8 +131,26 @@ class PaymentController extends Controller
         return back()->with('success', 'Payment marked paid and olympiad access granted.');
     }
 
-    public function refund($payment)
+    public function refund(Request $request, Payment $payment, PaymentService $payments)
     {
-        return back()->with('info', 'Refund processing coming soon.');
+        $data = $request->validate([
+            'manual_note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        if (! in_array($payment->status, ['created', 'paid'], true)) {
+            return back()->with('info', 'Only pending or paid payments can be downgraded.');
+        }
+
+        $downgraded = $payments->downgrade(
+            $payment,
+            $request->user(),
+            $data['manual_note'] ?? null,
+        );
+
+        $message = $downgraded->status === 'refunded'
+            ? 'Payment downgraded to refunded and linked olympiad access removed.'
+            : 'Pending payment downgraded and removed from pending verification.';
+
+        return back()->with('success', $message);
     }
 }

@@ -219,6 +219,107 @@ class AdminUserEnrollmentTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_downgrade_paid_payment_and_remove_linked_access(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $student = User::factory()->create(['role' => 'student']);
+        [$subject, $classLevel] = $this->taxonomy();
+        $exam = $this->exam($subject, $classLevel);
+
+        $this->actingAs($admin)
+            ->post(route('admin.users.enrollments.store', $student), [
+                'exam_id' => $exam->id,
+                'manual_reference' => 'TEST_USER',
+            ])
+            ->assertRedirect();
+
+        $payment = Payment::where('user_id', $student->id)->firstOrFail();
+        $enrollment = ExamEnrollment::where('payment_id', $payment->id)->firstOrFail();
+
+        $this->actingAs($admin)
+            ->post(route('admin.payments.refund', $payment), [
+                'manual_note' => 'Testing access removed.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('refunded', $payment->fresh()->status);
+        $this->assertSame('cancelled', $enrollment->fresh()->status);
+        $this->assertSame('Testing access removed.', $payment->fresh()->manual_note);
+
+        $this->actingAs($admin)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('stats.totalRevenue', 0)
+                ->where('stats.revenueMonth', 0)
+            );
+    }
+
+    public function test_admin_can_downgrade_pending_payment_without_granting_access(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $student = User::factory()->create(['role' => 'student']);
+        [$subject, $classLevel] = $this->taxonomy();
+        $exam = $this->exam($subject, $classLevel);
+
+        $payment = Payment::create([
+            'user_id' => $student->id,
+            'amount' => 250,
+            'gross_amount' => 250,
+            'discount_amount' => 0,
+            'currency' => 'INR',
+            'status' => 'created',
+            'gateway' => 'razorpay',
+            'notes' => ['exam_ids' => [$exam->id]],
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.payments.refund', $payment), [
+                'manual_note' => 'Student cancelled before paying.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('failed', $payment->fresh()->status);
+        $this->assertDatabaseMissing('exam_enrollments', [
+            'user_id' => $student->id,
+            'exam_id' => $exam->id,
+            'status' => 'enrolled',
+        ]);
+    }
+
+    public function test_admin_cannot_downgrade_payment_after_linked_exam_attempt(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $student = User::factory()->create(['role' => 'student']);
+        [$subject, $classLevel] = $this->taxonomy();
+        $exam = $this->exam($subject, $classLevel);
+
+        $this->actingAs($admin)
+            ->post(route('admin.users.enrollments.store', $student), ['exam_id' => $exam->id])
+            ->assertRedirect();
+
+        $payment = Payment::where('user_id', $student->id)->firstOrFail();
+        $enrollment = ExamEnrollment::where('payment_id', $payment->id)->firstOrFail();
+
+        ExamAttempt::create([
+            'user_id' => $student->id,
+            'exam_id' => $exam->id,
+            'status' => 'submitted',
+            'started_at' => now()->subMinutes(30),
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.payments.refund', $payment))
+            ->assertRedirect()
+            ->assertSessionHasErrors('payment');
+
+        $this->assertSame('paid', $payment->fresh()->status);
+        $this->assertSame('enrolled', $enrollment->fresh()->status);
+    }
+
     private function taxonomy(): array
     {
         $subject = Subject::create([
