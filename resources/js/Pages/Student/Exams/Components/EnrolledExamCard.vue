@@ -28,11 +28,6 @@ const start = () => router.post(route('student.exams.start', props.exam.id));
 
         <h3 class="name">{{ exam.name }}</h3>
 
-        <div class="meta">
-            <span>🎓 {{ exam.class_level?.label ?? '—' }}</span>
-            <span>📝 {{ exam.questions_count }} Qs</span>
-            <span>⏱ {{ exam.duration_minutes }}m</span>
-        </div>
         <div class="win">{{ fmt(exam.starts_at) }} → {{ fmt(exam.ends_at) }}</div>
 
         <!-- state CTA -->
@@ -61,7 +56,6 @@ const start = () => router.post(route('student.exams.start', props.exam.id));
 .av-closed { background: rgba(91,99,115,.14); color: #5B6373; }
 
 .name { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.12rem; color: #0A1024; margin: 0; line-height: 1.25; }
-.meta { display: flex; flex-wrap: wrap; gap: .8rem; font-size: .82rem; color: #5B6373; }
 .win { font-family: "Space Grotesk", monospace; font-size: .8rem; color: #5B6373; }
 
 .cta-row { margin-top: .4rem; padding-top: .8rem; border-top: 1px solid #F0E6D2; }

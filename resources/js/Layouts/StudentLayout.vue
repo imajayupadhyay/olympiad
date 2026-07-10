@@ -3,6 +3,7 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import SeoHead from '@/Components/Shared/SeoHead.vue';
 import AppLogo from '@/Components/Shared/AppLogo.vue';
+import SupportWidget from '@/Components/Student/SupportWidget.vue';
 
 defineProps({
     title: { type: String, default: '' },
@@ -64,13 +65,27 @@ const markAllRead = () => {
     router.patch('/student/notifications/read-all', {}, { preserveScroll: true, preserveState: true });
 };
 
+/* ── Profile / account menu (topbar) ── */
+const whoRef = ref(null);
+const menuOpen = ref(false);
+let closeTimer = null;
+
+// Open immediately on hover; close after a short grace period so moving the
+// pointer from the avatar onto the menu never dismisses it mid-hover.
+const openMenu = () => { clearTimeout(closeTimer); menuOpen.value = true; };
+const scheduleClose = () => { clearTimeout(closeTimer); closeTimer = setTimeout(() => (menuOpen.value = false), 220); };
+const closeMenu = () => { clearTimeout(closeTimer); menuOpen.value = false; };
+
 const onDocClick = (e) => {
     if (bellOpen.value && bellRef.value && !bellRef.value.contains(e.target)) {
         bellOpen.value = false;
     }
+    if (menuOpen.value && whoRef.value && !whoRef.value.contains(e.target)) {
+        menuOpen.value = false;
+    }
 };
 onMounted(() => document.addEventListener('click', onDocClick));
-onBeforeUnmount(() => document.removeEventListener('click', onDocClick));
+onBeforeUnmount(() => { document.removeEventListener('click', onDocClick); clearTimeout(closeTimer); });
 </script>
 
 <template>
@@ -105,16 +120,6 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick));
                 </Link>
             </nav>
 
-            <div class="side-foot">
-                <Link href="/student/profile" class="nav-link" :class="{ active: isActive('/student/profile') }" @click="sidebarOpen = false">
-                    <span class="nav-ic" v-html="icons.user"></span>
-                    <span>Profile</span>
-                </Link>
-                <Link href="/logout" method="post" as="button" class="logout">
-                    <span class="nav-ic" v-html="icons.logout"></span>
-                    <span>Logout</span>
-                </Link>
-            </div>
         </aside>
 
         <!-- ───── Main ───── -->
@@ -164,15 +169,62 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick));
                             <Link href="/student/notifications" class="bell-viewall" @click="bellOpen = false">View all notifications</Link>
                         </div>
                     </div>
-                    <div class="who">
-                        <div class="who-text">
-                            <strong>{{ user?.name }}</strong>
-                            <small>Student</small>
-                        </div>
-                        <div class="avatar">
-                            <img v-if="user?.photo_url" :src="user.photo_url" alt="" />
-                            <template v-else>{{ initials }}</template>
-                        </div>
+                    <div class="who-wrap" ref="whoRef" @mouseenter="openMenu" @mouseleave="scheduleClose">
+                        <button
+                            class="who"
+                            type="button"
+                            aria-haspopup="menu"
+                            :aria-expanded="menuOpen"
+                            @click="menuOpen = !menuOpen"
+                        >
+                            <div class="who-text">
+                                <strong>{{ user?.name }}</strong>
+                                <small>Student</small>
+                            </div>
+                            <div class="avatar">
+                                <img v-if="user?.photo_url" :src="user.photo_url" alt="" />
+                                <template v-else>{{ initials }}</template>
+                            </div>
+                            <svg class="who-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                        </button>
+
+                        <transition name="who-menu">
+                            <div v-if="menuOpen" class="who-menu" role="menu">
+                                <!-- transparent bridge (padding) keeps hover contiguous with the avatar -->
+                                <div class="who-menu-card">
+                                    <div class="who-menu-head">
+                                        <div class="who-menu-avatar">
+                                            <img v-if="user?.photo_url" :src="user.photo_url" alt="" />
+                                            <template v-else>{{ initials }}</template>
+                                        </div>
+                                        <div class="who-menu-id">
+                                            <strong>{{ user?.name }}</strong>
+                                            <small>{{ user?.email }}</small>
+                                        </div>
+                                    </div>
+                                    <Link
+                                        href="/student/profile"
+                                        class="who-item"
+                                        role="menuitem"
+                                        @click="closeMenu"
+                                    >
+                                        <span class="who-item-ic" v-html="icons.user"></span>
+                                        <span>Profile</span>
+                                    </Link>
+                                    <Link
+                                        href="/logout"
+                                        method="post"
+                                        as="button"
+                                        class="who-item danger"
+                                        role="menuitem"
+                                        @click="closeMenu"
+                                    >
+                                        <span class="who-item-ic" v-html="icons.logout"></span>
+                                        <span>Logout</span>
+                                    </Link>
+                                </div>
+                            </div>
+                        </transition>
                     </div>
                 </div>
             </header>
@@ -181,6 +233,9 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocClick));
                 <slot />
             </main>
         </div>
+
+        <!-- Floating support chat (bottom-right) -->
+        <SupportWidget />
     </div>
 </template>
 
@@ -245,9 +300,8 @@ export default { data: () => ({ icons }) };
 .logo-text small { color: rgba(251,246,236,.5); font-size: .72rem; }
 
 .side-nav { flex: 1; padding: .5rem .8rem; display: grid; gap: .25rem; align-content: start; position: relative; z-index: 1; }
-.side-foot { padding: .8rem; border-top: 1px solid rgba(251,246,236,.1); display: grid; gap: .25rem; position: relative; z-index: 1; }
 
-.nav-link, .logout {
+.nav-link {
     position: relative; display: flex; align-items: center; gap: .8rem;
     padding: .7rem .85rem; border-radius: 12px;
     color: rgba(251,246,236,.72); font-size: .92rem; font-weight: 500;
@@ -255,7 +309,7 @@ export default { data: () => ({ icons }) };
     width: 100%; text-align: left;
     transition: color .2s, background .2s, transform .15s;
 }
-.nav-link:hover, .logout:hover { color: #fff; background: rgba(251,246,236,.06); transform: translateX(2px); }
+.nav-link:hover { color: #fff; background: rgba(251,246,236,.06); transform: translateX(2px); }
 .nav-link.active {
     color: #fff;
     background: linear-gradient(135deg, rgba(238,106,44,.95), rgba(201,80,26,.95));
@@ -265,8 +319,6 @@ export default { data: () => ({ icons }) };
 .nav-ic { display: grid; place-items: center; width: 20px; flex-shrink: 0; color: rgba(251,246,236,.6); }
 .nav-ic :deep(svg) { width: 19px; height: 19px; }
 .nav-link:hover .nav-ic { color: var(--gold-lt); }
-.logout { color: rgba(251,246,236,.6); }
-.logout:hover { color: #FCA5A5; background: rgba(220,38,38,.12); }
 
 /* ── main ── */
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -320,10 +372,19 @@ export default { data: () => ({ icons }) };
 .bell-viewall { display: block; padding: .8rem 1rem; text-align: center; font-size: .82rem; font-weight: 600; color: var(--saffron); text-decoration: none; background: #FBF6EC; }
 .bell-viewall:hover { background: #F3E9D6; }
 
-.who { display: flex; align-items: center; gap: .65rem; }
+.who-wrap { position: relative; }
+.who {
+    display: flex; align-items: center; gap: .55rem;
+    border: 0; background: transparent; cursor: pointer; padding: .25rem .35rem;
+    border-radius: 12px; font-family: inherit; transition: background .18s;
+}
+.who:hover { background: rgba(10,16,36,.05); }
+.who:focus-visible { outline: 2px solid var(--saffron); outline-offset: 2px; }
 .who-text { display: none; flex-direction: column; line-height: 1.2; text-align: right; }
 .who-text strong { font-size: .88rem; color: var(--ink); font-weight: 700; }
 .who-text small { font-size: .74rem; color: rgba(10,16,36,.5); }
+.who-caret { width: 15px; height: 15px; color: rgba(10,16,36,.4); flex-shrink: 0; transition: transform .2s; }
+.who[aria-expanded="true"] .who-caret { transform: rotate(180deg); }
 .avatar {
     width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
     display: grid; place-items: center;
@@ -334,6 +395,47 @@ export default { data: () => ({ icons }) };
 }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
 @media (min-width: 640px) { .who-text { display: flex; } }
+
+/* ── Profile / account menu ── */
+.who-menu {
+    position: absolute; top: 100%; right: 0; z-index: 50;
+    padding-top: 10px; /* transparent hover bridge — no dead gap to the avatar */
+}
+.who-menu-card {
+    min-width: 224px;
+    background: #fff; border: 1px solid var(--paper-line); border-radius: 16px;
+    box-shadow: 0 30px 70px -24px rgba(10,16,36,.4); overflow: hidden;
+}
+.who-menu-head { display: flex; align-items: center; gap: .65rem; padding: .9rem 1rem; border-bottom: 1px solid var(--paper-line); background: #FBF6EC; }
+.who-menu-avatar {
+    width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0; overflow: hidden;
+    display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #2A335A, #131C3D);
+    font-family: "Space Grotesk", monospace; font-weight: 700; font-size: .92rem;
+}
+.who-menu-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.who-menu-id { min-width: 0; }
+.who-menu-id strong { display: block; font-size: .88rem; color: var(--ink); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.who-menu-id small { display: block; font-size: .74rem; color: rgba(10,16,36,.5); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.who-item {
+    display: flex; align-items: center; gap: .7rem; width: 100%; text-align: left;
+    padding: .75rem 1rem; border: 0; background: transparent; cursor: pointer;
+    font-family: inherit; font-size: .89rem; font-weight: 600; color: var(--ink); text-decoration: none;
+    transition: background .15s;
+}
+.who-item:hover { background: #FBF6EC; }
+.who-item + .who-item { border-top: 1px solid #F3E9D6; }
+.who-item.danger { color: #DC2626; }
+.who-item.danger:hover { background: rgba(220,38,38,.07); }
+.who-item-ic { display: grid; place-items: center; width: 18px; flex-shrink: 0; color: currentColor; }
+.who-item-ic :deep(svg) { width: 18px; height: 18px; }
+
+.who-menu-enter-active { transition: opacity .16s, transform .16s; }
+.who-menu-leave-active { transition: opacity .12s, transform .12s; }
+.who-menu-enter-from, .who-menu-leave-to { opacity: 0; transform: translateY(-6px); }
+@media (prefers-reduced-motion: reduce) {
+    .who-menu-enter-from, .who-menu-leave-to { transform: none; }
+    .who-caret { transition: none; }
+}
 
 .content { flex: 1; padding: 1.6rem; }
 

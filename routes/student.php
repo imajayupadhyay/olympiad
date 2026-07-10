@@ -11,6 +11,7 @@ use App\Http\Controllers\Student\PracticeController;
 use App\Http\Controllers\Student\PaymentController;
 use App\Http\Controllers\Student\ReferralController;
 use App\Http\Controllers\Student\SupportController;
+use App\Http\Controllers\Student\SupportWidgetController;
 use App\Http\Controllers\Student\NotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +47,14 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
 
     Route::get('/support', [SupportController::class, 'index'])->name('support');
     Route::post('/support', [SupportController::class, 'store'])->name('support.store');
+
+    // JSON backend for the floating chat widget — registered before the
+    // model-bound /support/{ticket} route so /support/widget isn't captured.
+    Route::get('/support/widget', [SupportWidgetController::class, 'index'])->name('support.widget');
+    Route::post('/support/widget', [SupportWidgetController::class, 'store'])->name('support.widget.store');
+    Route::get('/support/widget/{ticket}', [SupportWidgetController::class, 'show'])->name('support.widget.show');
+    Route::post('/support/widget/{ticket}/reply', [SupportWidgetController::class, 'reply'])->name('support.widget.reply');
+
     Route::get('/support/{ticket}', [SupportController::class, 'show'])->name('support.show');
     Route::post('/support/{ticket}/reply', [SupportController::class, 'reply'])->name('support.reply');
 
