@@ -55,7 +55,7 @@
                         :class="form.errors.message ? 'border-danger bg-danger/5' : 'border-gray-200'"></textarea>
               <div class="flex justify-between mt-1">
                 <p v-if="form.errors.message" class="text-danger text-xs">{{ form.errors.message }}</p>
-                <p class="text-text-muted text-[10px] ml-auto">{{ form.message.length }}/2000</p>
+                <p class="text-text-muted text-[10px] ml-auto">{{ form.message.length }}/5000</p>
               </div>
             </div>
 
@@ -82,8 +82,96 @@
               </p>
             </div>
 
-            <!-- Audience -->
+            <!-- Recipient mode -->
             <div>
+              <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Recipients</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  @click="form.recipient_mode = 'filters'"
+                  class="py-2.5 px-3 rounded-xl border text-xs font-semibold transition-colors"
+                  :class="form.recipient_mode === 'filters'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-gray-50 text-text-muted border-gray-200 hover:border-primary/40'"
+                >
+                  Use filters
+                </button>
+                <button
+                  type="button"
+                  @click="switchToSelectedMode"
+                  class="py-2.5 px-3 rounded-xl border text-xs font-semibold transition-colors"
+                  :class="form.recipient_mode === 'selected'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-gray-50 text-text-muted border-gray-200 hover:border-primary/40'"
+                >
+                  Pick students
+                </button>
+              </div>
+            </div>
+
+            <!-- Student picker -->
+            <div v-if="form.recipient_mode === 'selected'" class="space-y-3 border border-primary/10 rounded-xl p-4 bg-primary/5">
+              <div>
+                <label class="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">Search Students</label>
+                <input
+                  v-model="studentSearch"
+                  type="search"
+                  placeholder="Search name, email, phone, school…"
+                  class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-primary"
+                />
+                <p v-if="form.errors.selected_user_ids" class="text-danger text-xs mt-1">{{ form.errors.selected_user_ids }}</p>
+              </div>
+
+              <div v-if="selectedStudents.length" class="space-y-2">
+                <p class="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Selected {{ selectedStudents.length }}</p>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="student in selectedStudents"
+                    :key="student.id"
+                    type="button"
+                    @click="removeStudent(student.id)"
+                    class="group flex items-center gap-2 max-w-full px-3 py-1.5 rounded-full bg-white border border-primary/15 text-xs font-semibold text-text-main hover:border-danger/40"
+                  >
+                    <span class="truncate max-w-[180px]">{{ student.name }}</span>
+                    <span class="text-text-muted group-hover:text-danger">×</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                <div class="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
+                  <span class="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Results</span>
+                  <span v-if="studentSearchLoading" class="text-[10px] font-semibold text-accent">Searching…</span>
+                </div>
+                <div v-if="studentOptions.length === 0" class="p-4 text-xs text-text-muted">
+                  No matching students found.
+                </div>
+                <button
+                  v-for="student in studentOptions"
+                  :key="student.id"
+                  type="button"
+                  @click="toggleStudent(student)"
+                  class="w-full px-3 py-2.5 text-left hover:bg-gray-50 border-b border-gray-50 last:border-b-0 flex items-center justify-between gap-3"
+                >
+                  <div class="min-w-0">
+                    <p class="text-xs font-semibold text-text-main truncate">{{ student.name }}</p>
+                    <p class="text-[11px] text-text-muted truncate">{{ student.email }}</p>
+                    <p class="text-[10px] text-text-muted truncate">
+                      {{ [student.class, student.city, student.state].filter(Boolean).join(' · ') || 'No profile details' }}
+                    </p>
+                  </div>
+                  <span
+                    class="shrink-0 px-2 py-1 rounded-lg text-[10px] font-bold"
+                    :class="isSelected(student.id) ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'"
+                  >
+                    {{ isSelected(student.id) ? 'Selected' : 'Add' }}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Audience -->
+            <div v-if="form.recipient_mode === 'filters'">
               <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Audience</label>
               <div class="grid grid-cols-3 gap-2 mb-3">
                 <button
@@ -122,6 +210,94 @@
               </div>
             </div>
 
+            <!-- Filters -->
+            <div v-if="form.recipient_mode === 'filters'" class="space-y-3 border border-gray-100 rounded-xl p-4 bg-gray-50/70">
+              <div class="flex items-center justify-between">
+                <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider">Recipient Filters</label>
+                <span v-if="preview.loading" class="text-[10px] font-semibold text-accent">Counting…</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">Students</label>
+                  <select v-model="form.student_status" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:border-primary">
+                    <option value="active">Active only</option>
+                    <option value="inactive">Inactive only</option>
+                    <option value="all">All accounts</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">Enrollment</label>
+                  <select v-model="form.enrollment_status" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:border-primary">
+                    <option value="all">Any enrollment</option>
+                    <option value="enrolled">Enrolled</option>
+                    <option value="not_enrolled">Not enrolled</option>
+                    <option value="cancelled">Cancelled access</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">Payment Status</label>
+                <div class="grid grid-cols-3 gap-2">
+                  <button
+                    v-for="status in paymentStatuses"
+                    :key="status.value"
+                    type="button"
+                    @click="form.payment_status = status.value"
+                    class="py-2 px-2 rounded-lg border text-[11px] font-semibold transition-colors"
+                    :class="form.payment_status === status.value
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-white text-text-muted border-gray-200 hover:border-primary/40'"
+                  >
+                    {{ status.label }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">State</label>
+                  <select v-model="form.state" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:border-primary">
+                    <option value="">All states</option>
+                    <option v-for="state in states" :key="state" :value="state">{{ state }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">Search</label>
+                  <input
+                    v-model="form.search"
+                    type="search"
+                    placeholder="Name, email, school…"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Recipient preview -->
+            <div class="rounded-xl border p-4" :class="preview.count === 0 ? 'bg-danger/5 border-danger/20' : 'bg-primary/5 border-primary/10'">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-text-muted text-[10px] font-semibold uppercase tracking-wider">Matched Recipients</p>
+                  <p class="font-number text-2xl font-bold" :class="preview.count === 0 ? 'text-danger' : 'text-primary'">
+                    {{ preview.count === null ? '—' : preview.count.toLocaleString() }}
+                  </p>
+                </div>
+                <span class="text-[10px] font-semibold px-2.5 py-1 rounded-lg" :class="preview.count === 0 ? 'bg-danger/10 text-danger' : 'bg-white text-text-muted'">
+                  {{ form.channel === 'in_app' ? 'Portal only' : form.channel === 'email' ? 'Email queue' : 'Email + portal' }}
+                </span>
+              </div>
+              <p v-if="preview.error" class="text-danger text-xs mt-2">{{ preview.error }}</p>
+              <div v-else-if="preview.sample.length" class="mt-3 space-y-1.5">
+                <div v-for="student in preview.sample" :key="student.id" class="flex items-center justify-between gap-3 text-xs">
+                  <span class="font-semibold text-text-main truncate">{{ student.name }}</span>
+                  <span class="text-text-muted truncate">{{ student.email }}</span>
+                </div>
+              </div>
+              <p v-else-if="preview.count === 0" class="text-danger text-xs mt-2">No student will receive this broadcast with the selected filters.</p>
+            </div>
+
             <!-- Preview box -->
             <div v-if="form.title || form.message" class="bg-gray-50 border border-gray-200 rounded-xl p-4">
               <p class="text-text-muted text-[10px] font-semibold uppercase tracking-wider mb-2">Preview</p>
@@ -129,7 +305,7 @@
               <p class="text-text-muted text-xs whitespace-pre-line leading-relaxed">{{ form.message || 'Message…' }}</p>
             </div>
 
-            <button type="submit" :disabled="form.processing"
+            <button type="submit" :disabled="form.processing || preview.count === 0"
                     class="w-full bg-primary text-white py-3 rounded-xl text-sm font-semibold hover:bg-primary-light transition-colors disabled:opacity-60 shadow-sm flex items-center justify-center gap-2">
               <svg v-if="!form.processing" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
@@ -183,6 +359,13 @@
                           :class="audienceClass(log.audience)">
                       {{ audienceLabel(log) }}
                     </span>
+                    <span
+                      v-for="chip in filterChips(log.audience_filters)"
+                      :key="chip"
+                      class="font-semibold px-1.5 py-0.5 rounded bg-royal/10 text-royal"
+                    >
+                      {{ chip }}
+                    </span>
                     <span class="flex items-center gap-1">
                       <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/>
@@ -190,6 +373,21 @@
                       <span class="font-number font-semibold text-text-main">{{ log.recipient_count }}</span> recipients
                     </span>
                     <span v-if="log.sent_by">by {{ log.sent_by.name }}</span>
+                  </div>
+
+                  <div v-if="log.channel !== 'in_app'" class="flex items-center gap-2 flex-wrap mt-2 text-[10px]">
+                    <span class="font-semibold px-1.5 py-0.5 rounded bg-success/10 text-success">
+                      Sent {{ log.email_sent_count || 0 }}
+                    </span>
+                    <span class="font-semibold px-1.5 py-0.5 rounded bg-gold/10 text-gold-dark">
+                      Queued {{ log.email_queued_count || 0 }}
+                    </span>
+                    <span v-if="log.email_failed_count" class="font-semibold px-1.5 py-0.5 rounded bg-danger/10 text-danger">
+                      Failed {{ log.email_failed_count }}
+                    </span>
+                    <span v-if="log.email_skipped_count" class="font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-text-muted">
+                      Skipped {{ log.email_skipped_count }}
+                    </span>
                   </div>
                 </div>
 
@@ -247,7 +445,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { Link, useForm, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
@@ -255,6 +453,7 @@ const props = defineProps({
   logs:        Object,
   exams:       Array,
   classLevels: Array,
+  states:      Array,
   stats:       Object,
 });
 
@@ -262,10 +461,23 @@ const form = useForm({
   title:          '',
   message:        '',
   channel:        'in_app',
+  recipient_mode: 'filters',
+  selected_user_ids: [],
   audience:       'all',
   exam_id:        '',
   class_level_id: '',
+  student_status: 'active',
+  payment_status: 'all',
+  enrollment_status: 'all',
+  state:          '',
+  search:         '',
 });
+
+const selectedStudents = ref([]);
+const studentOptions = ref([]);
+const studentSearch = ref('');
+const studentSearchLoading = ref(false);
+let studentSearchTimer = null;
 
 const channels = [
   { value: 'in_app', label: 'In-App', icon: '🔔' },
@@ -279,9 +491,148 @@ const audiences = [
   { value: 'class', label: 'By Class',     icon: '🎓' },
 ];
 
+const paymentStatuses = [
+  { value: 'all',      label: 'Any' },
+  { value: 'paid',     label: 'Paid' },
+  { value: 'unpaid',   label: 'Unpaid' },
+  { value: 'pending',  label: 'Pending' },
+  { value: 'failed',   label: 'Failed' },
+  { value: 'refunded', label: 'Refunded' },
+];
+
+const preview = ref({
+  count:   null,
+  sample:  [],
+  loading: false,
+  error:   '',
+});
+
+let previewTimer = null;
+
+const previewPayload = () => ({
+  title:             form.title,
+  message:           form.message,
+  channel:           form.channel,
+  recipient_mode:    form.recipient_mode,
+  selected_user_ids: form.selected_user_ids,
+  audience:          form.audience,
+  exam_id:           form.exam_id,
+  class_level_id:    form.class_level_id,
+  student_status:    form.student_status,
+  payment_status:    form.payment_status,
+  enrollment_status: form.enrollment_status,
+  state:             form.state,
+  search:            form.search,
+});
+
+const schedulePreview = () => {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(loadPreview, 250);
+};
+
+const loadPreview = async () => {
+  preview.value.loading = true;
+  preview.value.error = '';
+
+  try {
+    const { data } = await window.axios.post(route('admin.notifications.preview'), previewPayload());
+    preview.value.count = data.count;
+    preview.value.sample = data.sample || [];
+  } catch (error) {
+    preview.value.count = null;
+    preview.value.sample = [];
+    preview.value.error = 'Unable to calculate recipients for the current filters.';
+  } finally {
+    preview.value.loading = false;
+  }
+};
+
+const loadStudentOptions = async () => {
+  studentSearchLoading.value = true;
+
+  try {
+    const { data } = await window.axios.get(route('admin.notifications.students'), {
+      params: { search: studentSearch.value },
+    });
+    studentOptions.value = data.students || [];
+  } finally {
+    studentSearchLoading.value = false;
+  }
+};
+
+const scheduleStudentSearch = () => {
+  clearTimeout(studentSearchTimer);
+  studentSearchTimer = setTimeout(loadStudentOptions, 250);
+};
+
+const syncSelectedIds = () => {
+  form.selected_user_ids = selectedStudents.value.map((student) => student.id);
+};
+
+const isSelected = (id) => selectedStudents.value.some((student) => student.id === id);
+
+const addStudent = (student) => {
+  if (isSelected(student.id)) return;
+  selectedStudents.value.push(student);
+  syncSelectedIds();
+};
+
+const removeStudent = (id) => {
+  selectedStudents.value = selectedStudents.value.filter((student) => student.id !== id);
+  syncSelectedIds();
+};
+
+const toggleStudent = (student) => {
+  if (isSelected(student.id)) {
+    removeStudent(student.id);
+  } else {
+    addStudent(student);
+  }
+};
+
+const switchToSelectedMode = () => {
+  form.recipient_mode = 'selected';
+  form.audience = 'all';
+  form.exam_id = '';
+  form.class_level_id = '';
+};
+
+watch(
+  () => [
+    form.channel,
+    form.recipient_mode,
+    (form.selected_user_ids || []).join(','),
+    form.audience,
+    form.exam_id,
+    form.class_level_id,
+    form.student_status,
+    form.payment_status,
+    form.enrollment_status,
+    form.state,
+    form.search,
+  ],
+  schedulePreview,
+  { immediate: true }
+);
+
+watch(studentSearch, scheduleStudentSearch, { immediate: true });
+
 const submit = () => {
+  const count = preview.value.count ?? 0;
+
+  if (count === 0) return;
+
+  if (! window.confirm(`Send this broadcast to ${count.toLocaleString()} matched student(s)?`)) {
+    return;
+  }
+
   form.post(route('admin.notifications.send'), {
-    onSuccess: () => form.reset(),
+    onSuccess: () => {
+      form.reset();
+      selectedStudents.value = [];
+      syncSelectedIds();
+      schedulePreview();
+    },
   });
 };
 
@@ -297,6 +648,7 @@ const channelClass = (ch) => ({
 }[ch] || 'bg-gray-100 text-text-muted');
 
 const audienceLabel = (log) => {
+  if (log.audience_filters?.recipient_mode === 'selected') return 'Selected students';
   if (log.audience === 'exam')  return log.exam?.name    ? `Exam: ${log.exam.name}` : 'By Exam';
   if (log.audience === 'class') return log.class_level?.label ? `Class: ${log.class_level.label}` : 'By Class';
   return 'All Students';
@@ -306,6 +658,38 @@ const audienceClass = (a) => ({
   exam:  'bg-purple-100 text-purple-600',
   class: 'bg-amber-100 text-amber-600',
 }[a] || '');
+
+const filterChips = (filters = {}) => {
+  if (!filters || Array.isArray(filters)) return [];
+
+  const labels = {
+    student_status: {
+      inactive: 'Inactive accounts',
+      all: 'All accounts',
+    },
+    payment_status: {
+      paid: 'Paid',
+      unpaid: 'Unpaid',
+      pending: 'Payment pending',
+      failed: 'Payment failed',
+      refunded: 'Refunded',
+    },
+    enrollment_status: {
+      enrolled: 'Enrolled',
+      not_enrolled: 'Not enrolled',
+      cancelled: 'Cancelled access',
+    },
+  };
+
+  return [
+    filters.recipient_mode === 'selected' ? `${filters.selected_user_ids?.length || 0} picked` : null,
+    labels.student_status?.[filters.student_status],
+    labels.payment_status?.[filters.payment_status],
+    labels.enrollment_status?.[filters.enrollment_status],
+    filters.state ? `State: ${filters.state}` : null,
+    filters.search ? `Search: ${filters.search}` : null,
+  ].filter(Boolean);
+};
 
 // Delete
 const deleteTarget  = ref(null);

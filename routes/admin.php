@@ -74,6 +74,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/referrals/settings', [ReferralSettingController::class, 'update'])->name('referrals.settings.update');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
+    Route::get('/notifications/students', [NotificationController::class, 'students'])->name('notifications.students');
+    Route::post('/notifications/preview', [NotificationController::class, 'preview'])->name('notifications.preview');
     Route::post('/notifications/send', [NotificationController::class, 'send'])->name('notifications.send');
     Route::delete('/notifications/{log}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
