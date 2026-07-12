@@ -48,6 +48,21 @@ class ManagedEmailSystemTest extends TestCase
         $this->assertStringContainsString('Secret@123', $rendered['text_body']);
     }
 
+    public function test_managed_email_header_uses_original_logo_asset(): void
+    {
+        $template = EmailTemplate::where('key', 'student_registered')->firstOrFail();
+
+        $rendered = app(ManagedEmailService::class)->renderTemplate($template, [
+            'student_name' => 'Aarav Sharma',
+            'student_email' => 'aarav@example.com',
+            'login_password' => 'Secret@123',
+        ]);
+
+        $this->assertStringContainsString('https://neoexam.org/NEO_logo_horizontal_light.png', $rendered['html_body']);
+        $this->assertStringContainsString('<img class="email-logo"', $rendered['html_body']);
+        $this->assertStringNotContainsString('width:44px;height:44px;border-radius:12px', $rendered['html_body']);
+    }
+
     public function test_disabled_template_is_logged_as_skipped_without_queueing_job(): void
     {
         Queue::fake();

@@ -274,6 +274,7 @@ class ManagedEmailService
     {
         $appName = e(config('app.name', 'National Olympiad Hunt'));
         $portalUrl = e(config('app.url'));
+        $logoUrl = e($this->mailLogoUrl());
         $supportEmail = e(config('services.brevo.support_email') ?: config('mail.from.address'));
         $supportPhone = e(config('services.brevo.support_phone', '+91 72890 89009'));
 
@@ -284,7 +285,7 @@ class ManagedEmailService
             .'<meta name="viewport" content="width=device-width, initial-scale=1">'
             .'<meta name="color-scheme" content="light">'
             .'<style>'
-            .'@media only screen and (max-width:640px){.email-shell{padding:14px!important}.email-card{border-radius:18px!important}.email-content{padding:24px 20px!important}.email-header{padding:22px 20px!important}.email-footer{padding:20px!important}.email-logo{max-width:190px!important}.email-cta{display:block!important;text-align:center!important}}'
+            .'@media only screen and (max-width:640px){.email-shell{padding:14px!important}.email-card{border-radius:18px!important}.email-content{padding:24px 20px!important}.email-header{padding:22px 20px!important}.email-footer{padding:20px!important}.email-logo{width:230px!important;max-width:100%!important}.email-cta{display:block!important;text-align:center!important}}'
             .'.email-content p{margin:0 0 14px!important}.email-content p:last-child{margin-bottom:0!important}.email-content a{color:#C9501A!important}.email-content strong{color:#0A1024!important}.email-content ul{margin:8px 0 14px 22px!important;padding:0!important}.email-content li{margin:4px 0!important}'
             .'</style>'
             .'</head>'
@@ -295,17 +296,9 @@ class ManagedEmailService
             .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">'
             .'<tr>'
             .'<td style="vertical-align:middle;">'
-            .'<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">'
-            .'<tr>'
-            .'<td style="vertical-align:middle;width:48px;">'
-            .'<div style="width:44px;height:44px;border-radius:12px;background:#F2C84B;border:1px solid rgba(255,255,255,.24);color:#0A1024;font-size:28px;line-height:44px;text-align:center;font-weight:900;font-family:Arial,Helvetica,sans-serif;">N</div>'
-            .'</td>'
-            .'<td style="vertical-align:middle;padding-left:12px;">'
-            .'<div style="font-family:Georgia,Times,serif;color:#ffffff;font-size:22px;line-height:1.1;font-weight:700;letter-spacing:.2px;">'.$appName.'</div>'
-            .'<div style="color:#F2C84B;font-size:10px;letter-spacing:.22em;text-transform:uppercase;font-weight:700;margin-top:5px;">National Excellence Olympiad</div>'
-            .'</td>'
-            .'</tr>'
-            .'</table>'
+            .'<a href="'.$portalUrl.'" style="display:inline-block;text-decoration:none;">'
+            .'<img class="email-logo" src="'.$logoUrl.'" width="300" alt="'.$appName.'" style="display:block;width:300px;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;">'
+            .'</a>'
             .'</td>'
             .'<td align="right" style="vertical-align:middle;color:#F2C84B;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;">Olympiad Portal</td>'
             .'</tr>'
@@ -326,6 +319,18 @@ class ManagedEmailService
             .'</div>'
             .'</body>'
             .'</html>';
+    }
+
+    protected function mailLogoUrl(): string
+    {
+        $baseUrl = rtrim((string) config('app.url'), '/');
+        $host = parse_url($baseUrl, PHP_URL_HOST);
+
+        if (! $host || in_array($host, ['localhost', '127.0.0.1', '0.0.0.0', '::1'], true)) {
+            $baseUrl = 'https://neoexam.org';
+        }
+
+        return $baseUrl.'/NEO_logo_horizontal_light.png';
     }
 
     protected function safeMeta(array $meta): array
