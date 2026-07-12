@@ -6,14 +6,17 @@ import { computed } from 'vue';
  * Centralised <head> meta for every page.
  * - `title`       → document title (run through the global "… - National Olympiad Hunt" template).
  * - `description` → meta description + Open Graph / Twitter description (falls back to the site blurb).
+ * - `keywords`    → optional page keywords for legacy/search-directory compatibility.
  * - `noindex`     → emit robots noindex,nofollow (use on private/auth pages).
  * Tags use head-key so Inertia replaces (not duplicates) them across navigation.
  */
 const props = defineProps({
     title:       { type: String, default: null },
     description: { type: String, default: '' },
+    keywords:    { type: String, default: '' },
     noindex:     { type: Boolean, default: false },
     image:       { type: String, default: null },
+    canonical:   { type: String, default: null },
 });
 
 const SITE = 'National Olympiad Hunt';
@@ -28,12 +31,14 @@ const url = computed(() => (typeof window !== 'undefined' ? window.location.orig
 <template>
     <Head :title="title ?? undefined">
         <meta head-key="description" name="description" :content="desc" />
+        <meta v-if="keywords" head-key="keywords" name="keywords" :content="keywords" />
         <meta head-key="ogtitle" property="og:title" :content="ogTitle" />
         <meta head-key="ogdesc" property="og:description" :content="desc" />
         <meta head-key="ogurl" property="og:url" :content="url" />
         <meta head-key="twtitle" name="twitter:title" :content="ogTitle" />
         <meta head-key="twdesc" name="twitter:description" :content="desc" />
         <meta v-if="image" head-key="ogimage" property="og:image" :content="image" />
+        <link v-if="canonical" head-key="canonical" rel="canonical" :href="canonical" />
         <meta v-if="noindex" head-key="robots" name="robots" content="noindex, nofollow" />
     </Head>
 </template>

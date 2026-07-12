@@ -5,6 +5,22 @@ use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\SchoolController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/sitemap.xml', function () {
+    $siteUrl = rtrim(config('app.url'), '/');
+    $urls = [
+        [
+            'loc' => $siteUrl.'/',
+            'lastmod' => now()->toDateString(),
+            'changefreq' => 'weekly',
+            'priority' => '1.0',
+        ],
+    ];
+
+    return response()
+        ->view('sitemap', ['urls' => $urls])
+        ->header('Content-Type', 'application/xml; charset=UTF-8');
+})->name('sitemap');
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/exams', [ExamController::class, 'index'])->name('exams');

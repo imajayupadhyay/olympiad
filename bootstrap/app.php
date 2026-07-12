@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             \App\Http\Middleware\CaptureReferral::class,
+            \App\Http\Middleware\PreventPrivateIndexing::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
@@ -27,5 +28,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response) {
+            $path = '/'.ltrim(request()->path(), '/');
+
+            if (! in_array($path, ['/', '/robots.txt', '/sitemap.xml'], true)) {
+                $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+            }
+
+            return $response;
+        });
     })->create();

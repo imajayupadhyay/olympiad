@@ -1,7 +1,9 @@
 <template>
   <SeoHead
     :title="seoSection.page_title"
-    :description="seoSection.meta_description" />
+    :description="seoSection.meta_description"
+    :keywords="seoSection.meta_keywords"
+    canonical="https://neoexam.org/" />
   <div class="noh" ref="rootEl">
 
     <!-- ============ MARQUEE ============ -->
@@ -415,7 +417,12 @@ const props = defineProps({
 /* ---------- dynamic content with safe fallbacks ---------- */
 const year = new Date().getFullYear();
 const defaultContent = {
-  seo: { is_enabled: true, page_title: 'Online Olympiad Exams for Class 1-12', meta_description: "National Olympiad Hunt is India's online olympiad platform for Class 1-12. Register free, take timed olympiad exams across subjects, climb national ranks and win medals & certificates." },
+  seo: {
+    is_enabled: true,
+    page_title: 'Online Olympiad Exams for Class 1-12 in India',
+    meta_description: "National Olympiad Hunt offers online olympiad exams for Class 1-12 students in India. Register for Maths, Science, English and GK olympiads, earn national ranks, medals and certificates.",
+    meta_keywords: 'online olympiad exams, olympiad exams for class 1 to 12, national olympiad India, maths olympiad, science olympiad, English olympiad, GK olympiad, olympiad registration, student competitions India',
+  },
   marquee: { is_enabled: true, items: [] },
   hero: { is_enabled: true, bars: [], chips: [] },
   stats: { is_enabled: true, items: [] },
