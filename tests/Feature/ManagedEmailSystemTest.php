@@ -58,7 +58,7 @@ class ManagedEmailSystemTest extends TestCase
             'login_password' => 'Secret@123',
         ]);
 
-        $this->assertStringContainsString('https://neoexam.org/NEO_logo_horizontal_light.png', $rendered['html_body']);
+        $this->assertStringContainsString('https://neoexam.org/NEO_email_header_logo.png', $rendered['html_body']);
         $this->assertStringContainsString('<img class="email-logo"', $rendered['html_body']);
         $this->assertStringNotContainsString('width:44px;height:44px;border-radius:12px', $rendered['html_body']);
     }

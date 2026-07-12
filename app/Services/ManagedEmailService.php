@@ -292,12 +292,12 @@ class ManagedEmailService
             .'<body style="margin:0;background:#FBF6EC;padding:0;font-family:Arial,Helvetica,sans-serif;color:#0A1024;-webkit-font-smoothing:antialiased;">'
             .'<div class="email-shell" style="width:100%;box-sizing:border-box;background:#FBF6EC;padding:32px 18px;">'
             .'<div class="email-card" style="max-width:700px;margin:0 auto;background:#ffffff;border:1px solid #E7D9BE;border-radius:24px;overflow:hidden;box-shadow:0 24px 60px rgba(10,16,36,.12);">'
-            .'<div class="email-header" style="background:#0A1024;padding:28px 32px;border-bottom:4px solid #EE6A2C;">'
+            .'<div class="email-header" bgcolor="#0A1024" style="background:#0A1024!important;padding:28px 32px;border-bottom:4px solid #EE6A2C;">'
             .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">'
             .'<tr>'
             .'<td style="vertical-align:middle;">'
             .'<a href="'.$portalUrl.'" style="display:inline-block;text-decoration:none;">'
-            .'<img class="email-logo" src="'.$logoUrl.'" width="300" alt="'.$appName.'" style="display:block;width:300px;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;">'
+            .'<img class="email-logo" src="'.$logoUrl.'" width="300" alt="'.$appName.'" style="display:block;width:300px;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;background:#0A1024;">'
             .'</a>'
             .'</td>'
             .'<td align="right" style="vertical-align:middle;color:#F2C84B;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;">Olympiad Portal</td>'
@@ -330,7 +330,7 @@ class ManagedEmailService
             $baseUrl = 'https://neoexam.org';
         }
 
-        return $baseUrl.'/NEO_logo_horizontal_light.png';
+        return $baseUrl.'/NEO_email_header_logo.png';
     }
 
     protected function safeMeta(array $meta): array

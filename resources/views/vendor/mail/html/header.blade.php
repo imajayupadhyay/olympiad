@@ -10,13 +10,13 @@
 @endphp
 
 <tr>
-    <td class="header" style="background: #0A1024; border-bottom: 4px solid #EE6A2C; padding: 28px 32px;">
+    <td class="header" bgcolor="#0A1024" style="background: #0A1024 !important; border-bottom: 4px solid #EE6A2C; padding: 28px 32px;">
         <a href="{{ $url }}" style="display: inline-block; text-decoration: none;">
             <img
-                src="{{ $baseUrl }}/NEO_logo_horizontal_light.png"
+                src="{{ $baseUrl }}/NEO_email_header_logo.png"
                 width="300"
                 alt="{{ config('app.name', 'National Olympiad Hunt') }}"
-                style="display: block; width: 300px; max-width: 100%; height: auto; border: 0; outline: none; text-decoration: none;"
+                style="display: block; width: 300px; max-width: 100%; height: auto; border: 0; outline: none; text-decoration: none; background: #0A1024;"
             >
         </a>
     </td>
