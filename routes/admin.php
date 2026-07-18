@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\ReferralController;
 use App\Http\Controllers\Admin\ReferralSettingController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ResultController;
 use App\Http\Controllers\Admin\SupportController;
 use App\Http\Controllers\Admin\Settings\ClassLevelController;
@@ -62,6 +63,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
     Route::patch('/payments/{payment}/reconcile', [PaymentController::class, 'reconcile'])->name('payments.reconcile');
     Route::post('/payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund');
+
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export/excel', [ReportController::class, 'excel'])->name('reports.excel');
+    Route::get('/reports/export/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
 
     Route::get('/coupons', [CouponController::class, 'index'])->name('coupons');
     Route::post('/coupons', [CouponController::class, 'store'])->name('coupons.store');

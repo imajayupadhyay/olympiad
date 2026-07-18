@@ -1,3 +1,42 @@
+# National Olympiad Hunt
+
+Laravel 12, Inertia.js and Vue 3 application for managing olympiads, student
+enrollments, payments, results, certificates, communications and public content.
+
+## Admin Student Reports
+
+The admin Reports page at `/admin/reports` provides composable student filters for:
+
+- Paid, unpaid, pending, failed, refunded and absent payment records
+- Enrolled or not enrolled students by olympiad/course
+- Subject, student class, state and account status
+- Registration and successful-payment date ranges
+- Student name, email, phone, school or city
+
+The page includes filtered summary metrics, sorting, pagination, student profile links,
+and genuine XLSX and PDF exports. Page results and both exports share the same validated
+`StudentReportService` query.
+
+Export dependencies are locked to the PHP 8.2 application baseline:
+
+- `phpoffice/phpspreadsheet` 5.9
+- `dompdf/dompdf` 3.1
+- `maennchen/zipstream-php` 3.1.2 (transitive, PHP 8.2 compatible)
+
+Install exactly from the committed lock file:
+
+```bash
+composer install --no-dev --optimize-autoloader
+npm ci
+npm run build
+php artisan migrate --force
+```
+
+Reports coverage lives in `tests/Feature/AdminStudentReportTest.php` and currently
+contains 7 tests with 133 assertions.
+
+---
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
