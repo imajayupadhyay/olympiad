@@ -19,7 +19,7 @@ class ReportController extends Controller
         $students = $reports->queryWithReportData($filters)
             ->paginate($filters['per_page'])
             ->withQueryString()
-            ->through(fn ($student) => $reports->row($student));
+            ->through(fn ($student) => $reports->row($student, $filters));
 
         return Inertia::render('Admin/Reports/Index', array_merge($reports->metadata(), [
             'students' => $students,
@@ -58,6 +58,6 @@ class ReportController extends Controller
     {
         abort_if($reports->query($filters)->count() > $limit, 422, "This export is limited to {$limit} students. Apply more filters and try again.");
 
-        return $reports->queryWithReportData($filters)->get()->map(fn ($student) => $reports->row($student));
+        return $reports->queryWithReportData($filters)->get()->map(fn ($student) => $reports->row($student, $filters));
     }
 }

@@ -18,18 +18,13 @@ class StudentReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'search' => ['nullable', 'string', 'max:120'],
             'class_level_id' => ['nullable', 'integer', Rule::exists('class_levels', 'id')],
             'subject_id' => ['nullable', 'integer', Rule::exists('subjects', 'id')],
             'exam_id' => ['nullable', 'integer', Rule::exists('exams', 'id')],
             'state' => ['nullable', 'string', Rule::in(User::indianStates())],
-            'account_status' => ['nullable', Rule::in(['active', 'inactive'])],
-            'enrollment_status' => ['nullable', Rule::in(['enrolled', 'not_enrolled'])],
             'payment_status' => ['nullable', Rule::in(['paid', 'unpaid', 'pending', 'failed', 'refunded', 'no_payments'])],
-            'registered_from' => ['nullable', 'date_format:Y-m-d'],
-            'registered_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:registered_from'],
-            'paid_from' => ['nullable', 'date_format:Y-m-d'],
-            'paid_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:paid_from'],
+            'date_from' => ['nullable', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
             'sort' => ['nullable', Rule::in(['name', 'registered_at', 'paid_total', 'enrollments'])],
             'direction' => ['nullable', Rule::in(['asc', 'desc'])],
             'per_page' => ['nullable', 'integer', Rule::in([25, 50, 100])],

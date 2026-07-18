@@ -37,7 +37,10 @@ class AdminStudentReportTest extends TestCase
             'phone' => '9999999999', 'school' => 'National School', 'city' => 'Pune', 'state' => 'Maharashtra',
             'is_active' => true,
         ]);
-        User::factory()->create(['role' => 'student', 'name' => 'Unpaid Student', 'is_active' => false]);
+        User::factory()->create([
+            'role' => 'student', 'class_level_id' => $classFive->id,
+            'name' => 'Unpaid Student', 'is_active' => false,
+        ]);
         $this->paidEnrollment($paid, $exam, 375);
 
         $this->actingAs($admin)
@@ -57,6 +60,20 @@ class AdminStudentReportTest extends TestCase
                 ->where('students.data.0.subjects.0', 'Mathematics')
                 ->where('students.data.0.paid_total', 375)
                 ->where('students.data.1.payment_label', 'Unpaid')
+            );
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.index', [
+                'class_level_id' => $classFive->id,
+                'payment_status' => 'unpaid',
+            ]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('students.data', 1)
+                ->where('students.data.0.name', 'Unpaid Student')
+                ->where('students.data.0.payment_label', 'Unpaid')
+                ->where('students.data.0.paid_total', 0)
+                ->where('summary.paid', 0)
+                ->where('summary.unpaid', 1)
             );
     }
 
@@ -97,12 +114,17 @@ class AdminStudentReportTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->has('students.data', 3)
                 ->where('students.data.0.name', 'Math Pending')
+                ->where('students.data.0.payment_label', 'Unpaid')
+                ->where('students.data.0.paid_total', 0)
                 ->where('students.data.1.name', 'Never Paid')
+                ->where('students.data.1.payment_label', 'Unpaid')
                 ->where('students.data.2.name', 'Science Paid')
+                ->where('students.data.2.payment_label', 'Unpaid')
+                ->where('students.data.2.paid_total', 0)
             );
     }
 
-    public function test_enrollment_subject_class_and_negative_course_filters_combine(): void
+    public function test_subject_class_and_course_filters_combine(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         [$math, $science, $classFive, $classSix] = $this->taxonomy();
@@ -110,7 +132,7 @@ class AdminStudentReportTest extends TestCase
         $scienceExam = $this->exam($science, $classSix, 'Science Challenge', 'SCI-6');
         $mathStudent = User::factory()->create(['role' => 'student', 'name' => 'Math Five', 'class_level_id' => $classFive->id]);
         $scienceStudent = User::factory()->create(['role' => 'student', 'name' => 'Science Six', 'class_level_id' => $classSix->id]);
-        $notEnrolled = User::factory()->create(['role' => 'student', 'name' => 'Other Five', 'class_level_id' => $classFive->id]);
+        User::factory()->create(['role' => 'student', 'name' => 'Other Five', 'class_level_id' => $classFive->id]);
         $this->freeEnrollment($mathStudent, $mathExam);
         $this->freeEnrollment($scienceStudent, $scienceExam);
 
@@ -118,7 +140,6 @@ class AdminStudentReportTest extends TestCase
             ->get(route('admin.reports.index', [
                 'subject_id' => $math->id,
                 'class_level_id' => $classFive->id,
-                'enrollment_status' => 'enrolled',
             ]))
             ->assertInertia(fn (Assert $page) => $page
                 ->has('students.data', 1)
@@ -133,16 +154,11 @@ class AdminStudentReportTest extends TestCase
             );
 
         $this->actingAs($admin)
-            ->get(route('admin.reports.index', [
-                'exam_id' => $mathExam->id,
-                'class_level_id' => $classFive->id,
-                'enrollment_status' => 'not_enrolled',
-                'sort' => 'name',
-                'direction' => 'asc',
-            ]))
+            ->get(route('admin.reports.index', ['exam_id' => $mathExam->id]))
             ->assertInertia(fn (Assert $page) => $page
                 ->has('students.data', 1)
-                ->where('students.data.0.name', 'Other Five')
+                ->where('students.data.0.name', 'Math Five')
+                ->where('students.data.0.olympiads.0.name', 'Math Challenge')
             );
     }
 
@@ -156,19 +172,50 @@ class AdminStudentReportTest extends TestCase
             ->get(route('admin.reports.index', [
                 'subject_id' => $science->id,
                 'exam_id' => $exam->id,
-                'registered_from' => '2026-07-20',
-                'registered_to' => '2026-07-01',
+                'date_from' => '2026-07-20',
+                'date_to' => '2026-07-01',
             ]))
-            ->assertSessionHasErrors(['exam_id', 'registered_to']);
+            ->assertSessionHasErrors(['exam_id', 'date_to']);
+    }
+
+    public function test_single_joined_date_range_combines_with_class_and_payment_filters(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        [, , $classFive, $classSix] = $this->taxonomy();
+        User::factory()->create([
+            'role' => 'student', 'name' => 'In Range', 'class_level_id' => $classFive->id,
+            'created_at' => '2026-07-10 10:00:00',
+        ]);
+        User::factory()->create([
+            'role' => 'student', 'name' => 'Too Early', 'class_level_id' => $classFive->id,
+            'created_at' => '2026-06-30 10:00:00',
+        ]);
+        User::factory()->create([
+            'role' => 'student', 'name' => 'Wrong Class', 'class_level_id' => $classSix->id,
+            'created_at' => '2026-07-10 10:00:00',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.reports.index', [
+                'class_level_id' => $classFive->id,
+                'payment_status' => 'unpaid',
+                'date_from' => '2026-07-01',
+                'date_to' => '2026-07-15',
+            ]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('students.data', 1)
+                ->where('students.data.0.name', 'In Range')
+                ->where('students.data.0.payment_label', 'Unpaid')
+            );
     }
 
     public function test_excel_export_is_a_real_workbook_and_keeps_formula_like_values_as_text(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        User::factory()->create(['role' => 'student', 'name' => '=2+2', 'email' => 'formula@example.test']);
-        User::factory()->create(['role' => 'student', 'name' => 'Excluded Student']);
+        User::factory()->create(['role' => 'student', 'name' => '=2+2', 'email' => 'formula@example.test', 'state' => 'Maharashtra']);
+        User::factory()->create(['role' => 'student', 'name' => 'Excluded Student', 'state' => 'Delhi']);
 
-        $response = $this->actingAs($admin)->get(route('admin.reports.excel', ['search' => 'formula@example.test']));
+        $response = $this->actingAs($admin)->get(route('admin.reports.excel', ['state' => 'Maharashtra']));
         $response->assertOk()->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
         $path = tempnam(sys_get_temp_dir(), 'noh-report-').'.xlsx';

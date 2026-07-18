@@ -8,10 +8,9 @@ enrollments, payments, results, certificates, communications and public content.
 The admin Reports page at `/admin/reports` provides composable student filters for:
 
 - Paid, unpaid, pending, failed, refunded and absent payment records
-- Enrolled or not enrolled students by olympiad/course
-- Subject, student class, state and account status
-- Registration and successful-payment date ranges
-- Student name, email, phone, school or city
+- Subject and olympiad/course
+- Student class and state
+- A single student registration date range
 
 The page includes filtered summary metrics, sorting, pagination, student profile links,
 and genuine XLSX and PDF exports. Page results and both exports share the same validated
@@ -33,7 +32,7 @@ php artisan migrate --force
 ```
 
 Reports coverage lives in `tests/Feature/AdminStudentReportTest.php` and currently
-contains 7 tests with 133 assertions.
+contains 8 tests with 179 assertions.
 
 ---
 

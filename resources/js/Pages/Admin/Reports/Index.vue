@@ -50,23 +50,13 @@
       <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
         <div>
           <h2 id="report-filters-heading" class="font-heading font-bold text-text-main text-sm">Report filters</h2>
-          <p class="text-xs text-text-muted mt-0.5">Course-scoped enrollment and payment filters combine with student details.</p>
+          <p class="text-xs text-text-muted mt-0.5">All selected filters are applied together to the same student result set.</p>
         </div>
         <button v-if="hasFilters" type="button" @click="clearFilters" class="text-xs font-semibold text-danger hover:text-red-700">Clear all</button>
       </div>
 
       <form class="p-5" @submit.prevent="applyFilters">
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <label class="xl:col-span-2 block">
-            <span class="filter-label">Search student</span>
-            <div class="relative">
-              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-              </svg>
-              <input v-model="form.search" type="search" placeholder="Name, email, phone, school or city" class="filter-control pl-9" />
-            </div>
-          </label>
-
           <label class="block">
             <span class="filter-label">Student class</span>
             <select v-model="form.class_level_id" class="filter-control">
@@ -91,22 +81,13 @@
             </select>
           </label>
 
-          <label class="block xl:col-span-2">
+          <label class="block">
             <span class="filter-label">Olympiad / course</span>
             <select v-model="form.exam_id" class="filter-control">
               <option value="">{{ form.subject_id ? 'All olympiads in subject' : 'All olympiads' }}</option>
               <option v-for="exam in availableExams" :key="exam.id" :value="String(exam.id)">
                 {{ exam.name }} ({{ exam.exam_code }}) · {{ exam.class_level?.label || 'No class' }}
               </option>
-            </select>
-          </label>
-
-          <label class="block">
-            <span class="filter-label">Enrollment</span>
-            <select v-model="form.enrollment_status" class="filter-control">
-              <option value="">Any enrollment</option>
-              <option value="enrolled">Enrolled</option>
-              <option value="not_enrolled">Not enrolled</option>
             </select>
           </label>
 
@@ -124,32 +105,13 @@
           </label>
 
           <label class="block">
-            <span class="filter-label">Account</span>
-            <select v-model="form.account_status" class="filter-control">
-              <option value="">Any account status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Disabled</option>
-            </select>
+            <span class="filter-label">Joined from</span>
+            <input v-model="form.date_from" type="date" class="filter-control" />
           </label>
 
           <label class="block">
-            <span class="filter-label">Registered from</span>
-            <input v-model="form.registered_from" type="date" class="filter-control" />
-          </label>
-
-          <label class="block">
-            <span class="filter-label">Registered to</span>
-            <input v-model="form.registered_to" type="date" :min="form.registered_from || undefined" class="filter-control" />
-          </label>
-
-          <label class="block">
-            <span class="filter-label">Paid from</span>
-            <input v-model="form.paid_from" type="date" class="filter-control" />
-          </label>
-
-          <label class="block">
-            <span class="filter-label">Paid to</span>
-            <input v-model="form.paid_to" type="date" :min="form.paid_from || undefined" class="filter-control" />
+            <span class="filter-label">Joined to</span>
+            <input v-model="form.date_to" type="date" :min="form.date_from || undefined" class="filter-control" />
           </label>
         </div>
 
@@ -160,7 +122,7 @@
               <select v-model="form.sort" class="filter-control min-w-44">
                 <option value="registered_at">Registration date</option>
                 <option value="name">Student name</option>
-                <option value="paid_total">Lifetime paid</option>
+                <option value="paid_total">Paid amount</option>
                 <option value="enrollments">Enrollment count</option>
               </select>
             </label>
@@ -256,7 +218,7 @@
                   <span class="w-1.5 h-1.5 rounded-full bg-current"></span>{{ student.payment_label }}
                 </span>
                 <p class="font-number text-xs font-bold text-text-main mt-1.5">{{ money(student.paid_total) }}</p>
-                <p class="text-[10px] text-text-muted">lifetime paid</p>
+                <p class="text-[10px] text-text-muted">paid in scope</p>
               </td>
               <td class="table-cell">
                 <span class="inline-flex items-center gap-1.5 text-xs font-semibold" :class="student.is_active ? 'text-success' : 'text-danger'">
@@ -304,9 +266,8 @@ const props = defineProps({
 });
 
 const defaults = {
-  search: '', class_level_id: '', subject_id: '', exam_id: '', state: '',
-  account_status: '', enrollment_status: '', payment_status: '',
-  registered_from: '', registered_to: '', paid_from: '', paid_to: '',
+  class_level_id: '', subject_id: '', exam_id: '', state: '', payment_status: '',
+  date_from: '', date_to: '',
   sort: 'registered_at', direction: 'desc', per_page: '25',
 };
 
@@ -314,7 +275,7 @@ const form = reactive(Object.fromEntries(
   Object.entries(defaults).map(([key, fallback]) => [key, props.filters[key] != null ? String(props.filters[key]) : fallback]),
 ));
 
-const filterKeys = ['search', 'class_level_id', 'subject_id', 'exam_id', 'state', 'account_status', 'enrollment_status', 'payment_status', 'registered_from', 'registered_to', 'paid_from', 'paid_to'];
+const filterKeys = ['class_level_id', 'subject_id', 'exam_id', 'state', 'payment_status', 'date_from', 'date_to'];
 const hasFilters = computed(() => filterKeys.some(key => form[key]));
 const query = computed(() => Object.fromEntries(Object.entries(form).filter(([, value]) => value !== '')));
 const availableExams = computed(() => form.subject_id ? props.exams.filter(exam => String(exam.subject_id) === form.subject_id) : props.exams);
@@ -349,6 +310,9 @@ const paymentClass = label => ({
   Paid: 'bg-success/10 text-success',
   Pending: 'bg-gold/10 text-gold-dark',
   Unpaid: 'bg-danger/10 text-danger',
+  Failed: 'bg-danger/10 text-danger',
+  Refunded: 'bg-royal/10 text-royal',
+  'No payment': 'bg-gray-100 text-text-muted',
 }[label] || 'bg-gray-100 text-text-muted');
 </script>
 

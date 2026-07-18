@@ -81,7 +81,7 @@ class StudentReportExportService
         $headers = [
             'Student ID', 'Name', 'Email', 'Phone', 'Class', 'School', 'City', 'State',
             'Account', 'Registered', 'Olympiads', 'Subjects', 'Enrollment Count',
-            'Payment', 'Lifetime Paid (INR)', 'Last Paid',
+            'Payment', 'Paid in Scope (INR)', 'Last Paid',
         ];
         $sheet->fromArray($headers, null, 'A6');
 

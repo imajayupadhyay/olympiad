@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 
 class StudentReportService
@@ -18,7 +19,7 @@ class StudentReportService
         $examIds = $this->scopedExamIds($filters);
 
         $this->applyStudentFilters($query, $filters);
-        $this->applyEnrollmentFilter($query, $filters, $examIds);
+        $this->applyCourseFilter($query, $filters, $examIds);
         $this->applyPaymentFilter($query, $filters, $examIds);
 
         return $query;
@@ -26,26 +27,34 @@ class StudentReportService
 
     public function queryWithReportData(array $filters): Builder
     {
+        $examIds = $this->scopedExamIds($filters);
         $query = $this->query($filters)->with([
             'classLevel:id,label',
-            'enrollments' => fn ($query) => $query
-                ->where('status', 'enrolled')
-                ->with(['exam:id,name,exam_code,subject_id', 'exam.subject:id,name'])
-                ->latest('enrolled_at'),
+            'enrollments' => function ($query) use ($examIds) {
+                $query->where('status', 'enrolled');
+                $this->constrainEnrollments($query, $examIds);
+                $query->with(['exam:id,name,exam_code,subject_id', 'exam.subject:id,name'])
+                    ->latest('enrolled_at');
+            },
         ])->withCount([
-            'enrollments as active_enrollments_count' => fn ($query) => $query->where('status', 'enrolled'),
-            'payments as paid_payments_count' => fn ($query) => $query->where('status', 'paid'),
-            'payments as pending_payments_count' => fn ($query) => $query->where('status', 'created'),
+            'enrollments as active_enrollments_count' => function ($query) use ($examIds) {
+                $query->where('status', 'enrolled');
+                $this->constrainEnrollments($query, $examIds);
+            },
+            'payments as report_paid_payments_count' => fn ($query) => $this->constrainPayments($query, 'paid', $examIds),
+            'payments as report_pending_payments_count' => fn ($query) => $this->constrainPayments($query, 'created', $examIds),
+            'payments as report_failed_payments_count' => fn ($query) => $this->constrainPayments($query, 'failed', $examIds),
+            'payments as report_refunded_payments_count' => fn ($query) => $this->constrainPayments($query, 'refunded', $examIds),
         ])->withSum([
-            'payments as paid_total' => fn ($query) => $query->where('status', 'paid'),
+            'payments as report_paid_total' => fn ($query) => $this->constrainPayments($query, 'paid', $examIds),
         ], 'amount')->withMax([
-            'payments as latest_paid_at' => fn ($query) => $query->where('status', 'paid'),
+            'payments as report_latest_paid_at' => fn ($query) => $this->constrainPayments($query, 'paid', $examIds),
         ], 'paid_at');
 
         return $this->applySort($query, $filters);
     }
 
-    public function row(User $student): array
+    public function row(User $student, array $filters): array
     {
         $enrollments = $student->enrollments
             ->filter(fn ($enrollment) => $enrollment->exam !== null);
@@ -69,11 +78,11 @@ class StudentReportService
                 'subject' => $enrollment->exam->subject?->name,
             ])->values()->all(),
             'subjects' => $enrollments->pluck('exam.subject.name')->filter()->unique()->values()->all(),
-            'paid_total' => (float) ($student->paid_total ?? 0),
-            'paid_payments_count' => (int) $student->paid_payments_count,
-            'pending_payments_count' => (int) $student->pending_payments_count,
-            'latest_paid_at' => $student->latest_paid_at,
-            'payment_label' => $this->paymentLabel($student),
+            'paid_total' => (float) ($student->report_paid_total ?? 0),
+            'paid_payments_count' => (int) $student->report_paid_payments_count,
+            'pending_payments_count' => (int) $student->report_pending_payments_count,
+            'latest_paid_at' => $student->report_latest_paid_at,
+            'payment_label' => $this->paymentLabel($student, $filters),
         ];
     }
 
@@ -84,7 +93,7 @@ class StudentReportService
         $examIds = $this->scopedExamIds($filters);
 
         $paidStudents = (clone $matched)
-            ->whereHas('payments', fn (Builder $query) => $this->constrainPayments($query, 'paid', $filters, $examIds))
+            ->whereHas('payments', fn (Builder $query) => $this->constrainPayments($query, 'paid', $examIds))
             ->count();
 
         $enrolledStudents = (clone $matched)
@@ -95,7 +104,7 @@ class StudentReportService
 
         $payments = Payment::query()
             ->whereIn('user_id', (clone $matched)->select('users.id'));
-        $this->constrainPayments($payments, 'paid', $filters, $examIds);
+        $this->constrainPayments($payments, 'paid', $examIds);
 
         return [
             'matched' => $matchedCount,
@@ -124,8 +133,6 @@ class StudentReportService
     {
         $labels = [];
         $map = [
-            'account_status' => ['active' => 'Active accounts', 'inactive' => 'Disabled accounts'],
-            'enrollment_status' => ['enrolled' => 'Enrolled', 'not_enrolled' => 'Not enrolled'],
             'payment_status' => [
                 'paid' => 'Paid', 'unpaid' => 'Unpaid', 'pending' => 'Pending payment',
                 'failed' => 'Failed payment', 'refunded' => 'Refunded', 'no_payments' => 'No payment records',
@@ -138,9 +145,6 @@ class StudentReportService
             }
         }
 
-        if (isset($filters['search'])) {
-            $labels[] = 'Search: '.$filters['search'];
-        }
         if (isset($filters['class_level_id'])) {
             $labels[] = 'Class: '.ClassLevel::find($filters['class_level_id'])?->label;
         }
@@ -154,7 +158,7 @@ class StudentReportService
             $labels[] = 'State: '.$filters['state'];
         }
 
-        foreach (['registered_from' => 'Registered from', 'registered_to' => 'Registered to', 'paid_from' => 'Paid from', 'paid_to' => 'Paid to'] as $key => $label) {
+        foreach (['date_from' => 'Joined from', 'date_to' => 'Joined to'] as $key => $label) {
             if (isset($filters[$key])) {
                 $labels[] = "{$label}: {$filters[$key]}";
             }
@@ -165,50 +169,27 @@ class StudentReportService
 
     private function applyStudentFilters(Builder $query, array $filters): void
     {
-        if (isset($filters['search'])) {
-            $search = trim($filters['search']);
-            $query->where(function (Builder $query) use ($search) {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('school', 'like', "%{$search}%")
-                    ->orWhere('city', 'like', "%{$search}%");
-            });
-        }
-
         foreach (['class_level_id', 'state'] as $field) {
             if (isset($filters[$field])) {
                 $query->where($field, $filters[$field]);
             }
         }
 
-        if (isset($filters['account_status'])) {
-            $query->where('is_active', $filters['account_status'] === 'active');
+        if (isset($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
         }
-        if (isset($filters['registered_from'])) {
-            $query->whereDate('created_at', '>=', $filters['registered_from']);
-        }
-        if (isset($filters['registered_to'])) {
-            $query->whereDate('created_at', '<=', $filters['registered_to']);
+        if (isset($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
         }
     }
 
-    private function applyEnrollmentFilter(Builder $query, array $filters, ?Collection $examIds): void
+    private function applyCourseFilter(Builder $query, array $filters, ?Collection $examIds): void
     {
-        $status = $filters['enrollment_status'] ?? null;
-
-        $hasPaymentFilter = isset($filters['payment_status']) || isset($filters['paid_from']) || isset($filters['paid_to']);
-
-        if ($status === null && $examIds !== null && ! $hasPaymentFilter) {
-            $status = 'enrolled';
-        }
-
-        if ($status === null) {
+        if ($examIds === null || isset($filters['payment_status'])) {
             return;
         }
 
-        $method = $status === 'enrolled' ? 'whereHas' : 'whereDoesntHave';
-        $query->{$method}('enrollments', function (Builder $query) use ($examIds) {
+        $query->whereHas('enrollments', function (Builder $query) use ($examIds) {
             $query->where('status', 'enrolled');
             $this->constrainEnrollments($query, $examIds);
         });
@@ -219,14 +200,13 @@ class StudentReportService
         $status = $filters['payment_status'] ?? null;
 
         if ($status === 'unpaid') {
-            $query->whereDoesntHave('payments', fn (Builder $payment) => $this->constrainPayments($payment, 'paid', $filters, $examIds));
+            $query->whereDoesntHave('payments', fn (Builder $payment) => $this->constrainPayments($payment, 'paid', $examIds));
 
             return;
         }
 
         if ($status === 'no_payments') {
-            $query->whereDoesntHave('payments', fn (Builder $payment) => $this->constrainPayments($payment, null, $filters, $examIds, false));
-            $this->applyPaidDateRequirement($query, $filters, $examIds);
+            $query->whereDoesntHave('payments', fn (Builder $payment) => $this->constrainPayments($payment, null, $examIds));
 
             return;
         }
@@ -238,35 +218,14 @@ class StudentReportService
         };
 
         if ($databaseStatus !== null) {
-            $query->whereHas('payments', fn (Builder $payment) => $this->constrainPayments($payment, $databaseStatus, $filters, $examIds));
-            if ($databaseStatus !== 'paid') {
-                $this->applyPaidDateRequirement($query, $filters, $examIds);
-            }
-        } elseif (isset($filters['paid_from']) || isset($filters['paid_to'])) {
-            $query->whereHas('payments', fn (Builder $payment) => $this->constrainPayments($payment, 'paid', $filters, $examIds));
+            $query->whereHas('payments', fn (Builder $payment) => $this->constrainPayments($payment, $databaseStatus, $examIds));
         }
     }
 
-    private function applyPaidDateRequirement(Builder $query, array $filters, ?Collection $examIds): void
-    {
-        if (isset($filters['paid_from']) || isset($filters['paid_to'])) {
-            $query->whereHas('payments', fn (Builder $payment) => $this->constrainPayments($payment, 'paid', $filters, $examIds));
-        }
-    }
-
-    private function constrainPayments(Builder $query, ?string $status, array $filters, ?Collection $examIds, bool $applyPaidDates = true): void
+    private function constrainPayments(Builder $query, ?string $status, ?Collection $examIds): void
     {
         if ($status !== null) {
             $query->where('status', $status);
-        }
-
-        if ($applyPaidDates && ($status === 'paid' || $status === null)) {
-            if (isset($filters['paid_from'])) {
-                $query->whereDate('paid_at', '>=', $filters['paid_from']);
-            }
-            if (isset($filters['paid_to'])) {
-                $query->whereDate('paid_at', '<=', $filters['paid_to']);
-            }
         }
 
         if ($examIds !== null) {
@@ -286,7 +245,7 @@ class StudentReportService
         }
     }
 
-    private function constrainEnrollments(Builder $query, ?Collection $examIds): void
+    private function constrainEnrollments(Builder|Relation $query, ?Collection $examIds): void
     {
         if ($examIds !== null) {
             if ($examIds->isEmpty()) {
@@ -318,18 +277,41 @@ class StudentReportService
 
         return match ($filters['sort'] ?? 'registered_at') {
             'name' => $query->orderBy('name', $direction)->orderBy('id'),
-            'paid_total' => $query->orderBy('paid_total', $direction)->orderBy('id'),
+            'paid_total' => $query->orderBy('report_paid_total', $direction)->orderBy('id'),
             'enrollments' => $query->orderBy('active_enrollments_count', $direction)->orderBy('id'),
             default => $query->orderBy('created_at', $direction)->orderBy('id'),
         };
     }
 
-    private function paymentLabel(User $student): string
+    private function paymentLabel(User $student, array $filters): string
     {
-        if ((int) $student->paid_payments_count > 0) {
+        if (isset($filters['payment_status'])) {
+            return match ($filters['payment_status']) {
+                'paid' => 'Paid',
+                'unpaid' => 'Unpaid',
+                'pending' => 'Pending',
+                'failed' => 'Failed',
+                'refunded' => 'Refunded',
+                'no_payments' => 'No payment',
+            };
+        }
+
+        if ((int) $student->report_paid_payments_count > 0) {
             return 'Paid';
         }
 
-        return (int) $student->pending_payments_count > 0 ? 'Pending' : 'Unpaid';
+        if ((int) $student->report_pending_payments_count > 0) {
+            return 'Pending';
+        }
+
+        if ((int) $student->report_refunded_payments_count > 0) {
+            return 'Refunded';
+        }
+
+        if ((int) $student->report_failed_payments_count > 0) {
+            return 'Failed';
+        }
+
+        return 'Unpaid';
     }
 }
