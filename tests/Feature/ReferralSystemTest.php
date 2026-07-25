@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\CouponService;
 use App\Services\ReferralService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ReferralSystemTest extends TestCase
@@ -279,6 +280,59 @@ class ReferralSystemTest extends TestCase
 
         $this->assertSame(1, ReferralShare::where('referrer_id', $referrer->id)->count());
         $this->assertSame(1, $this->rewardCount($referrer), 'Threshold 1 → reward on first share');
+    }
+
+    /**
+     * Every mode the settings screen offers must actually persist.
+     *
+     * Regression guard: `qualify_on` was left as a MySQL enum missing 'link_share',
+     * so saving that mode died with "Data truncated for column 'qualify_on'". The
+     * suite runs on sqlite, which ignores enum constraints — which is precisely why
+     * it went unnoticed. See 2026_07_25_110000_fix_referral_settings_qualify_on_column.
+     */
+    public function test_every_qualify_on_mode_can_be_saved_from_the_admin_screen(): void
+    {
+        $this->activeProgram();
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        foreach (['registration', 'first_paid_enrollment', 'link_click', 'link_share'] as $mode) {
+            $this->actingAs($admin)
+                ->from(route('admin.referrals.settings'))
+                ->put(route('admin.referrals.settings.update'), [
+                    'is_active'                => true,
+                    'referee_discount_type'    => 'percentage',
+                    'referee_discount_value'   => '10.00',
+                    'referee_max_discount'     => '100.00',
+                    'referee_min_order_amount' => '0.00',
+                    'referrer_reward_type'     => 'fixed',
+                    'referrer_reward_value'    => '50.00',
+                    'referrer_max_discount'    => null,
+                    'unlock_threshold'         => 1,
+                    'qualify_on'               => $mode,
+                    'reward_validity_days'     => null,
+                ])
+                ->assertSessionHasNoErrors()
+                ->assertRedirect();
+
+            $this->assertSame($mode, ReferralSetting::current()->refresh()->qualify_on,
+                "qualify_on should persist as '{$mode}'");
+        }
+    }
+
+    /**
+     * The column must be a free-form string, not an enum that has to be migrated
+     * every time a mode is added. Only MySQL can express this, so skip elsewhere.
+     */
+    public function test_qualify_on_is_not_a_restrictive_enum(): void
+    {
+        if (DB::getDriverName() !== 'mysql') {
+            $this->markTestSkipped('Column type check is MySQL-specific.');
+        }
+
+        $column = DB::selectOne("SHOW COLUMNS FROM referral_settings WHERE Field = 'qualify_on'");
+
+        $this->assertStringNotContainsStringIgnoringCase('enum', $column->Type,
+            'qualify_on must be a string so new qualification modes need no migration.');
     }
 
     private function rewardCount(User $referrer): int
