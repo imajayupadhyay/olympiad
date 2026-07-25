@@ -137,10 +137,17 @@ class MarketingFunnelService
     }
 
     /**
-     * Run the whole funnel for one submission.
+     * Run the whole funnel for one submission: account, referral, free enrolments
+     * and the final priced cart.
+     *
+     * Deliberately stops short of the gateway. Registration settles every
+     * calculation first and hands back the confirmed figures; opening the Razorpay
+     * order is a separate, explicit step behind the Pay button (openOrderFor).
+     * That keeps the money step from jumping the queue in front of the totals and
+     * the Refer & earn card, and means a gateway outage can never break a signup.
      *
      * @param  array{name:string,email:string,phone:string,class_level_id:int,exam_ids:list<int>}  $data
-     * @return array{status:'free'|'ok'|'pending', ...}
+     * @return array{status:'free'|'ready', ...}
      */
     public function register(array $data, ?string $referralCode = null): array
     {
@@ -183,17 +190,38 @@ class MarketingFunnelService
 
         $payment = $this->payments->createPendingPayment($user, $paid, 'marketing');
         $this->applyBestReferralCoupon($payment);
+        $payment->refresh()->load('coupon');
 
-        // The account now exists, so the Refer & earn card can carry a real link
-        // and live counts — the same payload the registration wizard renders.
-        return $this->openOrderFor($payment) + ['referral' => $this->referrals->shareState($user)];
+        return [
+            'status'     => 'ready',
+            'payment_id' => $payment->id,
+            // Server-confirmed figures — the single source of truth for what the
+            // student is about to be charged. The form's live preview is only a hint.
+            'gross'      => (float) $payment->gross_amount,
+            'discount'   => (float) $payment->discount_amount,
+            'payable'    => (float) $payment->amount,
+            'currency'   => $payment->currency,
+            'coupon'     => $payment->coupon ? [
+                'code'   => $payment->coupon->code,
+                'source' => $payment->coupon->source,
+            ] : null,
+            'items'      => Exam::whereIn('id', $paid)->get(['id', 'name', 'fee_amount'])
+                ->map(fn (Exam $e) => [
+                    'id'         => $e->id,
+                    'name'       => $e->name,
+                    'fee_amount' => (float) $e->fee_amount,
+                ])->all(),
+            // The account now exists, so the Refer & earn card can carry a real link
+            // and live counts — the same payload the registration wizard renders.
+            'referral'   => $this->referrals->shareState($user),
+        ];
     }
 
     /**
-     * Open (or re-open) the Razorpay order for a pending funnel payment. Also the
-     * retry path when the gateway was unreachable at submit time.
+     * Open (or re-open) the Razorpay order for an already-priced funnel payment.
+     * This is what the Pay button calls — never registration itself.
      *
-     * @return array{status:'free'|'ok'|'pending', ...}
+     * @return array{status:'free'|'ok'|'failed', ...}
      */
     public function openOrderFor(Payment $payment): array
     {
@@ -209,9 +237,9 @@ class MarketingFunnelService
             report($e);
 
             return [
-                'status'     => 'pending',
+                'status'     => 'failed',
                 'payment_id' => $payment->id,
-                'message'    => 'Your account is ready, but we could not reach the payment gateway. Please retry.',
+                'message'    => 'We could not reach the payment gateway. Your account and selection are saved — please try again.',
             ];
         }
 

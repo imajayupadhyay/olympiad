@@ -138,29 +138,55 @@ class MarketingFunnelTest extends TestCase
         $this->assertSame(0, Payment::count());
     }
 
-    public function test_paid_selection_creates_a_pending_payment_for_the_new_account(): void
+    public function test_registration_settles_every_calculation_without_touching_the_gateway(): void
     {
-        $this->fakeGatewayFailure();
+        // No gateway fake needed: registration must not reach Razorpay at all. If it
+        // did, this test would hit the live API and fail.
         $exam = $this->exam(['fee_amount' => 250]);
 
         $response = $this->postJson(route('marketing.register'), $this->payload([
             'exam_ids' => [$exam->id],
         ]));
 
-        // The gateway is unreachable, but the account and the cart must survive.
-        $response->assertOk()->assertJson(['status' => 'pending']);
+        $response->assertOk()->assertJson([
+            'status'   => 'ready',
+            'gross'    => 250.0,
+            'discount' => 0.0,
+            'payable'  => 250.0,
+            'currency' => 'INR',
+        ]);
+        $response->assertJsonPath('items.0.name', $exam->name);
 
         $user = User::where('email', 'aarav@example.com')->first();
-        $this->assertNotNull($user);
-
         $payment = Payment::where('user_id', $user->id)->first();
-        $this->assertNotNull($payment);
+
         $this->assertSame('created', $payment->status);
-        $this->assertSame(250.0, (float) $payment->gross_amount);
         $this->assertSame([$exam->id], $payment->notes['exam_ids']);
+        // The order is only created when the Pay button asks for it.
+        $this->assertNull($payment->razorpay_order_id);
 
         // Nothing is enrolled until the money lands.
         $this->assertSame(0, ExamEnrollment::count());
+    }
+
+    public function test_the_pay_step_reports_a_gateway_outage_without_losing_the_signup(): void
+    {
+        $exam = $this->exam(['fee_amount' => 250]);
+        $this->postJson(route('marketing.register'), $this->payload(['exam_ids' => [$exam->id]]))->assertOk();
+
+        $user = User::where('email', 'aarav@example.com')->first();
+        $payment = Payment::where('user_id', $user->id)->first();
+
+        $this->fakeGatewayFailure();
+
+        $this->actingAs($user)
+            ->postJson(route('marketing.payment.order', $payment))
+            ->assertOk()
+            ->assertJson(['status' => 'failed']);
+
+        // Account and priced cart both survive so the student can retry.
+        $this->assertSame('created', $payment->refresh()->status);
+        $this->assertSame(250.0, (float) $payment->amount);
     }
 
     public function test_registration_queues_the_welcome_email(): void
@@ -180,7 +206,6 @@ class MarketingFunnelTest extends TestCase
     public function test_a_referral_link_attributes_the_signup_and_discounts_the_cart(): void
     {
         $this->activeReferralProgram();
-        $this->fakeGatewayFailure();
 
         $referrer = User::factory()->create(['is_active' => true]);
         $exam = $this->exam(['fee_amount' => 500]);
@@ -333,7 +358,6 @@ class MarketingFunnelTest extends TestCase
     public function test_registering_returns_the_new_students_own_share_state(): void
     {
         $this->activeReferralProgram();
-        $this->fakeGatewayFailure();
         $exam = $this->exam(['fee_amount' => 250]);
 
         $response = $this->postJson(route('marketing.register'), $this->payload([
@@ -387,7 +411,6 @@ class MarketingFunnelTest extends TestCase
 
     public function test_a_marketing_signup_is_tagged_on_the_account_the_payment_and_the_enrolment(): void
     {
-        $this->fakeGatewayFailure();
         $free = $this->exam(['fee_amount' => 0]);
         $paid = $this->exam(['fee_amount' => 250]);
 

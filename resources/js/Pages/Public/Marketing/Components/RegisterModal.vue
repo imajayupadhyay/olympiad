@@ -34,6 +34,8 @@ const errors = ref({});
 const banner = ref(null);
 const processing = ref(false);
 const pendingPaymentId = ref(null);
+// Server-confirmed pricing, set once registration settles every calculation.
+const confirmed = ref(null);
 const sheetEl = ref(null);
 const firstFieldEl = ref(null);
 
@@ -111,7 +113,7 @@ async function submit() {
             phone: form.value.phone.trim(),
             exam_ids: [...picked.value],
         });
-        await handleFunnelResponse(data);
+        handleRegisterResponse(data);
     } catch (e) {
         processing.value = false;
         if (e.response?.status === 422) {
@@ -128,40 +130,62 @@ async function submit() {
     }
 }
 
-/** Route the funnel result: enrolled free, gateway ready, or gateway unreachable. */
-async function handleFunnelResponse(data) {
+/**
+ * Registration outcome. Either the cart was free (straight to the dashboard) or
+ * everything is priced and confirmed — in which case we show the summary and
+ * wait for the student to press Pay. The gateway is never opened from here.
+ */
+function handleRegisterResponse(data) {
     if (data.status === 'free') {
         router.visit(data.redirect);
         return;
     }
 
-    if (data.status === 'pending') {
+    if (data.status === 'ready') {
         pendingPaymentId.value = data.payment_id;
+        confirmed.value = data;
         if (data.referral) share.value = data.referral;
         processing.value = false;
-        banner.value = { type: 'error', text: data.message };
-        return;
-    }
-
-    if (data.status === 'ok') {
-        pendingPaymentId.value = data.payment_id;
-        if (data.referral) share.value = data.referral;
-        await openRazorpay(data);
     }
 }
 
-/** Retry the gateway on the account we already created. */
-async function retryPayment() {
+/**
+ * The Pay button — the only thing that reaches the gateway. Asks the server for a
+ * fresh order (which re-validates the coupon and re-prices) and then opens the
+ * Razorpay modal, so what's charged always matches what was just shown.
+ */
+async function pay() {
     if (processing.value || !pendingPaymentId.value) return;
     processing.value = true;
     banner.value = null;
 
     try {
         const { data } = await window.axios.post(route('marketing.payment.order', pendingPaymentId.value));
-        await handleFunnelResponse(data);
+
+        if (data.status === 'free') {
+            router.visit(data.redirect);
+            return;
+        }
+
+        if (data.status === 'failed') {
+            processing.value = false;
+            banner.value = { type: 'error', text: data.message };
+            return;
+        }
+
+        if (data.status === 'ok') {
+            // A lapsed coupon may have changed the price — reflect it before charging.
+            if (confirmed.value && data.payable !== undefined && data.payable !== confirmed.value.payable) {
+                confirmed.value = { ...confirmed.value, ...data };
+                banner.value = { type: 'info', text: 'Your total was updated. Please review it before paying.' };
+                processing.value = false;
+                return;
+            }
+            await openRazorpay(data);
+        }
     } catch {
         processing.value = false;
-        banner.value = { type: 'error', text: 'Still could not reach the payment gateway. Please try again shortly.' };
+        banner.value = { type: 'error', text: 'Could not start the payment. Please try again shortly.' };
     }
 }
 
@@ -229,7 +253,7 @@ async function openRazorpay(data) {
 }
 
 /* ── sheet chrome ───────────────────────────────────────────── */
-// Once the account exists the form is spent — only the retry path remains.
+// Once the account exists the form is spent — only the review-and-pay step remains.
 const accountCreated = computed(() => pendingPaymentId.value !== null);
 
 /* ── Refer & earn card ──────────────────────────────────────────
@@ -405,17 +429,49 @@ onBeforeUnmount(() => {
 
                         </form>
 
-                        <div v-if="accountCreated" class="retry">
-                            <div class="retry__ic">✓</div>
-                            <h3>Your account is ready</h3>
-                            <p>
-                                We've emailed your login details to <b>{{ form.email }}</b>. Complete the payment to
-                                lock in your {{ selected.length }} olympiad<span v-if="selected.length !== 1">s</span>.
-                            </p>
-                            <button class="btn btn-primary btn-shine" type="button" :disabled="processing" @click="retryPayment">
-                                {{ processing ? 'Opening…' : `Pay ${inr(payable)}` }}
+                        <!-- Everything is registered and priced. Nothing has been charged
+                             yet — Pay is the only thing that opens the gateway. -->
+                        <div v-if="accountCreated && confirmed" class="review">
+                            <div class="review__head">
+                                <div class="review__ic">✓</div>
+                                <div>
+                                    <h3>You're registered</h3>
+                                    <p>Login details are on their way to <b>{{ form.email }}</b>. Review your order below, then pay to confirm your seat.</p>
+                                </div>
+                            </div>
+
+                            <div class="sum">
+                                <div v-for="item in confirmed.items" :key="item.id" class="sum__row">
+                                    <span>{{ item.name }}</span>
+                                    <b class="num">{{ inr(item.fee_amount) }}</b>
+                                </div>
+
+                                <div class="sum__row sub">
+                                    <span>Subtotal</span>
+                                    <b class="num">{{ inr(confirmed.gross) }}</b>
+                                </div>
+
+                                <div v-if="confirmed.discount > 0" class="sum__row disc">
+                                    <span>
+                                        {{ confirmed.coupon?.source === 'referral_reward' ? 'Referral reward' : 'Welcome discount' }}
+                                        <em v-if="confirmed.coupon">{{ confirmed.coupon.code }}</em>
+                                    </span>
+                                    <b class="num">− {{ inr(confirmed.discount) }}</b>
+                                </div>
+
+                                <div class="sum__row total">
+                                    <span>Amount to pay</span>
+                                    <b class="num">{{ inr(confirmed.payable) }}</b>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary btn-shine review__pay" type="button" :disabled="processing" @click="pay">
+                                {{ processing ? 'Opening payment…' : `Pay ${inr(confirmed.payable)}` }}
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M5 12h14M13 6l6 6-6 6" />
+                                </svg>
                             </button>
-                            <a class="retry__skip" :href="route('student.dashboard')">Pay later — go to my dashboard</a>
+                            <a class="review__skip" :href="route('student.dashboard')">Pay later — go to my dashboard</a>
                         </div>
 
                         <!-- Referral — link-only, exactly as on /register: arriving on a
@@ -650,13 +706,24 @@ onBeforeUnmount(() => {
 .banner.error{ background:rgba(220,38,38,.1); color:#991B1B; }
 .banner.info{ background:rgba(44,73,166,.1); color:var(--royal); }
 
-/* account created / retry */
-.retry{ text-align:center; padding:16px 10px 6px; }
-.retry__ic{ width:60px; height:60px; margin:0 auto 18px; border-radius:50%; background:rgba(22,138,102,.12); color:var(--emerald); font-size:28px; display:grid; place-items:center; }
-.retry h3{ font-family:var(--display); font-size:24px; font-weight:600; margin-bottom:10px; }
-.retry p{ font-size:14.5px; color:var(--ink-70); max-width:420px; margin:0 auto 24px; }
-.retry .btn{ min-width:220px; }
-.retry__skip{ display:block; margin-top:16px; font:600 13px/1 var(--body); color:var(--ink-55); text-decoration:underline; }
+/* registered — review the settled order, then pay */
+.review__head{ display:flex; align-items:flex-start; gap:15px; margin-bottom:22px; }
+.review__ic{ width:44px; height:44px; flex:none; border-radius:50%; background:rgba(22,138,102,.12); color:var(--emerald); font-size:21px; display:grid; place-items:center; }
+.review__head h3{ font-family:var(--display); font-size:23px; font-weight:600; line-height:1.2; }
+.review__head p{ font-size:13.5px; line-height:1.5; color:var(--ink-70); margin-top:6px; }
+
+.sum{ border:1px solid var(--paper-line); border-radius:16px; overflow:hidden; background:rgba(255,255,255,.5); }
+.sum__row{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 18px; font-size:14px; }
+.sum__row + .sum__row{ border-top:1px solid var(--paper-line); }
+.sum__row b{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-weight:700; white-space:nowrap; }
+.sum__row.sub{ color:var(--ink-55); background:rgba(10,16,36,.02); }
+.sum__row.disc{ color:var(--emerald); background:rgba(22,138,102,.05); }
+.sum__row.disc em{ font-style:normal; font-family:var(--mono); font-size:11px; margin-left:7px; padding:3px 7px; border-radius:100px; background:rgba(22,138,102,.14); }
+.sum__row.total{ background:var(--ink); color:var(--paper); font-weight:700; }
+.sum__row.total b{ font-size:19px; color:var(--gold-lt); }
+
+.review__pay{ width:100%; margin-top:18px; }
+.review__skip{ display:block; text-align:center; margin-top:14px; font:600 13px/1 var(--body); color:var(--ink-55); text-decoration:underline; }
 
 /* footer */
 .sheet__foot{ display:flex; align-items:center; justify-content:space-between; gap:20px; padding:18px 32px; border-top:1px solid var(--paper-line); background:var(--paper-2); }
