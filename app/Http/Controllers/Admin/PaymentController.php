@@ -37,6 +37,14 @@ class PaymentController extends Controller
             $query->where('status', $request->status);
         }
 
+        // Campaign attribution — 'checkout' also covers pre-attribution payments.
+        if ($request->filled('source')) {
+            $source = $request->source;
+            $query->where(fn ($q) => $source === 'checkout'
+                ? $q->where('source', 'checkout')->orWhereNull('source')
+                : $q->where('source', $source));
+        }
+
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
@@ -63,6 +71,8 @@ class PaymentController extends Controller
             'currency'    => $p->currency,
             'status'      => $p->status,
             'gateway'     => $p->gateway,
+            'source'      => $p->source ?: 'checkout',
+            'source_label' => $p->sourceLabel(),
             'method'      => $p->method,
             'is_manual'   => (bool) $p->is_manual,
             'manual_reference' => $p->manual_reference,
@@ -82,7 +92,8 @@ class PaymentController extends Controller
 
         return Inertia::render('Admin/Payments/Index', [
             'payments' => $rows,
-            'filters'  => $request->only(['search', 'status', 'date_from', 'date_to']),
+            'sources'  => Payment::SOURCES,
+            'filters'  => $request->only(['search', 'status', 'date_from', 'date_to', 'source']),
             'totals'   => [
                 'collected' => (float) Payment::where('status', 'paid')->sum('amount'),
                 'month'     => (float) Payment::where('status', 'paid')
@@ -90,6 +101,7 @@ class PaymentController extends Controller
                 'paid'      => Payment::where('status', 'paid')->count(),
                 'pending'   => Payment::where('status', 'created')->count(),
                 'failed'    => Payment::where('status', 'failed')->count(),
+                'marketing' => (float) Payment::where('status', 'paid')->where('source', 'marketing')->sum('amount'),
             ],
         ]);
     }

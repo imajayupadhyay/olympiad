@@ -23,6 +23,7 @@ class StudentReportRequest extends FormRequest
             'exam_id' => ['nullable', 'integer', Rule::exists('exams', 'id')],
             'state' => ['nullable', 'string', Rule::in(User::indianStates())],
             'payment_status' => ['nullable', Rule::in(['paid', 'unpaid', 'pending', 'failed', 'refunded', 'no_payments'])],
+            'registration_source' => ['nullable', Rule::in(array_keys(User::REGISTRATION_SOURCES))],
             'date_from' => ['nullable', 'date_format:Y-m-d'],
             'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
             'sort' => ['nullable', Rule::in(['name', 'registered_at', 'paid_total', 'enrollments'])],

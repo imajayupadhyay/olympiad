@@ -63,7 +63,7 @@ class StudentReportExportService
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Students');
         $sheet->setCellValue('A1', 'National Olympiad Hunt - Student Report');
-        $sheet->mergeCells('A1:P1');
+        $sheet->mergeCells('A1:Q1');
         $sheet->setCellValue('A2', 'Generated: '.now()->format('d M Y, h:i A'));
         $sheet->mergeCells('A2:P2');
         $sheet->setCellValue('A3', sprintf(
@@ -76,12 +76,14 @@ class StudentReportExportService
         ));
         $sheet->mergeCells('A3:P3');
         $sheet->setCellValueExplicit('A4', 'Filters: '.implode(' | ', $filterLabels), DataType::TYPE_STRING);
-        $sheet->mergeCells('A4:P4');
+        $sheet->mergeCells('A4:Q4');
 
+        // 'Source' is appended last on purpose: the numeric column indices below
+        // (and the styled ranges) stay valid without re-indexing every column.
         $headers = [
             'Student ID', 'Name', 'Email', 'Phone', 'Class', 'School', 'City', 'State',
             'Account', 'Registered', 'Olympiads', 'Subjects', 'Enrollment Count',
-            'Payment', 'Paid in Scope (INR)', 'Last Paid',
+            'Payment', 'Paid in Scope (INR)', 'Last Paid', 'Source',
         ];
         $sheet->fromArray($headers, null, 'A6');
 
@@ -96,6 +98,7 @@ class StudentReportExportService
                 implode(', ', $row['subjects']) ?: '-',
                 $row['active_enrollments_count'], $row['payment_label'], $row['paid_total'],
                 $this->date($row['latest_paid_at']),
+                $row['registration_source_label'] ?? 'Website',
             ];
 
             foreach ($values as $columnIndex => $value) {
@@ -109,17 +112,17 @@ class StudentReportExportService
             $rowNumber++;
         }
 
-        $sheet->getStyle('A1:P1')->getFont()->setBold(true)->setSize(16)->getColor()->setARGB('FFFFFFFF');
-        $sheet->getStyle('A1:P1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF0A1024');
-        $sheet->getStyle('A6:P6')->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
-        $sheet->getStyle('A6:P6')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFEE6A2C');
-        $sheet->getStyle('A1:P'.$rowNumber)->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
+        $sheet->getStyle('A1:Q1')->getFont()->setBold(true)->setSize(16)->getColor()->setARGB('FFFFFFFF');
+        $sheet->getStyle('A1:Q1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF0A1024');
+        $sheet->getStyle('A6:Q6')->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
+        $sheet->getStyle('A6:Q6')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFEE6A2C');
+        $sheet->getStyle('A1:Q'.$rowNumber)->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
         $sheet->getStyle('K7:L'.$rowNumber)->getAlignment()->setWrapText(true);
         $sheet->getStyle('O7:O'.$rowNumber)->getNumberFormat()->setFormatCode('#,##0.00');
         $sheet->freezePane('A7');
-        $sheet->setAutoFilter('A6:P'.max(6, $rowNumber - 1));
+        $sheet->setAutoFilter('A6:Q'.max(6, $rowNumber - 1));
 
-        $widths = [10, 22, 30, 16, 12, 28, 18, 20, 12, 16, 38, 24, 14, 12, 18, 16];
+        $widths = [10, 22, 30, 16, 12, 28, 18, 20, 12, 16, 38, 24, 14, 12, 18, 16, 18];
         foreach ($widths as $index => $width) {
             $sheet->getColumnDimensionByColumn($index + 1)->setWidth($width);
         }

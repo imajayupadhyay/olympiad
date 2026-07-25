@@ -41,7 +41,7 @@ class PaymentService
      * Record a pending payment for the given (paid) exams. No Razorpay order is
      * created yet — that happens at openOrder() once any coupon is settled.
      */
-    public function createPendingPayment(User $user, array $examIds): Payment
+    public function createPendingPayment(User $user, array $examIds, string $source = 'checkout'): Payment
     {
         $summary = $this->enrollments->selectionSummary($examIds, $user);
         $examIds = collect($summary['items'])->pluck('id')->all();
@@ -55,6 +55,7 @@ class PaymentService
             'currency'        => $summary['currency'],
             'status'          => 'created',
             'gateway'         => 'razorpay',
+            'source'          => $source,
             'notes'           => ['exam_ids' => $examIds],
         ]);
     }
@@ -194,6 +195,7 @@ class PaymentService
                 'currency' => $exam->fee_currency,
                 'status' => 'paid',
                 'gateway' => 'manual',
+                'source' => 'admin',
                 'method' => 'manual_admin',
                 'is_manual' => true,
                 'recorded_by_admin_id' => $admin->id,

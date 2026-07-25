@@ -192,6 +192,13 @@
               <p class="text-text-muted text-xs mb-0.5">Student ID</p>
               <p class="text-text-muted font-number text-xs">#{{ String(student.id).padStart(5, '0') }}</p>
             </div>
+            <div>
+              <p class="text-text-muted text-xs mb-0.5">Registered Via</p>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-md"
+                    :class="registrationSourceClass">
+                {{ registrationSourceLabel }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -266,7 +273,20 @@ const sourceLabel = (source) => ({
   payment: 'Paid checkout',
   free: 'Free checkout',
   checkout: 'Checkout',
+  marketing: 'Marketing page',
 }[source] || 'Enrollment');
+
+// Where the account itself was created (null = predates source tracking).
+const registrationSourceLabel = computed(() => ({
+  marketing: 'Marketing page',
+  admin: 'Added by admin',
+  website: 'Website',
+}[props.student.registration_source] || 'Website'));
+
+const registrationSourceClass = computed(() => ({
+  marketing: 'bg-accent/10 text-accent-dark',
+  admin: 'bg-royal/10 text-royal',
+}[props.student.registration_source] || 'bg-gray-100 text-text-muted'));
 
 const statusClass = (status) => ({
   enrolled: 'bg-success/10 text-success',

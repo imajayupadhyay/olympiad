@@ -23,7 +23,7 @@
     </div>
 
     <!-- Stats bar -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
       <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
         <p class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-1">Total</p>
         <p class="font-number text-2xl font-bold text-primary">{{ totals.all.toLocaleString() }}</p>
@@ -39,6 +39,10 @@
       <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
         <p class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-1">Joined Today</p>
         <p class="font-number text-2xl font-bold text-gold">{{ totals.today.toLocaleString() }}</p>
+      </div>
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+        <p class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-1">From Marketing</p>
+        <p class="font-number text-2xl font-bold text-accent">{{ (totals.marketing ?? 0).toLocaleString() }}</p>
       </div>
     </div>
 
@@ -68,6 +72,10 @@
           <option value="">All Status</option>
           <option value="active">Active</option>
           <option value="inactive">Disabled</option>
+        </select>
+        <select v-model="filterForm.source" class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-gray-50 text-text-main">
+          <option value="">All Sources</option>
+          <option v-for="(label, key) in sources" :key="key" :value="key">{{ label }}</option>
         </select>
       </div>
       <div class="flex gap-2 mt-3">
@@ -143,6 +151,8 @@
 
             <td class="px-4 py-3.5 text-text-muted text-xs font-number whitespace-nowrap">
               {{ formatDate(s.created_at) }}
+              <span class="block mt-1 font-body font-semibold px-1.5 py-0.5 rounded w-fit"
+                    :class="sourceClass(s.registration_source)">{{ sourceLabel(s.registration_source) }}</span>
             </td>
 
             <td class="px-4 py-3.5">
@@ -259,6 +269,7 @@ const props = defineProps({
   students:    Object,
   classLevels: Array,
   states:      Array,
+  sources:     { type: Object, default: () => ({}) },
   filters:     Object,
   totals:      Object,
 });
@@ -268,11 +279,12 @@ const filterForm = ref({
   class_level_id: props.filters.class_level_id || '',
   state:          props.filters.state          || '',
   status:         props.filters.status         || '',
+  source:         props.filters.source         || '',
 });
 
 const hasFilters = computed(() =>
   filterForm.value.search || filterForm.value.class_level_id ||
-  filterForm.value.state  || filterForm.value.status
+  filterForm.value.state  || filterForm.value.status || filterForm.value.source
 );
 
 const applyFilters = () => {
@@ -280,9 +292,16 @@ const applyFilters = () => {
 };
 
 const clearFilters = () => {
-  filterForm.value = { search: '', class_level_id: '', state: '', status: '' };
+  filterForm.value = { search: '', class_level_id: '', state: '', status: '', source: '' };
   applyFilters();
 };
+
+// Where the account came from. Accounts predating source tracking read as Website.
+const sourceLabel = (key) => props.sources[key] || props.sources.website || 'Website';
+const sourceClass = (key) => ({
+  marketing: 'bg-accent/10 text-accent-dark',
+  admin:     'bg-royal/10 text-royal',
+}[key] || 'bg-gray-100 text-text-muted');
 
 const initials = (name) =>
   name?.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';

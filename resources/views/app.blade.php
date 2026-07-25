@@ -6,7 +6,7 @@
             $siteUrl = rtrim(config('app.url', url('/')), '/');
             $canonicalUrl = request()->is('/') ? $siteUrl.'/' : url()->current();
             $shareImage = $siteUrl.'/NEO_logo_horizontal_light.png';
-            $indexablePublicPaths = ['/'];
+            $indexablePublicPaths = ['/', '/marketing'];
             $isIndexable = in_array('/'.ltrim(request()->path(), '/'), $indexablePublicPaths, true);
             $isNoindex = ! $isIndexable;
 

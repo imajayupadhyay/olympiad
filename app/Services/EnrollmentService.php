@@ -42,11 +42,11 @@ class EnrollmentService
      *
      * @return Collection<int, ExamEnrollment>
      */
-    public function enrollFree(User $user, array $examIds): Collection
+    public function enrollFree(User $user, array $examIds, ?string $source = null): Collection
     {
         $exams = $this->resolveExams($examIds, $user)->filter->isFree();
 
-        return $exams->map(fn (Exam $exam) => $this->createEnrollment($user, $exam));
+        return $exams->map(fn (Exam $exam) => $this->createEnrollment($user, $exam, null, $source));
     }
 
     /**

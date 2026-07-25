@@ -168,7 +168,7 @@ class OnboardingController extends Controller
             }
         }
 
-        $payment = $this->payments->createPendingPayment($user, $canonicalIds);
+        $payment = $this->payments->createPendingPayment($user, $canonicalIds, 'onboarding');
         session(['onboarding_payment_id' => $payment->id]);
 
         return $payment;

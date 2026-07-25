@@ -69,6 +69,8 @@ class StudentReportService
             'city' => $student->city,
             'state' => $student->state,
             'is_active' => (bool) $student->is_active,
+            'registration_source' => $student->registration_source ?: 'website',
+            'registration_source_label' => $student->registrationSourceLabel(),
             'registered_at' => $student->created_at?->toIso8601String(),
             'active_enrollments_count' => (int) $student->active_enrollments_count,
             'olympiads' => $enrollments->map(fn ($enrollment) => [
@@ -126,6 +128,7 @@ class StudentReportService
                 ->orderBy('name')
                 ->get(['id', 'name', 'exam_code', 'subject_id', 'class_level_id', 'status']),
             'states' => User::indianStates(),
+            'registrationSources' => User::REGISTRATION_SOURCES,
         ];
     }
 
@@ -137,6 +140,7 @@ class StudentReportService
                 'paid' => 'Paid', 'unpaid' => 'Unpaid', 'pending' => 'Pending payment',
                 'failed' => 'Failed payment', 'refunded' => 'Refunded', 'no_payments' => 'No payment records',
             ],
+            'registration_source' => User::REGISTRATION_SOURCES,
         ];
 
         foreach ($map as $key => $options) {
@@ -173,6 +177,15 @@ class StudentReportService
             if (isset($filters[$field])) {
                 $query->where($field, $filters[$field]);
             }
+        }
+
+        // Campaign attribution. 'website' also covers accounts created before
+        // the source column existed, which were backfilled to 'website'.
+        if (isset($filters['registration_source'])) {
+            $source = $filters['registration_source'];
+            $query->where(fn (Builder $q) => $source === 'website'
+                ? $q->where('registration_source', 'website')->orWhereNull('registration_source')
+                : $q->where('registration_source', $source));
         }
 
         if (isset($filters['date_from'])) {

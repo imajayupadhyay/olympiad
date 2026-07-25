@@ -118,16 +118,26 @@ class UserController extends Controller
             $query->where('is_active', $request->status === 'active');
         }
 
+        // Campaign attribution — 'website' also covers pre-attribution accounts.
+        if ($request->filled('source')) {
+            $source = $request->source;
+            $query->where(fn ($q) => $source === 'website'
+                ? $q->where('registration_source', 'website')->orWhereNull('registration_source')
+                : $q->where('registration_source', $source));
+        }
+
         return Inertia::render('Admin/Users/Index', [
             'students'    => $query->paginate(20)->withQueryString(),
             'classLevels' => ClassLevel::active(),
             'states'      => User::indianStates(),
-            'filters'     => $request->only(['search', 'class_level_id', 'state', 'status']),
+            'sources'     => User::REGISTRATION_SOURCES,
+            'filters'     => $request->only(['search', 'class_level_id', 'state', 'status', 'source']),
             'totals'      => [
-                'all'      => User::where('role', 'student')->count(),
-                'active'   => User::where('role', 'student')->where('is_active', true)->count(),
-                'inactive' => User::where('role', 'student')->where('is_active', false)->count(),
-                'today'    => User::where('role', 'student')->whereDate('created_at', today())->count(),
+                'all'       => User::where('role', 'student')->count(),
+                'active'    => User::where('role', 'student')->where('is_active', true)->count(),
+                'inactive'  => User::where('role', 'student')->where('is_active', false)->count(),
+                'today'     => User::where('role', 'student')->whereDate('created_at', today())->count(),
+                'marketing' => User::where('role', 'student')->where('registration_source', 'marketing')->count(),
             ],
         ]);
     }
@@ -154,6 +164,7 @@ class UserController extends Controller
 
         $plainPassword = $data['password'];
         $data['role']     = 'student';
+        $data['registration_source'] = 'admin';
         $data['password'] = Hash::make($plainPassword);
 
         $user = User::create($data);

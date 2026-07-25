@@ -16,6 +16,7 @@ class Payment extends Model
         'currency',
         'status',
         'gateway',
+        'source',
         'coupon_id',
         'razorpay_order_id',
         'razorpay_payment_id',
@@ -63,5 +64,18 @@ class Payment extends Model
     public function isPaid(): bool
     {
         return $this->status === 'paid';
+    }
+
+    /** Which surface produced this payment — drives campaign reporting in the admin panel. */
+    public const SOURCES = [
+        'checkout'   => 'Student portal',
+        'onboarding' => 'Registration wizard',
+        'marketing'  => 'Marketing page',
+        'admin'      => 'Admin entry',
+    ];
+
+    public function sourceLabel(): string
+    {
+        return self::SOURCES[$this->source] ?? 'Student portal';
     }
 }

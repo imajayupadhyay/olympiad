@@ -20,10 +20,22 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name', 'email', 'role', 'password', 'password_changed_at',
+        'name', 'email', 'role', 'registration_source', 'password', 'password_changed_at',
         'class_level_id', 'phone', 'dob', 'school', 'school_address', 'city', 'pincode', 'state', 'photo', 'is_active',
         'referral_code', 'referred_by',
     ];
+
+    /** Where a student account was created — drives campaign reporting in the admin panel. */
+    public const REGISTRATION_SOURCES = [
+        'website'   => 'Website',
+        'marketing' => 'Marketing page',
+        'admin'     => 'Added by admin',
+    ];
+
+    public function registrationSourceLabel(): string
+    {
+        return self::REGISTRATION_SOURCES[$this->registration_source] ?? 'Website';
+    }
 
     protected $casts_extra = [];
 

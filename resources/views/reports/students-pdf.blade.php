@@ -56,6 +56,7 @@
                 <th style="width:10%">Payment</th>
                 <th style="width:8%">Account</th>
                 <th style="width:8%">Joined</th>
+                <th style="width:8%">Source</th>
             </tr>
         </thead>
         <tbody>
@@ -73,9 +74,10 @@
                     </td>
                     <td>{{ $row['is_active'] ? 'Active' : 'Disabled' }}</td>
                     <td>{{ $row['registered_at'] ? date('d M Y', strtotime($row['registered_at'])) : '-' }}</td>
+                    <td>{{ $row['registration_source_label'] ?? 'Website' }}</td>
                 </tr>
             @empty
-                <tr><td colspan="9" style="padding:24px;text-align:center">No students matched these filters.</td></tr>
+                <tr><td colspan="10" style="padding:24px;text-align:center">No students matched these filters.</td></tr>
             @endforelse
         </tbody>
     </table>

@@ -14,7 +14,7 @@
     </div>
 
     <!-- Stats bar -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
         <p class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-1">Total Collected</p>
         <p class="font-number text-2xl font-bold text-success">{{ inr(totals.collected) }}</p>
@@ -31,11 +31,15 @@
         <p class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-1">Pending / Failed</p>
         <p class="font-number text-2xl font-bold text-gold">{{ (totals.pending + totals.failed).toLocaleString() }}</p>
       </div>
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+        <p class="text-text-muted text-xs font-semibold uppercase tracking-wider mb-1">From Marketing</p>
+        <p class="font-number text-2xl font-bold text-accent">{{ inr(totals.marketing ?? 0) }}</p>
+      </div>
     </div>
 
     <!-- Filters -->
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
         <div class="lg:col-span-2 relative">
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -53,6 +57,11 @@
           <option value="created">Pending</option>
           <option value="failed">Failed</option>
           <option value="refunded">Refunded</option>
+        </select>
+        <select v-model="filterForm.source" title="Where the payment came from"
+                class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-gray-50 text-text-main">
+          <option value="">All Sources</option>
+          <option v-for="(label, key) in sources" :key="key" :value="key">{{ label }}</option>
         </select>
         <input v-model="filterForm.date_from" type="date" title="From date"
                class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-gray-50 text-text-main" />
@@ -127,6 +136,8 @@
 
             <td class="px-4 py-3.5 text-text-muted text-xs font-number whitespace-nowrap">
               {{ formatDate(p.created_at) }}
+              <span class="block mt-1 font-body font-semibold px-1.5 py-0.5 rounded w-fit"
+                    :class="sourceClass(p.source)">{{ p.source_label }}</span>
             </td>
 
             <td class="px-4 py-3.5">
@@ -284,6 +295,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
   payments: Object,
+  sources:  { type: Object, default: () => ({}) },
   filters:  Object,
   totals:   Object,
 });
@@ -291,9 +303,17 @@ const props = defineProps({
 const filterForm = ref({
   search:    props.filters.search    || '',
   status:    props.filters.status    || '',
+  source:    props.filters.source    || '',
   date_from: props.filters.date_from || '',
   date_to:   props.filters.date_to   || '',
 });
+
+// Which surface produced the payment. Rows predating source tracking read as portal.
+const sourceClass = (key) => ({
+  marketing:  'bg-accent/10 text-accent-dark',
+  admin:      'bg-royal/10 text-royal',
+  onboarding: 'bg-gold/10 text-gold-dark',
+}[key] || 'bg-gray-100 text-text-muted');
 const reconcileTarget = ref(null);
 const reconcileForm = useForm({
   manual_reference: '',
@@ -305,7 +325,7 @@ const downgradeForm = useForm({
 });
 
 const hasFilters = computed(() =>
-  filterForm.value.search || filterForm.value.status ||
+  filterForm.value.search || filterForm.value.status || filterForm.value.source ||
   filterForm.value.date_from || filterForm.value.date_to
 );
 
@@ -314,7 +334,7 @@ const applyFilters = () => {
 };
 
 const clearFilters = () => {
-  filterForm.value = { search: '', status: '', date_from: '', date_to: '' };
+  filterForm.value = { search: '', status: '', source: '', date_from: '', date_to: '' };
   applyFilters();
 };
 

@@ -60,6 +60,7 @@ class RegisteredUserController extends Controller
             'school_address' => $data['school_address'] ?? null,
             'state'          => $data['state'] ?? null,
             'role'           => 'student',
+            'registration_source' => 'website',
             'is_active'      => true,
             'password'       => Hash::make($plainPassword),
         ]);

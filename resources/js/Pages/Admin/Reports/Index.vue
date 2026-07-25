@@ -105,6 +105,14 @@
           </label>
 
           <label class="block">
+            <span class="filter-label">Registered via</span>
+            <select v-model="form.registration_source" class="filter-control">
+              <option value="">Any source</option>
+              <option v-for="(label, key) in registrationSources" :key="key" :value="key">{{ label }}</option>
+            </select>
+          </label>
+
+          <label class="block">
             <span class="filter-label">Joined from</span>
             <input v-model="form.date_from" type="date" class="filter-control" />
           </label>
@@ -225,7 +233,11 @@
                   <span class="w-1.5 h-1.5 rounded-full bg-current"></span>{{ student.is_active ? 'Active' : 'Disabled' }}
                 </span>
               </td>
-              <td class="table-cell text-xs text-text-muted font-number whitespace-nowrap">{{ date(student.registered_at) }}</td>
+              <td class="table-cell text-xs text-text-muted font-number whitespace-nowrap">
+                {{ date(student.registered_at) }}
+                <span class="block mt-1 font-body font-semibold px-1.5 py-0.5 rounded w-fit"
+                      :class="sourceClass(student.registration_source)">{{ student.registration_source_label }}</span>
+              </td>
               <td class="table-cell text-right">
                 <Link :href="route('admin.users.show', student.id)" class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-accent transition-colors">
                   View
@@ -260,6 +272,7 @@ const props = defineProps({
   subjects: Array,
   exams: Array,
   states: Array,
+  registrationSources: { type: Object, default: () => ({}) },
   filters: Object,
   summary: Object,
   exportLimits: Object,
@@ -267,7 +280,7 @@ const props = defineProps({
 
 const defaults = {
   class_level_id: '', subject_id: '', exam_id: '', state: '', payment_status: '',
-  date_from: '', date_to: '',
+  registration_source: '', date_from: '', date_to: '',
   sort: 'registered_at', direction: 'desc', per_page: '25',
 };
 
@@ -275,7 +288,7 @@ const form = reactive(Object.fromEntries(
   Object.entries(defaults).map(([key, fallback]) => [key, props.filters[key] != null ? String(props.filters[key]) : fallback]),
 ));
 
-const filterKeys = ['class_level_id', 'subject_id', 'exam_id', 'state', 'payment_status', 'date_from', 'date_to'];
+const filterKeys = ['class_level_id', 'subject_id', 'exam_id', 'state', 'payment_status', 'registration_source', 'date_from', 'date_to'];
 const hasFilters = computed(() => filterKeys.some(key => form[key]));
 const query = computed(() => Object.fromEntries(Object.entries(form).filter(([, value]) => value !== '')));
 const availableExams = computed(() => form.subject_id ? props.exams.filter(exam => String(exam.subject_id) === form.subject_id) : props.exams);
@@ -306,6 +319,11 @@ const initials = name => name?.split(/\s+/).map(word => word[0]).slice(0, 2).joi
 const location = student => [student.city, student.state].filter(Boolean).join(', ') || 'No location';
 const date = value => value ? new Date(value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 const money = value => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value || 0));
+// Where the account was created. Accounts predating source tracking read as Website.
+const sourceClass = key => ({
+  marketing: 'bg-accent/10 text-accent-dark',
+  admin: 'bg-royal/10 text-royal',
+}[key] || 'bg-gray-100 text-text-muted');
 const paymentClass = label => ({
   Paid: 'bg-success/10 text-success',
   Pending: 'bg-gold/10 text-gold-dark',
