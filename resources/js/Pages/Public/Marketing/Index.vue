@@ -26,6 +26,38 @@ const props = defineProps({
 const modalOpen = ref(false);
 const openRegister = () => { modalOpen.value = true; };
 
+/* ── continuously cycling exam-offer countdown ─────────────── */
+const OFFER_DURATION_SECONDS = 20 * 60;
+const OFFER_END_KEY = 'noh_marketing_offer_ends_at';
+const offerRemaining = ref(OFFER_DURATION_SECONDS);
+let offerTimer = null;
+let offerEndsAt = null;
+
+const offerMinutes = computed(() => String(Math.floor(offerRemaining.value / 60)).padStart(2, '0'));
+const offerSeconds = computed(() => String(offerRemaining.value % 60).padStart(2, '0'));
+const offerUrgent = computed(() => offerRemaining.value <= 60);
+
+function syncOfferCountdown() {
+    const now = Date.now();
+    const durationMs = OFFER_DURATION_SECONDS * 1000;
+    let endsAt = offerEndsAt;
+
+    try {
+        endsAt = Number(sessionStorage.getItem(OFFER_END_KEY)) || endsAt;
+    } catch { /* storage can be unavailable in strict private browsing modes */ }
+
+    if (!Number.isFinite(endsAt) || endsAt <= 0) {
+        endsAt = now + durationMs;
+    } else if (endsAt <= now) {
+        const elapsedCycles = Math.floor((now - endsAt) / durationMs) + 1;
+        endsAt += elapsedCycles * durationMs;
+    }
+
+    offerEndsAt = endsAt;
+    try { sessionStorage.setItem(OFFER_END_KEY, String(endsAt)); } catch { /* keep the in-memory cycle */ }
+    offerRemaining.value = Math.max(0, Math.ceil((endsAt - now) / 1000));
+}
+
 /* ── content ────────────────────────────────────────────────── */
 const stats = reactive([
     { label: 'Students registered', target: 48000, suffix: '+', display: '0' },
@@ -110,6 +142,8 @@ const onScroll = () => { scrolled.value = window.scrollY > 20; };
 onMounted(() => {
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
+    syncOfferCountdown();
+    offerTimer = window.setInterval(syncOfferCountdown, 1000);
 
     const root = rootEl.value;
     if (!root) return;
@@ -142,6 +176,7 @@ onMounted(() => {
 
 onUnmounted(() => {
     window.removeEventListener('scroll', onScroll);
+    window.clearInterval(offerTimer);
     observers.forEach((o) => o.disconnect());
 });
 
@@ -210,6 +245,23 @@ const year = new Date().getFullYear();
                         India’s online olympiad for Classes 1–12 — with an official rank and certificate
                         for every participant, plus 60+ prizes worth over ₹5 lakh.
                     </p>
+
+                    <div class="offer-timer" :class="{ urgent: offerUrgent }">
+                        <div class="offer-timer__label">
+                            <span><i aria-hidden="true"></i> Limited-time exam offer</span>
+                        </div>
+                        <div class="offer-clock" :aria-label="`Offer countdown: ${offerMinutes} minutes and ${offerSeconds} seconds`">
+                            <span>
+                                <b class="num">{{ offerMinutes }}</b>
+                                <small>MIN</small>
+                            </span>
+                            <i class="offer-clock__colon" aria-hidden="true">:</i>
+                            <span>
+                                <b class="num">{{ offerSeconds }}</b>
+                                <small>SEC</small>
+                            </span>
+                        </div>
+                    </div>
 
                     <div class="hero__cta">
                         <button class="btn btn-primary btn-shine" type="button" @click="openRegister">
@@ -509,7 +561,19 @@ const year = new Date().getFullYear();
 @keyframes pulse-dot{ 0%,100%{ box-shadow:0 0 0 4px rgba(22,138,102,.12); } 50%{ box-shadow:0 0 0 8px rgba(22,138,102,0); } }
 .hero h1{ font-family:var(--display); font-weight:600; font-size:clamp(38px,5.6vw,70px); line-height:.98; letter-spacing:-.025em; }
 .hero h1 .ital{ font-weight:500; }
-.hero p.lede{ font-size:18px; color:var(--ink-70); max-width:570px; margin:26px 0 34px; }
+.hero p.lede{ font-size:18px; color:var(--ink-70); max-width:570px; margin:26px 0 22px; }
+.offer-timer{ width:max-content; max-width:100%; display:flex; align-items:center; gap:22px; margin-bottom:24px; padding:10px 11px 10px 15px; border-radius:17px; color:var(--ink); background:rgba(255,255,255,.58); border:1px solid rgba(238,106,44,.22); box-shadow:inset 0 1px 0 rgba(255,255,255,.8),var(--shadow-sm); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); transition:border-color .25s,box-shadow .25s; }
+.offer-timer__label{ display:flex; flex-direction:column; }
+.offer-timer__label > span{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--saffron-dk); }
+.offer-timer__label > span i{ width:7px; height:7px; flex:none; border-radius:50%; background:var(--saffron); box-shadow:0 0 0 4px rgba(238,106,44,.12); }
+.offer-clock{ display:flex; align-items:flex-start; gap:7px; flex:none; padding:8px 11px; border-radius:12px; color:var(--paper); background:var(--ink); box-shadow:0 8px 18px -10px rgba(10,16,36,.65); }
+.offer-clock > span{ display:grid; grid-template-columns:auto auto; align-items:baseline; column-gap:4px; }
+.offer-clock b{ min-width:25px; font-size:20px; line-height:1; text-align:center; color:var(--gold-lt); font-variant-numeric:tabular-nums; }
+.offer-clock small{ font-size:7px; font-weight:700; letter-spacing:.1em; color:var(--paper-45); }
+.offer-clock__colon{ font:700 17px/.9 var(--mono); color:var(--saffron); font-style:normal; animation:colon-blink 1s steps(1,end) infinite; }
+@keyframes colon-blink{ 50%{ opacity:.35; } }
+.offer-timer.urgent{ border-color:rgba(238,106,44,.58); box-shadow:0 0 0 4px rgba(238,106,44,.08),var(--shadow-sm); }
+.offer-timer.urgent .offer-timer__label > span i{ animation:pulse-dot 1s ease-out infinite; }
 .hero__cta{ display:flex; gap:18px; flex-wrap:wrap; align-items:center; }
 .hero__cta-note{ font-size:13px; color:var(--ink-55); }
 .hero__proof{ display:flex; align-items:center; gap:0; margin-top:30px; color:var(--ink-55); }
@@ -683,7 +747,16 @@ footer{ background:var(--ink); color:var(--paper-70); padding:52px 0; }
   .hero__badge{ gap:8px; padding:8px 11px; margin-bottom:20px; font-size:9.5px; letter-spacing:.04em; }
   .hero__badge i{ width:7px; height:7px; }
   .hero h1{ font-size:clamp(32px,10.7vw,42px); line-height:1.01; letter-spacing:-.02em; }
-  .hero p.lede{ max-width:none; margin:20px 0 26px; font-size:14.5px; line-height:1.58; }
+  .hero p.lede{ max-width:none; margin:20px 0 17px; font-size:14.5px; line-height:1.58; }
+  .offer-timer{ width:100%; justify-content:space-between; gap:10px; margin-bottom:19px; padding:9px 9px 9px 12px; border-radius:14px; }
+  .offer-timer__label{ min-width:0; }
+  .offer-timer__label > span{ gap:6px; font-size:10.5px; line-height:1.25; letter-spacing:.04em; }
+  .offer-timer__label > span i{ width:6px; height:6px; box-shadow:0 0 0 3px rgba(238,106,44,.12); }
+  .offer-clock{ gap:5px; padding:7px 8px; border-radius:10px; }
+  .offer-clock > span{ column-gap:3px; }
+  .offer-clock b{ min-width:22px; font-size:17px; }
+  .offer-clock small{ font-size:6px; }
+  .offer-clock__colon{ font-size:15px; }
   .hero__cta{ gap:10px; }
   .hero__cta .btn{ width:100%; }
   .hero__cta-note{ width:100%; text-align:center; font-size:11px; }
@@ -775,6 +848,7 @@ footer{ background:var(--ink); color:var(--paper-70); padding:52px 0; }
   .hero__badge{ font-size:8.8px; }
   .hero__proof span{ padding-inline:6px; font-size:8.3px; }
   .hero__proof b{ font-size:8.8px; }
+  .offer-timer__label > span{ white-space:normal; }
   .campaign-card{ padding-inline:14px; }
   .trophy span{ font-size:58px; }
   .trophy::before{ width:102px; height:102px; }
