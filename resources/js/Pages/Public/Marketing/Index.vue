@@ -236,9 +236,8 @@ const year = new Date().getFullYear();
                     </span>
 
                     <h1>
-                        Compete.<br>
-                        Rank nationally.<br>
-                        <span class="ital">Win big.</span>
+                        Turning Potential<br>
+                        into <span class="ital">Achievement</span>
                     </h1>
 
                     <p class="lede">
