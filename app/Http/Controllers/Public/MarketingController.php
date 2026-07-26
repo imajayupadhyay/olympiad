@@ -110,8 +110,18 @@ class MarketingController extends Controller
                 ->with('error', 'We could not verify that payment. Please try again.');
         }
 
+        $payment->refresh();
+
         return redirect()->route('student.dashboard')
-            ->with('success', 'Payment successful — you are enrolled. 🎉');
+            ->with('success', 'Payment successful — you are enrolled. 🎉')
+            ->with('meta_purchase', [
+                'event_id'  => 'marketing_purchase_'.$payment->id,
+                'payment_id' => $payment->id,
+                // Payment.amount is the final post-discount amount in rupees.
+                // Razorpay's order amount is in paise and must not be used here.
+                'value'      => (float) $payment->amount,
+                'currency'   => 'INR',
+            ]);
     }
 
 }

@@ -6,6 +6,7 @@
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
+import { trackMetaEventOnce } from '@/Services/metaPixel.service.js';
 
 const props = defineProps({
     open: { type: Boolean, default: false },
@@ -249,7 +250,19 @@ async function openRazorpay(data) {
         banner.value = { type: 'error', text: r?.error?.description || 'Payment failed. Please try again.' };
     });
 
-    rzp.open();
+    try {
+        rzp.open();
+
+        // This funnel has no separate checkout page. Opening the verified
+        // Razorpay order is the exact moment the visitor initiates checkout.
+        trackMetaEventOnce(
+            `marketing_checkout_${data.payment_id}`,
+            'InitiateCheckout',
+        );
+    } catch {
+        processing.value = false;
+        banner.value = { type: 'error', text: 'Could not open the payment window. Please try again.' };
+    }
 }
 
 /* ── sheet chrome ───────────────────────────────────────────── */

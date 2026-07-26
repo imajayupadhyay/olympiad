@@ -309,6 +309,39 @@ class MarketingFunnelTest extends TestCase
             ])->assertForbidden();
     }
 
+    public function test_verified_marketing_payment_exposes_a_dynamic_inr_purchase_event(): void
+    {
+        $student = User::factory()->create();
+        $payment = Payment::create([
+            'user_id' => $student->id,
+            'amount' => 269.10,
+            'gross_amount' => 299,
+            'discount_amount' => 29.90,
+            'currency' => 'INR',
+            'status' => 'paid',
+            'gateway' => 'razorpay',
+            'source' => 'marketing',
+            'razorpay_order_id' => 'order_verified',
+            'razorpay_payment_id' => 'pay_verified',
+            'notes' => ['exam_ids' => []],
+            'paid_at' => now(),
+        ]);
+
+        $this->actingAs($student)
+            ->post(route('marketing.payment.verify', $payment), [
+                'razorpay_payment_id' => 'pay_verified',
+                'razorpay_order_id' => 'order_verified',
+                'razorpay_signature' => 'already_verified',
+            ])
+            ->assertRedirect(route('student.dashboard'))
+            ->assertSessionHas('meta_purchase', fn (array $event) =>
+                $event['event_id'] === 'marketing_purchase_'.$payment->id
+                && $event['payment_id'] === $payment->id
+                && $event['value'] === 269.10
+                && $event['currency'] === 'INR'
+            );
+    }
+
     public function test_the_referral_banner_exposes_only_the_referrers_first_name(): void
     {
         $this->activeReferralProgram();

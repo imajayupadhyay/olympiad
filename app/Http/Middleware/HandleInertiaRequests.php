@@ -40,6 +40,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error'   => $request->session()->get('error'),
                 'info'    => $request->session()->get('info'),
+                'meta_purchase' => $request->session()->get('meta_purchase'),
             ],
             ...$this->badges($request),
         ];
