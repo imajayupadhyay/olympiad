@@ -176,10 +176,35 @@ const everyone = [
   .pz-grid{ grid-template-columns:1fr; }
 }
 @media (max-width:600px){
+  .prizes{ padding:60px 0; line-height:1.55; }
+  .wrap{ padding-inline:16px; }
+  .eyebrow{ font-size:10px; letter-spacing:.18em; gap:8px; }
+  .eyebrow::before{ width:20px; }
+  .shead{ margin-bottom:34px; }
+  .shead h2{ margin-top:13px; font-size:clamp(28px,9vw,34px); line-height:1.08; }
+  .shead p{ margin-top:13px; font-size:13.5px; line-height:1.58; }
+  .pz-grid{ gap:14px; }
+  .pz-hero{ padding:25px 20px; border-radius:22px; }
+  .pz-hero__rank{ padding:6px 10px; font-size:9px; letter-spacing:.14em; }
+  .pz-hero__emoji{ margin:20px 0 13px; font-size:46px; }
+  .pz-hero h3{ font-size:23px; }
+  .pz-hero p{ margin:9px 0 21px; font-size:12.5px; line-height:1.55; }
+  .pz-hero .btn{ min-height:44px; padding:13px 19px; font-size:13px; }
+  .pz-list{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .pz-card{ min-width:0; align-items:flex-start; gap:9px; padding:13px 10px; border-radius:14px; }
+  .pz-card__emoji{ width:35px; height:35px; border-radius:10px; font-size:17px; }
+  .pz-card > div{ min-width:0; }
+  .pz-card small{ margin-bottom:4px; font-size:8px; line-height:1.25; letter-spacing:.1em; }
+  .pz-card b{ display:block; overflow-wrap:anywhere; font-size:11px; line-height:1.3; }
+  .pz-all{ margin-top:24px; padding:20px 17px; gap:15px; border-radius:18px; justify-content:flex-start; text-align:left; }
+  .pz-all__lead{ font-size:16px; }
+  .pz-all ul{ flex-direction:column; gap:10px; align-items:flex-start; text-align:left; }
+  .pz-all li{ gap:8px; font-size:11.5px; }
+  .pz-all li span{ font-size:16px; }
+}
+@media (max-width:360px){
+  .wrap{ padding-inline:14px; }
   .pz-list{ grid-template-columns:1fr; }
-  .pz-hero{ padding:30px 24px; }
-  .pz-hero__emoji{ font-size:52px; }
-  .pz-all{ padding:24px 20px; gap:20px; }
-  .pz-all ul{ flex-direction:column; gap:14px; align-items:flex-start; text-align:left; }
+  .pz-card{ align-items:center; padding:13px; }
 }
 </style>

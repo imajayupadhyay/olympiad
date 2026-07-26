@@ -103,7 +103,6 @@ const toggleFaq = (i) => { openFaq.value = openFaq.value === i ? -1 : i; };
 /* ── scroll behaviours ──────────────────────────────────────── */
 const rootEl = ref(null);
 const scrolled = ref(false);
-const barsIn = ref(false);
 const observers = [];
 
 const onScroll = () => { scrolled.value = window.scrollY > 20; };
@@ -139,16 +138,6 @@ onMounted(() => {
         observers.push(countIO);
     }
 
-    const cardEl = root.querySelector('.medal-card');
-    if (cardEl) {
-        const barIO = new IntersectionObserver((entries) => {
-            if (!entries[0].isIntersecting) return;
-            barIO.disconnect();
-            barsIn.value = true;
-        }, { threshold: 0.3 });
-        barIO.observe(cardEl);
-        observers.push(barIO);
-    }
 });
 
 onUnmounted(() => {
@@ -169,12 +158,6 @@ function runCounters() {
         requestAnimationFrame(tick);
     });
 }
-
-const bars = [
-    { label: 'Mathematics', score: '94%', w: '94%' },
-    { label: 'Science', score: '88%', w: '88%' },
-    { label: 'Reasoning', score: '91%', w: '91%' },
-];
 
 const year = new Date().getFullYear();
 </script>
@@ -213,76 +196,70 @@ const year = new Date().getFullYear();
             <div class="wrap hero__grid">
                 <div>
                     <span class="hero__badge glass">
-                        Registrations are open <b>2026 SEASON</b>
+                        <i aria-hidden="true"></i>
+                        2026 registrations are open
                     </span>
 
                     <h1>
-                        One exam.<br>
-                        A national rank.<br>
-                        <span class="ital">60+ prizes</span> to win.
+                        Compete.<br>
+                        Rank nationally.<br>
+                        <span class="ital">Win big.</span>
                     </h1>
 
                     <p class="lede">
-                        India's olympiad for Class 1–12, taken online from home. Register once, pick your
-                        subjects, and compete for tablets, smart watches, gift vouchers and the Gold Medal
-                        of Merit — while every participant earns a rank and a certificate.
+                        India’s online olympiad for Classes 1–12 — with an official rank and certificate
+                        for every participant, plus 60+ prizes worth over ₹5 lakh.
                     </p>
 
                     <div class="hero__cta">
                         <button class="btn btn-primary btn-shine" type="button" @click="openRegister">
-                            Register Now
+                            Enter the Olympiad
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M5 12h14M13 6l6 6-6 6" />
                             </svg>
                         </button>
-                        <span class="hero__cta-note">Takes 60 seconds · No password needed</span>
+                        <span class="hero__cta-note">60-second registration · No password needed</span>
                     </div>
 
-                    <div class="hero__trust">
-                        <div class="avatars">
-                            <span style="background:#EE6A2C">A</span>
-                            <span style="background:#2C49A6">P</span>
-                            <span style="background:#168A66">R</span>
-                            <span style="background:#6C3FA0">S</span>
-                        </div>
-                        <small>
-                            <b>48,000+ students</b> have already registered<br>
-                            <span class="stars">★★★★★</span> rated by parents &amp; teachers
-                        </small>
+                    <div class="hero__proof" aria-label="Campaign highlights">
+                        <span><b class="num">48,000+</b> students</span>
+                        <span><b>Class 1–12</b></span>
+                        <span><b>100% online</b></span>
                     </div>
                 </div>
 
                 <div class="hero__visual">
-                    <div class="medal-card">
-                        <div class="medal-card__shine"></div>
-                        <div class="medal-card__top">
-                            <svg class="medal-card__crest" viewBox="0 0 60 60" fill="none">
-                                <circle cx="30" cy="24" r="17" stroke="#F2C84B" stroke-width="2.5" />
-                                <path d="M30 14l3 6.5 7 .9-5 4.9 1.3 7-6.3-3.4-6.3 3.4 1.3-7-5-4.9 7-.9L30 14z" fill="#F2C84B" />
-                                <path d="M21 40l-4 16 13-6 13 6-4-16" stroke="#EE6A2C" stroke-width="2.5" stroke-linejoin="round" />
-                            </svg>
-                            <div class="medal-card__rank">
-                                <span class="num">04</span>
-                                <small>All India Rank</small>
-                            </div>
+                    <div class="campaign-card">
+                        <div class="campaign-card__glow"></div>
+                        <div class="campaign-card__confetti" aria-hidden="true">
+                            <i class="cf1"></i><i class="cf2"></i><i class="cf3"></i><i class="cf4"></i><i class="cf5"></i>
                         </div>
-                        <h3>Ananya Deshmukh</h3>
-                        <p class="sub">Class 8 · Science Olympiad · Pune</p>
-                        <div class="medal-card__bars">
-                            <div v-for="b in bars" :key="b.label" class="bar-row">
-                                <div class="lbl"><span>{{ b.label }}</span><b>{{ b.score }}</b></div>
-                                <div class="bar"><i :style="{ width: barsIn ? b.w : '0%' }"></i></div>
-                            </div>
+                        <div class="campaign-card__top">
+                            <span>National prize season</span>
+                            <b><i></i> LIVE</b>
                         </div>
-                    </div>
 
-                    <div class="chip glass c1">
-                        <span class="chip__ic" style="background:rgba(214,153,31,.16)">🏆</span>
-                        <div><b>Gold Medal</b><small>Top 1% nationally</small></div>
-                    </div>
-                    <div class="chip glass c3">
-                        <span class="chip__ic" style="background:rgba(22,138,102,.14)">📜</span>
-                        <div><b>Certificate</b><small>For every participant</small></div>
+                        <div class="campaign-card__main">
+                            <div class="trophy" aria-hidden="true">
+                                <span>🏆</span>
+                            </div>
+                            <div class="prize-count">
+                                <strong class="num">60<span>+</span></strong>
+                                <b>Exciting prizes</b>
+                                <small>Rewards worth ₹5 lakh+</small>
+                            </div>
+                        </div>
+
+                        <div class="campaign-prizes">
+                            <span><i>🔊</i><b>Alexa</b></span>
+                            <span><i>📱</i><b>Tablet</b></span>
+                            <span><i>⌚</i><b>Smart watch</b></span>
+                        </div>
+
+                        <div class="campaign-card__foot">
+                            <span>✓</span>
+                            Every student earns a rank + certificate
+                        </div>
                     </div>
                 </div>
             </div>
@@ -527,45 +504,52 @@ const year = new Date().getFullYear();
 @keyframes floaty{ 0%,100%{ transform:translateY(0) rotate(0);} 50%{ transform:translateY(-18px) rotate(8deg);} }
 
 .hero__grid{ position:relative; z-index:2; display:grid; grid-template-columns:1.05fr .95fr; gap:50px; align-items:center; padding-bottom:120px; }
-.hero__badge{ display:inline-flex; align-items:center; gap:10px; padding:7px 7px 7px 14px; border-radius:100px; font:600 13px/1 var(--body); color:var(--ink-70); margin-bottom:26px; }
-.hero__badge b{ background:var(--ink); color:var(--gold-lt); padding:5px 11px; border-radius:100px; font-size:11.5px; letter-spacing:.04em; }
+.hero__badge{ display:inline-flex; align-items:center; gap:9px; padding:9px 14px; border-radius:100px; font:700 12px/1 var(--body); letter-spacing:.05em; text-transform:uppercase; color:var(--ink-70); margin-bottom:26px; }
+.hero__badge i{ width:8px; height:8px; flex:none; border-radius:50%; background:var(--emerald); box-shadow:0 0 0 5px rgba(22,138,102,.12); animation:pulse-dot 1.8s ease-out infinite; }
+@keyframes pulse-dot{ 0%,100%{ box-shadow:0 0 0 4px rgba(22,138,102,.12); } 50%{ box-shadow:0 0 0 8px rgba(22,138,102,0); } }
 .hero h1{ font-family:var(--display); font-weight:600; font-size:clamp(38px,5.6vw,70px); line-height:.98; letter-spacing:-.025em; }
 .hero h1 .ital{ font-weight:500; }
-.hero p.lede{ font-size:18.5px; color:var(--ink-70); max-width:520px; margin:28px 0 36px; }
+.hero p.lede{ font-size:18px; color:var(--ink-70); max-width:570px; margin:26px 0 34px; }
 .hero__cta{ display:flex; gap:18px; flex-wrap:wrap; align-items:center; }
 .hero__cta-note{ font-size:13px; color:var(--ink-55); }
-.hero__trust{ display:flex; align-items:center; gap:16px; margin-top:34px; }
-.avatars{ display:flex; }
-.avatars span{ width:38px; height:38px; border-radius:50%; border:2.5px solid var(--paper); margin-left:-12px; display:grid; place-items:center; font:700 13px/1 var(--body); color:#fff; }
-.avatars span:first-child{ margin-left:0; }
-.hero__trust small{ font-size:13px; color:var(--ink-55); line-height:1.4; }
-.hero__trust b{ color:var(--ink); }
-.stars{ color:var(--gold); letter-spacing:2px; font-size:13px; }
+.hero__proof{ display:flex; align-items:center; gap:0; margin-top:30px; color:var(--ink-55); }
+.hero__proof span{ display:flex; align-items:baseline; gap:4px; padding:0 15px; font-size:12px; line-height:1.2; border-left:1px solid var(--ink-12); }
+.hero__proof span:first-child{ padding-left:0; border-left:0; }
+.hero__proof b{ color:var(--ink); font-size:13px; }
 
 .hero__visual{ position:relative; }
-.medal-card{ position:relative; background:linear-gradient(165deg,var(--ink-2),var(--ink)); border-radius:var(--r-xl); padding:38px 34px; color:var(--paper); overflow:hidden; box-shadow:var(--shadow-lg); border:1px solid rgba(255,255,255,.08); }
-.medal-card::before{ content:""; position:absolute; inset:0; background:radial-gradient(600px 200px at 80% -10%, rgba(214,153,31,.35), transparent 60%); }
-.medal-card__shine{ position:absolute; top:-60%; left:-30%; width:60%; height:220%; background:linear-gradient(120deg,transparent,rgba(255,255,255,.10),transparent); transform:skewX(-20deg); animation:sheen 6s ease-in-out infinite; }
-@keyframes sheen{ 0%,100%{ left:-40%;} 50%{ left:120%;} }
-.medal-card__top{ position:relative; display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:30px; }
-.medal-card__crest{ width:60px; height:60px; }
-.medal-card__rank{ text-align:right; }
-.medal-card__rank .num{ font-size:42px; font-weight:700; color:var(--gold-lt); line-height:1; }
-.medal-card__rank small{ display:block; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--paper-45); margin-top:6px; }
-.medal-card h3{ position:relative; font-family:var(--display); font-size:25px; font-weight:600; margin-bottom:6px; }
-.medal-card .sub{ position:relative; color:var(--paper-45); font-size:13.5px; margin-bottom:26px; }
-.medal-card__bars{ position:relative; display:flex; flex-direction:column; gap:14px; }
-.bar-row .lbl{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--paper-70); margin-bottom:7px; }
-.bar-row .lbl b{ color:var(--gold-lt); }
-.bar{ height:7px; border-radius:100px; background:rgba(255,255,255,.1); overflow:hidden; }
-.bar i{ display:block; height:100%; border-radius:100px; background:linear-gradient(90deg,var(--saffron),var(--gold-lt)); width:0; transition:width 1.4s cubic-bezier(.2,.8,.2,1); }
-.chip{ position:absolute; border-radius:16px; padding:13px 16px; display:flex; align-items:center; gap:11px; animation:float 5s ease-in-out infinite; }
-.chip__ic{ width:38px; height:38px; border-radius:11px; display:grid; place-items:center; flex:none; }
-.chip b{ font:700 15px/1 var(--body); }
-.chip small{ display:block; font-size:11px; color:var(--ink-55); margin-top:3px; }
-.chip.c1{ top:-26px; left:-34px; }
-.chip.c3{ bottom:-24px; right:-22px; animation-delay:.7s; }
-@keyframes float{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-12px);} }
+.campaign-card{ position:relative; isolation:isolate; overflow:hidden; padding:25px; border-radius:var(--r-xl); color:var(--paper); background:linear-gradient(150deg,#1b2748 0%,var(--ink-2) 45%,var(--ink) 100%); border:1px solid rgba(255,255,255,.1); box-shadow:var(--shadow-lg); transform:rotate(1.2deg); transition:transform .4s cubic-bezier(.2,.8,.2,1); }
+.campaign-card:hover{ transform:rotate(0) translateY(-5px); }
+.campaign-card::before{ content:""; position:absolute; inset:0; z-index:-1; background-image:radial-gradient(rgba(255,255,255,.055) 1px,transparent 1px); background-size:18px 18px; mask-image:linear-gradient(to bottom,#000,transparent 75%); }
+.campaign-card__glow{ position:absolute; z-index:-1; width:440px; height:440px; border-radius:50%; top:-240px; right:-170px; background:radial-gradient(circle,var(--gold-lt),transparent 66%); opacity:.34; }
+.campaign-card__top{ display:flex; align-items:center; justify-content:space-between; gap:16px; font:700 10px/1 var(--body); letter-spacing:.18em; text-transform:uppercase; color:var(--paper-45); }
+.campaign-card__top b{ display:flex; align-items:center; gap:6px; padding:6px 9px; border-radius:100px; font-size:9px; letter-spacing:.12em; color:#9FF4D8; background:rgba(22,138,102,.16); border:1px solid rgba(22,138,102,.26); }
+.campaign-card__top b i{ width:6px; height:6px; border-radius:50%; background:#5de4b8; box-shadow:0 0 10px #5de4b8; }
+.campaign-card__main{ display:grid; grid-template-columns:.88fr 1.12fr; align-items:center; gap:10px; min-height:280px; }
+.trophy{ position:relative; display:grid; place-items:center; }
+.trophy::before,.trophy::after{ content:""; position:absolute; border-radius:50%; border:1px solid rgba(242,200,75,.18); }
+.trophy::before{ width:180px; height:180px; }
+.trophy::after{ width:130px; height:130px; border-style:dashed; animation:spin 18s linear infinite; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+.trophy span{ position:relative; z-index:1; font-size:98px; line-height:1; filter:drop-shadow(0 24px 26px rgba(0,0,0,.48)); animation:trophy-float 4.5s ease-in-out infinite; }
+@keyframes trophy-float{ 0%,100%{ transform:translateY(3px) rotate(-3deg); } 50%{ transform:translateY(-8px) rotate(3deg); } }
+.prize-count{ position:relative; display:flex; flex-direction:column; align-items:flex-start; }
+.prize-count strong{ font-size:82px; font-weight:700; line-height:.82; letter-spacing:-.06em; color:var(--gold-lt); text-shadow:0 10px 35px rgba(214,153,31,.24); }
+.prize-count strong span{ font-size:.52em; vertical-align:top; margin-left:2px; }
+.prize-count > b{ margin-top:14px; font-family:var(--display); font-size:27px; line-height:1; font-weight:600; }
+.prize-count small{ margin-top:9px; font-size:12px; color:var(--paper-45); }
+.campaign-prizes{ display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-top:2px; }
+.campaign-prizes span{ display:flex; align-items:center; gap:9px; min-width:0; padding:11px; border-radius:13px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.09); }
+.campaign-prizes i{ width:31px; height:31px; flex:none; display:grid; place-items:center; border-radius:9px; font-size:17px; font-style:normal; background:rgba(242,200,75,.1); }
+.campaign-prizes b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; }
+.campaign-card__foot{ display:flex; align-items:center; justify-content:center; gap:8px; margin-top:14px; padding:12px; border-radius:13px; font-size:11.5px; font-weight:600; color:var(--paper-70); background:rgba(22,138,102,.11); border:1px solid rgba(22,138,102,.2); }
+.campaign-card__foot span{ display:grid; place-items:center; width:19px; height:19px; flex:none; border-radius:50%; color:var(--ink); background:#72e1bd; font-size:11px; font-weight:800; }
+.campaign-card__confetti i{ position:absolute; display:block; width:7px; height:18px; border-radius:4px; opacity:.75; }
+.campaign-card__confetti .cf1{ top:20%; left:7%; background:var(--saffron); transform:rotate(28deg); }
+.campaign-card__confetti .cf2{ top:12%; left:44%; width:9px; height:9px; border-radius:50%; background:var(--royal); }
+.campaign-card__confetti .cf3{ top:35%; right:7%; background:var(--gold-lt); transform:rotate(-38deg); }
+.campaign-card__confetti .cf4{ bottom:26%; left:5%; width:10px; height:10px; background:var(--emerald); transform:rotate(18deg); }
+.campaign-card__confetti .cf5{ bottom:12%; right:4%; width:9px; height:9px; border:2px solid var(--saffron); background:transparent; transform:rotate(35deg); }
 .wave{ position:absolute; bottom:0; left:0; width:100%; height:80px; z-index:1; }
 
 /* stats */
@@ -681,15 +665,123 @@ footer{ background:var(--ink); color:var(--paper-70); padding:52px 0; }
   .float-shape{ display:none; }
 }
 @media (max-width:600px){
-  .wrap{ padding-inline:18px; }
-  .section{ padding:74px 0; }
+  .noh{ padding-top:62px; line-height:1.55; background-size:18px 18px; }
+  .wrap{ padding-inline:16px; }
+  .mhead__inner{ height:62px; gap:12px; }
+  .mhead__brand :deep(img){ height:30px !important; max-width:190px; }
+  .mhead__cta{ padding:10px 15px; font-size:12.5px; }
+
+  .btn{ min-height:44px; padding:13px 20px; font-size:13.5px; }
+  .btn svg{ width:16px; height:16px; }
+  .eyebrow{ font-size:10px; letter-spacing:.18em; gap:8px; }
+  .eyebrow::before{ width:20px; }
+
+  .hero{ padding-top:34px; }
+  .hero__blob.a{ width:320px; height:320px; top:-100px; right:-150px; filter:blur(54px); }
+  .hero__blob.b{ width:280px; height:280px; left:-170px; bottom:20px; filter:blur(54px); }
+  .hero__grid{ gap:48px; padding-bottom:88px; }
+  .hero__badge{ gap:8px; padding:8px 11px; margin-bottom:20px; font-size:9.5px; letter-spacing:.04em; }
+  .hero__badge i{ width:7px; height:7px; }
+  .hero h1{ font-size:clamp(32px,10.7vw,42px); line-height:1.01; letter-spacing:-.02em; }
+  .hero p.lede{ max-width:none; margin:20px 0 26px; font-size:14.5px; line-height:1.58; }
+  .hero__cta{ gap:10px; }
+  .hero__cta .btn{ width:100%; }
+  .hero__cta-note{ width:100%; text-align:center; font-size:11px; }
+  .hero__proof{ width:100%; justify-content:space-between; margin-top:22px; }
+  .hero__proof span{ gap:3px; padding:0 9px; font-size:9px; }
+  .hero__proof b{ font-size:9.5px; }
+
+  .hero__visual{ width:100%; max-width:410px; }
+  .campaign-card{ padding:18px; border-radius:24px; transform:none; }
+  .campaign-card:hover{ transform:none; }
+  .campaign-card__top{ font-size:8px; letter-spacing:.13em; }
+  .campaign-card__top b{ padding:5px 7px; font-size:7.5px; }
+  .campaign-card__main{ grid-template-columns:.86fr 1.14fr; min-height:190px; gap:6px; }
+  .trophy::before{ width:116px; height:116px; }
+  .trophy::after{ width:84px; height:84px; }
+  .trophy span{ font-size:66px; }
+  .prize-count strong{ font-size:54px; }
+  .prize-count > b{ margin-top:9px; font-size:18px; }
+  .prize-count small{ margin-top:6px; font-size:9.5px; }
+  .campaign-prizes{ gap:6px; }
+  .campaign-prizes span{ flex-direction:column; gap:5px; justify-content:center; padding:8px 5px; }
+  .campaign-prizes i{ width:29px; height:29px; font-size:15px; }
+  .campaign-prizes b{ max-width:100%; font-size:8.5px; }
+  .campaign-card__foot{ gap:6px; margin-top:9px; padding:9px 7px; font-size:9.5px; }
+  .campaign-card__foot span{ width:17px; height:17px; font-size:9px; }
+  .wave{ height:48px; }
+
+  .stats__grid{ gap:0; padding:30px 16px 34px; }
+  .stat{ padding:14px 6px; }
+  .stat:not(:last-child)::after{ right:0; top:18%; height:64%; }
+  .stat:nth-child(2)::after{ display:none; }
+  .stat:nth-child(-n+2){ border-bottom:1px solid rgba(255,255,255,.1); }
+  .stat .num{ font-size:27px; }
+  .stat small{ margin-top:7px; font-size:9px; line-height:1.35; letter-spacing:.06em; }
+
+  .section{ padding:60px 0; }
+  .shead{ margin-bottom:34px; }
+  .shead h2{ margin-top:13px; font-size:clamp(28px,9vw,34px); line-height:1.08; }
+  .shead p{ margin-top:13px; font-size:13.5px; line-height:1.58; }
   .ben-grid{ grid-template-columns:1fr; }
+  .ben-grid{ gap:12px; }
+  .ben{ border-radius:20px; padding:21px 19px; }
+  .ben__ic{ width:43px; height:43px; margin-bottom:14px; border-radius:12px; font-size:20px; }
+  .ben h3{ margin-bottom:7px; font-size:17px; }
+  .ben p{ font-size:12.5px; line-height:1.55; }
+
+  .steps{ gap:32px; }
+  .step__n{ width:46px; height:46px; margin-bottom:14px; font-size:14px; }
+  .step h3{ margin-bottom:7px; font-size:18px; }
+  .step p{ max-width:320px; font-size:12.5px; line-height:1.55; }
+  .steps__cta{ margin-top:34px; }
+
+  .subj-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .subj{ min-width:0; padding:19px 14px 16px; border-radius:15px; }
+  .subj b{ overflow-wrap:anywhere; font-size:16px; }
+  .subj small{ font-size:10.5px; }
+  .subj__fee{ margin-top:12px; font-size:11px; }
+
+  .tgrid{ gap:12px; }
+  .tcard{ gap:18px; padding:22px 19px; border-radius:20px; }
+  .tcard__q{ font-size:15.5px; line-height:1.48; }
+  .tcard__who{ gap:11px; padding-top:15px; }
+  .tcard__av{ width:40px; height:40px; font-size:13px; }
+  .tcard__who b{ font-size:12.5px; }
+  .tcard__who small{ font-size:10.5px; }
+
+  .acc__q{ gap:14px; padding:19px 2px; font-size:14px; line-height:1.45; }
+  .acc__ic{ width:28px; height:28px; }
+  .acc__a p{ padding:0 2px 21px; font-size:12.5px; line-height:1.6; }
+
+  .cta{ padding:60px 0; }
+  .cta__inner{ padding:40px 20px; border-radius:24px; }
+  .cta__inner::after{ width:250px; height:250px; top:-130px; right:-110px; }
+  .cta h2{ font-size:clamp(27px,8.8vw,33px); line-height:1.08; margin-bottom:13px; }
+  .cta p{ margin-bottom:25px; font-size:13.5px; line-height:1.55; }
+  .cta__btns .btn{ width:100%; }
+
+  footer{ padding:42px 0 calc(38px + env(safe-area-inset-bottom)); }
+  .foot-inner{ gap:13px; }
+  .foot-inner :deep(img){ height:30px !important; max-width:210px; }
+  .foot-inner p{ font-size:11.5px; line-height:1.55; }
+  .foot-meta{ gap:10px 18px; padding-top:14px; font-size:10.5px; }
+}
+@media (max-width:360px){
+  .wrap{ padding-inline:14px; }
+  .mhead__brand :deep(img){ max-width:166px; }
+  .mhead__cta{ padding-inline:12px; }
+  .hero h1{ font-size:31px; }
+  .hero__badge{ font-size:8.8px; }
+  .hero__proof span{ padding-inline:6px; font-size:8.3px; }
+  .hero__proof b{ font-size:8.8px; }
+  .campaign-card{ padding-inline:14px; }
+  .trophy span{ font-size:58px; }
+  .trophy::before{ width:102px; height:102px; }
+  .trophy::after{ width:74px; height:74px; }
+  .prize-count strong{ font-size:49px; }
+  .prize-count > b{ font-size:16px; }
   .subj-grid{ grid-template-columns:1fr; }
-  .cta{ padding:74px 0; }
-  .cta__inner{ padding:50px 26px; }
-  .hero__trust{ flex-wrap:wrap; }
-  .chip.c1{ left:-12px; }
-  .mhead__cta{ padding:10px 18px; font-size:13.5px; }
 }
 @media (prefers-reduced-motion: reduce){
   .noh *{ animation:none !important; }

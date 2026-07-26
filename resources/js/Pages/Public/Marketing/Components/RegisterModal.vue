@@ -471,12 +471,11 @@ onBeforeUnmount(() => {
                                     <path d="M5 12h14M13 6l6 6-6 6" />
                                 </svg>
                             </button>
-                            <a class="review__skip" :href="route('student.dashboard')">Pay later — go to my dashboard</a>
                         </div>
 
                         <!-- Referral — link-only, exactly as on /register: arriving on a
                              friend's link unlocks the welcome discount. Nothing to type. -->
-                        <div v-if="program" class="referral">
+                        <div v-if="program && referredBy" class="referral">
                             <div v-if="referredBy" class="ref-applied">
                                 <span class="ref-ic">🎁</span>
                                 <span>
@@ -485,7 +484,8 @@ onBeforeUnmount(() => {
                                 </span>
                             </div>
 
-                            <div class="ref-share">
+                            <!-- Temporarily hidden on the /marketing registration form. -->
+                            <div v-if="false" class="ref-share">
                                 <div class="rs-glow" aria-hidden="true"></div>
 
                                 <div class="rs-top">
@@ -723,7 +723,6 @@ onBeforeUnmount(() => {
 .sum__row.total b{ font-size:19px; color:var(--gold-lt); }
 
 .review__pay{ width:100%; margin-top:18px; }
-.review__skip{ display:block; text-align:center; margin-top:14px; font:600 13px/1 var(--body); color:var(--ink-55); text-decoration:underline; }
 
 /* footer */
 .sheet__foot{ display:flex; align-items:center; justify-content:space-between; gap:20px; padding:18px 32px; border-top:1px solid var(--paper-line); background:var(--paper-2); }
@@ -748,14 +747,92 @@ onBeforeUnmount(() => {
 .sheet-enter-from .sheet, .sheet-leave-to .sheet{ transform:translateY(26px) scale(.98); }
 
 @media (max-width:640px){
-  .ov{ padding:0; align-items:flex-end; }
-  .sheet{ max-width:none; max-height:96vh; border-radius:26px 26px 0 0; }
-  .sheet__top{ padding:22px 20px 16px; }
-  .sheet__body{ padding:20px 20px 26px; }
-  .sheet__foot{ padding:16px 20px; flex-direction:column; align-items:stretch; gap:14px; }
-  .sheet__foot .btn{ width:100%; }
+  .ov{ padding:8px 0 0; align-items:flex-end; }
+  .sheet{ max-width:none; height:auto; max-height:calc(100dvh - 8px); border-radius:22px 22px 0 0; }
+  .sheet__top{ gap:12px; padding:18px 16px 14px; }
+  .eyebrow{ font-size:9px; letter-spacing:.18em; gap:7px; }
+  .eyebrow::before{ width:17px; }
+  .sheet__top h2{ margin-top:9px; font-size:20px; line-height:1.12; }
+  .x{ width:40px; height:40px; }
+  .sheet__body{ padding:16px 16px 22px; overscroll-behavior:contain; }
+  .blk{ margin-bottom:24px; }
+  .blk h3{ gap:9px; margin-bottom:14px; font-size:13.5px; }
+  .blk h3 i{ width:23px; height:23px; font-size:10px; line-height:23px; }
   .grid2{ grid-template-columns:1fr; }
+  .grid2{ gap:13px; }
+  .field > span{ margin-bottom:7px; font-size:10px; }
+  /* 16px inputs prevent iOS Safari from zooming the entire sheet on focus. */
+  .field input, .field select{ min-height:47px; padding:13px 14px; font-size:16px; }
+  .msg{ font-size:10.5px; }
+  .hint{ margin-top:11px; font-size:10.5px; line-height:1.5; }
+  .placeholder{ padding:16px; border-radius:12px; font-size:12px; line-height:1.55; }
+
+  .picks{ gap:8px; }
+  .pick{ align-items:flex-start; gap:10px; padding:13px 12px; border-radius:12px; }
+  .pick__box{ width:22px; height:22px; border-radius:7px; }
+  .pick__main b{ font-size:13px; line-height:1.35; }
+  .pick__main small{ font-size:10.5px; line-height:1.45; }
+  .pick__fee{ padding-top:3px; font-size:12px; }
+
+  .referral{ margin-top:20px; gap:10px; }
+  .ref-applied{ gap:9px; padding:12px 13px; font-size:11.5px; }
+  .ref-share{ padding:18px 16px 16px; border-radius:17px; }
+  .rs-top{ gap:8px; }
+  .rs-eyebrow{ font-size:9px; }
+  .rs-reward{ padding:5px 8px; font-size:9.5px; }
+  .rs-title{ margin-top:11px; font-size:18px; }
+  .rs-sub,.rs-soon{ font-size:11px; }
+  .rs-soon{ margin-top:11px; padding-top:11px; }
+  .rs-meter{ margin-top:14px; }
+  .rs-stats{ gap:6px; margin-top:14px; }
+  .rs-stat{ padding:8px 4px; }
+  .rs-stat strong{ font-size:16px; }
+  .rs-stat span{ font-size:8.5px; letter-spacing:.06em; }
+  .ref-link-row{ margin-top:13px; }
+  .ref-link-box{ padding:10px; }
+  .ref-link-box span{ font-size:10px; }
+  .ref-copy{ padding:10px 12px; font-size:11px; }
+  .ref-share-btns .sh{ flex:1; justify-content:center; padding:9px 8px; font-size:10.5px; }
+
+  .banner{ margin-bottom:16px; padding:11px 13px; font-size:11.5px; }
+  .review__head{ gap:11px; margin-bottom:17px; }
+  .review__ic{ width:38px; height:38px; font-size:18px; }
+  .review__head h3{ font-size:20px; }
+  .review__head p{ margin-top:4px; font-size:11.5px; }
+  .sum{ border-radius:13px; }
+  .sum__row{ gap:10px; padding:11px 12px; font-size:11.5px; }
+  .sum__row.disc em{ display:inline-block; margin:4px 0 0; font-size:9px; }
+  .sum__row.total b{ font-size:16px; }
+  .review__pay{ margin-top:14px; }
+
+  .sheet__foot{ padding:12px 16px calc(12px + env(safe-area-inset-bottom)); flex-direction:column; align-items:stretch; gap:10px; }
+  .sheet__foot .btn{ width:100%; }
+  .tot{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .tot small{ margin-bottom:0; font-size:9.5px; }
+  .tot__val{ justify-content:flex-end; gap:7px; }
+  .tot__val b{ font-size:19px; }
+  .tot__val s{ font-size:12px; }
+  .tot__val .save{ padding:4px 7px; font-size:9px; }
+  .btn{ min-height:46px; padding:13px 18px; font-size:13px; }
   .sheet-enter-from .sheet, .sheet-leave-to .sheet{ transform:translateY(100%); }
+}
+
+@media (max-width:360px){
+  .sheet__top,.sheet__body{ padding-inline:14px; }
+  .sheet__foot{ padding-inline:14px; }
+  .sheet__top h2{ font-size:18px; }
+  .pick{ gap:8px; padding-inline:10px; }
+  .pick__fee{ font-size:11px; }
+  .tot__val .save{ display:none; }
+}
+
+@media (max-width:640px) and (max-height:620px){
+  .sheet{ max-height:100dvh; border-radius:18px 18px 0 0; }
+  .sheet__top{ padding-block:12px 10px; }
+  .sheet__top .eyebrow{ display:none; }
+  .sheet__top h2{ margin-top:0; }
+  .sheet__body{ padding-block:13px 18px; }
+  .sheet__foot{ padding-block:9px calc(9px + env(safe-area-inset-bottom)); }
 }
 
 @media (prefers-reduced-motion: reduce){

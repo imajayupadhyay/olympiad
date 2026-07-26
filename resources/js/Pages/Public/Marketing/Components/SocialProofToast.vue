@@ -146,7 +146,11 @@ onBeforeUnmount(() => {
 .proof-enter-from, .proof-leave-to{ opacity:0; transform:translateY(16px); }
 
 @media (max-width:600px){
-  .proof{ left:12px; right:12px; bottom:12px; max-width:none; }
+  .proof{ left:10px; right:10px; bottom:calc(10px + env(safe-area-inset-bottom)); max-width:none; gap:9px; padding:10px 11px; border-radius:13px; }
+  .proof__av{ width:34px; height:34px; font-size:13px; line-height:34px; }
+  .proof__body{ font-size:11.5px; }
+  .proof__body small{ font-size:9.5px; }
+  .proof__x{ width:28px; height:28px; }
 }
 @media (prefers-reduced-motion: reduce){
   .proof-enter-active, .proof-leave-active{ transition:none; }
