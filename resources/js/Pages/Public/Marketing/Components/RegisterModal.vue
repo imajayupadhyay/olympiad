@@ -17,6 +17,8 @@ const props = defineProps({
     referredBy: { type: Object, default: null },
     // Both sides of the referral program; null when the program is switched off.
     program: { type: Object, default: null },
+    offerMinutes: { type: String, default: '15' },
+    offerSeconds: { type: String, default: '00' },
 });
 
 const emit = defineEmits(['close']);
@@ -426,12 +428,7 @@ onBeforeUnmount(() => {
                                             </svg>
                                         </span>
                                         <span class="pick__main">
-                                            <b>{{ exam.name }}</b>
-                                            <small>
-                                                {{ exam.subject?.name || 'Olympiad' }}
-                                                <template v-if="exam.questions_count">· {{ exam.questions_count }} questions</template>
-                                                <template v-if="exam.duration_minutes">· {{ exam.duration_minutes }} min</template>
-                                            </small>
+                                            <b>{{ exam.subject?.name || 'Olympiad' }}</b>
                                         </span>
                                         <span class="pick__fee num">{{ exam.is_free ? 'FREE' : inr(exam.fee_amount) }}</span>
                                     </button>
@@ -569,6 +566,11 @@ onBeforeUnmount(() => {
                                 </template>
                                 <b v-else class="num">{{ total === 0 ? 'FREE' : inr(total) }}</b>
                             </div>
+                            <span v-if="selected.length" class="tot__offer">
+                                <i aria-hidden="true"></i>
+                                <b class="num">{{ offerMinutes }}:{{ offerSeconds }}</b>
+                                left at this price
+                            </span>
                         </div>
                         <button class="btn btn-primary btn-shine" type="submit" form="reg-form" :disabled="processing">
                             <template v-if="processing">Processing…</template>
@@ -653,7 +655,6 @@ onBeforeUnmount(() => {
 .pick.on .pick__box svg{ opacity:1; }
 .pick__main{ flex:1; min-width:0; }
 .pick__main b{ display:block; font-size:15px; font-weight:700; }
-.pick__main small{ display:block; font-size:12.5px; color:var(--ink-55); margin-top:3px; }
 .pick__fee{ font:700 15px/1 var(--mono); font-variant-numeric:tabular-nums; color:var(--saffron-dk); flex:none; }
 
 /* ── Referral — mirrors the wizard's .ref-applied + .ref-share blocks ───── */
@@ -740,6 +741,9 @@ onBeforeUnmount(() => {
 /* footer */
 .sheet__foot{ display:flex; align-items:center; justify-content:space-between; gap:20px; padding:18px 32px; border-top:1px solid var(--paper-line); background:var(--paper-2); }
 .tot small{ display:block; font:600 11.5px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--ink-55); margin-bottom:7px; }
+.tot__offer{ display:flex; align-items:center; gap:5px; margin-top:8px; font:600 10px/1 var(--body); color:var(--saffron-dk); }
+.tot__offer i{ width:6px; height:6px; flex:none; border-radius:50%; background:var(--saffron); box-shadow:0 0 0 3px rgba(238,106,44,.1); }
+.tot__offer b{ font-size:11px; font-weight:700; font-variant-numeric:tabular-nums; }
 .tot__val{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
 .tot__val b{ font:700 24px/1 var(--mono); font-variant-numeric:tabular-nums; }
 .tot__val s{ font:500 15px/1 var(--mono); color:var(--ink-35); }
@@ -781,11 +785,10 @@ onBeforeUnmount(() => {
   .placeholder{ padding:16px; border-radius:12px; font-size:12px; line-height:1.55; }
 
   .picks{ gap:8px; }
-  .pick{ align-items:flex-start; gap:10px; padding:13px 12px; border-radius:12px; }
+  .pick{ align-items:center; gap:10px; padding:13px 12px; border-radius:12px; }
   .pick__box{ width:22px; height:22px; border-radius:7px; }
   .pick__main b{ font-size:13px; line-height:1.35; }
-  .pick__main small{ font-size:10.5px; line-height:1.45; }
-  .pick__fee{ padding-top:3px; font-size:12px; }
+  .pick__fee{ font-size:12px; }
 
   .referral{ margin-top:20px; gap:10px; }
   .ref-applied{ gap:9px; padding:12px 13px; font-size:11.5px; }
@@ -820,8 +823,10 @@ onBeforeUnmount(() => {
 
   .sheet__foot{ padding:12px 16px calc(12px + env(safe-area-inset-bottom)); flex-direction:column; align-items:stretch; gap:10px; }
   .sheet__foot .btn{ width:100%; }
-  .tot{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
-  .tot small{ margin-bottom:0; font-size:9.5px; }
+  .tot{ display:block; }
+  .tot small{ margin-bottom:5px; font-size:9.5px; }
+  .tot__offer{ margin-top:6px; font-size:8.5px; }
+  .tot__offer b{ font-size:9.5px; }
   .tot__val{ justify-content:flex-end; gap:7px; }
   .tot__val b{ font-size:19px; }
   .tot__val s{ font-size:12px; }

@@ -27,7 +27,7 @@ const modalOpen = ref(false);
 const openRegister = () => { modalOpen.value = true; };
 
 /* ── continuously cycling exam-offer countdown ─────────────── */
-const OFFER_DURATION_SECONDS = 20 * 60;
+const OFFER_DURATION_SECONDS = 15 * 60;
 const OFFER_END_KEY = 'noh_marketing_offer_ends_at';
 const offerRemaining = ref(OFFER_DURATION_SECONDS);
 let offerTimer = null;
@@ -46,7 +46,7 @@ function syncOfferCountdown() {
         endsAt = Number(sessionStorage.getItem(OFFER_END_KEY)) || endsAt;
     } catch { /* storage can be unavailable in strict private browsing modes */ }
 
-    if (!Number.isFinite(endsAt) || endsAt <= 0) {
+    if (!Number.isFinite(endsAt) || endsAt <= 0 || endsAt - now > durationMs) {
         endsAt = now + durationMs;
     } else if (endsAt <= now) {
         const elapsedCycles = Math.floor((now - endsAt) / durationMs) + 1;
@@ -478,6 +478,8 @@ const year = new Date().getFullYear();
             :referral="referral"
             :referred-by="referredBy"
             :program="program"
+            :offer-minutes="offerMinutes"
+            :offer-seconds="offerSeconds"
             @close="modalOpen = false"
         />
     </div>
