@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Auth\LoginOtpController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordOtpController;
@@ -21,6 +22,17 @@ Route::middleware('guest')->group(function () {
         ->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
+
+    Route::post('login/otp/send', [LoginOtpController::class, 'send'])
+        ->name('login.otp.send');
+    Route::post('login/otp/resend', [LoginOtpController::class, 'resend'])
+        ->name('login.otp.resend');
+    Route::post('login/otp/verify', [LoginOtpController::class, 'verify'])
+        ->name('login.otp.verify');
+    Route::post('login/otp/select', [LoginOtpController::class, 'select'])
+        ->name('login.otp.select');
+    Route::post('login/otp/cancel', [LoginOtpController::class, 'cancel'])
+        ->name('login.otp.cancel');
 
     // OTP-based password reset (student portal). The verified hand-off between
     // steps lives in the session — no reset-granting token reaches the browser.

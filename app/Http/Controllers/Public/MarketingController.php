@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Rules\ValidPhoneNumber;
 use App\Services\MarketingFunnelService;
 use App\Services\PaymentService;
 use Illuminate\Http\JsonResponse;
@@ -25,20 +26,19 @@ class MarketingController extends Controller
     public function __construct(
         protected MarketingFunnelService $funnel,
         protected PaymentService $payments,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
         return Inertia::render('Public/Marketing/Index', [
             'classLevels' => $this->funnel->classLevels(),
-            'exams'       => $this->funnel->catalogue(),
-            'referral'    => $this->funnel->refereePreviewRule(),
-            'program'     => $this->funnel->programCard(),
+            'exams' => $this->funnel->catalogue(),
+            'referral' => $this->funnel->refereePreviewRule(),
+            'program' => $this->funnel->programCard(),
             // Referrals are link-only, exactly as on /register: the code rides in on
             // /marketing?ref=CODE, CaptureReferral stashes it, and we simply confirm
             // it here. Nothing is ever typed.
-            'referredBy'  => $this->funnel->referredBy($request->session()->get('referral_code')),
+            'referredBy' => $this->funnel->referredBy($request->session()->get('referral_code')),
         ]);
     }
 
@@ -47,22 +47,21 @@ class MarketingController extends Controller
     {
         if (Auth::check()) {
             return response()->json([
-                'status'   => 'logged_in',
+                'status' => 'logged_in',
                 'redirect' => route('student.exams'),
-                'message'  => 'You are already signed in — pick your olympiads from your portal.',
+                'message' => 'You are already signed in — pick your olympiads from your portal.',
             ], 409);
         }
 
         $data = $request->validate([
-            'name'           => 'required|string|max:100',
-            'email'          => 'required|string|lowercase|email|max:255|unique:users,email',
-            'phone'          => 'required|string|regex:/^[6-9]\d{9}$/',
+            'name' => 'required|string|max:100',
+            'email' => 'required|string|lowercase|email|max:255|unique:users,email',
+            'phone' => ['required', 'string', 'max:25', new ValidPhoneNumber],
             'class_level_id' => 'required|exists:class_levels,id',
-            'exam_ids'       => 'required|array|min:1',
-            'exam_ids.*'     => 'integer|exists:exams,id',
+            'exam_ids' => 'required|array|min:1',
+            'exam_ids.*' => 'integer|exists:exams,id',
         ], [
-            'email.unique'  => 'This email is already registered. Log in to enrol in more olympiads.',
-            'phone.regex'   => 'Enter a valid 10-digit Indian mobile number.',
+            'email.unique' => 'This email is already registered. Log in to enrol in more olympiads.',
             'exam_ids.required' => 'Select at least one olympiad to continue.',
         ]);
 
@@ -81,9 +80,9 @@ class MarketingController extends Controller
 
         if ($payment->isPaid()) {
             return response()->json([
-                'status'   => 'free',
+                'status' => 'free',
                 'redirect' => route('student.dashboard'),
-                'message'  => 'This payment is already complete.',
+                'message' => 'This payment is already complete.',
             ]);
         }
 
@@ -97,8 +96,8 @@ class MarketingController extends Controller
 
         $data = $request->validate([
             'razorpay_payment_id' => 'required|string',
-            'razorpay_order_id'   => 'required|string',
-            'razorpay_signature'  => 'required|string',
+            'razorpay_order_id' => 'required|string',
+            'razorpay_signature' => 'required|string',
         ]);
 
         abort_unless($data['razorpay_order_id'] === $payment->razorpay_order_id, 400);
@@ -115,13 +114,12 @@ class MarketingController extends Controller
         return redirect()->route('student.dashboard')
             ->with('success', 'Payment successful — you are enrolled. 🎉')
             ->with('meta_purchase', [
-                'event_id'  => 'marketing_purchase_'.$payment->id,
+                'event_id' => 'marketing_purchase_'.$payment->id,
                 'payment_id' => $payment->id,
                 // Payment.amount is the final post-discount amount in rupees.
                 // Razorpay's order amount is in paise and must not be used here.
-                'value'      => (float) $payment->amount,
-                'currency'   => 'INR',
+                'value' => (float) $payment->amount,
+                'currency' => 'INR',
             ]);
     }
-
 }

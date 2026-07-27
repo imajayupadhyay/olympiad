@@ -3,10 +3,12 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Services\PhoneNumberService;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable
@@ -21,15 +23,15 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name', 'email', 'role', 'registration_source', 'password', 'password_changed_at',
-        'class_level_id', 'phone', 'dob', 'school', 'school_address', 'city', 'pincode', 'state', 'photo', 'is_active',
+        'class_level_id', 'phone', 'phone_e164', 'phone_verified_at', 'dob', 'school', 'school_address', 'city', 'pincode', 'state', 'photo', 'is_active',
         'referral_code', 'referred_by',
     ];
 
     /** Where a student account was created — drives campaign reporting in the admin panel. */
     public const REGISTRATION_SOURCES = [
-        'website'   => 'Website',
+        'website' => 'Website',
         'marketing' => 'Marketing page',
-        'admin'     => 'Added by admin',
+        'admin' => 'Added by admin',
     ];
 
     public function registrationSourceLabel(): string
@@ -45,6 +47,34 @@ class User extends Authenticatable
      */
     protected static function booted(): void
     {
+        static::saving(function (User $user) {
+            if ($user->isDirty('email')) {
+                $user->email = Str::lower(trim((string) $user->email));
+
+                if ($user->exists) {
+                    $user->email_verified_at = null;
+                }
+            }
+
+            if ($user->isDirty('phone')) {
+                $normalized = app(PhoneNumberService::class)
+                    ->tryNormalize($user->phone);
+
+                if ($normalized) {
+                    if ($user->exists && $user->getOriginal('phone_e164') !== $normalized) {
+                        $user->phone_verified_at = null;
+                    }
+
+                    $user->phone = $normalized;
+                    $user->phone_e164 = $normalized;
+                } elseif (! filled($user->phone)) {
+                    $user->phone = null;
+                    $user->phone_e164 = null;
+                    $user->phone_verified_at = null;
+                }
+            }
+        });
+
         static::creating(function (User $user) {
             if (empty($user->referral_code)) {
                 do {
@@ -73,49 +103,54 @@ class User extends Authenticatable
      */
     public function getPhotoUrlAttribute(): ?string
     {
-        return $this->photo ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->photo) : null;
+        return $this->photo ? Storage::disk('public')->url($this->photo) : null;
     }
 
     public function classLevel()
     {
-        return $this->belongsTo(\App\Models\ClassLevel::class);
+        return $this->belongsTo(ClassLevel::class);
     }
 
     public function examAttempts()
     {
-        return $this->hasMany(\App\Models\ExamAttempt::class);
+        return $this->hasMany(ExamAttempt::class);
     }
 
     public function studentNotifications()
     {
-        return $this->hasMany(\App\Models\StudentNotification::class);
+        return $this->hasMany(StudentNotification::class);
     }
 
     public function supportTickets()
     {
-        return $this->hasMany(\App\Models\SupportTicket::class);
+        return $this->hasMany(SupportTicket::class);
     }
 
     public function enrollments()
     {
-        return $this->hasMany(\App\Models\ExamEnrollment::class);
+        return $this->hasMany(ExamEnrollment::class);
     }
 
     public function payments()
     {
-        return $this->hasMany(\App\Models\Payment::class);
+        return $this->hasMany(Payment::class);
+    }
+
+    public function loginOtpChallenges()
+    {
+        return $this->hasMany(LoginOtpChallenge::class, 'selected_user_id');
     }
 
     /** Referrals where this user is the one who shared the link. */
     public function referralsMade()
     {
-        return $this->hasMany(\App\Models\Referral::class, 'referrer_id');
+        return $this->hasMany(Referral::class, 'referrer_id');
     }
 
     /** The single referral row where this user is the referee (if referred). */
     public function referralRecord()
     {
-        return $this->hasOne(\App\Models\Referral::class, 'referee_id');
+        return $this->hasOne(Referral::class, 'referee_id');
     }
 
     /** The user who referred this student, if any. */
@@ -190,6 +225,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'phone_verified_at' => 'datetime',
             'password' => 'hashed',
             'password_changed_at' => 'datetime',
             'dob' => 'date',
@@ -216,26 +252,26 @@ class User extends Authenticatable
     public function profileCompletion(): array
     {
         $fields = [
-            'Full name'     => filled($this->name),
-            'Email'         => filled($this->email),
-            'Class'         => filled($this->class_level_id),
-            'Phone'          => filled($this->phone),
-            'Date of birth'  => filled($this->dob),
-            'School'         => filled($this->school),
+            'Full name' => filled($this->name),
+            'Email' => filled($this->email),
+            'Class' => filled($this->class_level_id),
+            'Phone' => filled($this->phone),
+            'Date of birth' => filled($this->dob),
+            'School' => filled($this->school),
             'School address' => filled($this->school_address),
-            'City'           => filled($this->city),
-            'PIN code'       => filled($this->pincode),
-            'State'          => filled($this->state),
-            'Photo'          => filled($this->photo),
+            'City' => filled($this->city),
+            'PIN code' => filled($this->pincode),
+            'State' => filled($this->state),
+            'Photo' => filled($this->photo),
         ];
 
-        $total  = count($fields);
+        $total = count($fields);
         $filled = count(array_filter($fields));
 
         return [
             'percent' => (int) round($filled / $total * 100),
-            'filled'  => $filled,
-            'total'   => $total,
+            'filled' => $filled,
+            'total' => $total,
             'missing' => array_keys(array_filter($fields, fn ($ok) => ! $ok)),
         ];
     }

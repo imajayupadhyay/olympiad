@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\ClassLevel;
 use App\Models\User;
+use App\Rules\ValidPhoneNumber;
 use App\Services\ManagedEmailService;
 use App\Services\ReferralService;
 use Illuminate\Auth\Events\Registered;
@@ -26,7 +27,7 @@ class RegisteredUserController extends Controller
     {
         return Inertia::render('Auth/Register', [
             'classLevels' => ClassLevel::active(),
-            'states'      => User::indianStates(),
+            'states' => User::indianStates(),
         ]);
     }
 
@@ -38,13 +39,13 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name'           => 'required|string|max:100',
-            'email'          => 'required|string|lowercase|email|max:255|unique:'.User::class,
-            'phone'          => 'nullable|string|max:15',
+            'name' => 'required|string|max:100',
+            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'phone' => ['nullable', 'string', 'max:25', new ValidPhoneNumber],
             'class_level_id' => 'required|exists:class_levels,id',
-            'school'         => 'nullable|string|max:200',
+            'school' => 'nullable|string|max:200',
             'school_address' => 'nullable|string|max:255',
-            'state'          => 'nullable|string|max:100',
+            'state' => 'nullable|string|max:100',
         ]);
 
         // Password is auto-generated (not collected on the form) and emailed to the
@@ -52,17 +53,17 @@ class RegisteredUserController extends Controller
         $plainPassword = Str::password(12, letters: true, numbers: true, symbols: false);
 
         $user = User::create([
-            'name'           => $data['name'],
-            'email'          => $data['email'],
-            'phone'          => $data['phone'] ?? null,
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
             'class_level_id' => $data['class_level_id'],
-            'school'         => $data['school'] ?? null,
+            'school' => $data['school'] ?? null,
             'school_address' => $data['school_address'] ?? null,
-            'state'          => $data['state'] ?? null,
-            'role'           => 'student',
+            'state' => $data['state'] ?? null,
+            'role' => 'student',
             'registration_source' => 'website',
-            'is_active'      => true,
-            'password'       => Hash::make($plainPassword),
+            'is_active' => true,
+            'password' => Hash::make($plainPassword),
         ]);
 
         event(new Registered($user));

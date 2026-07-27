@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\ClassLevel;
 use App\Models\User;
+use App\Rules\ValidPhoneNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -19,9 +20,9 @@ class ProfileController extends Controller
         $user = $request->user()->load('classLevel');
 
         return Inertia::render('Student/Profile/Index', [
-            'profile'     => $user,
+            'profile' => $user,
             'classLevels' => ClassLevel::active(),
-            'states'      => User::indianStates(),
+            'states' => User::indianStates(),
         ]);
     }
 
@@ -33,16 +34,16 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $data = $request->validate([
-            'name'           => 'required|string|max:100',
-            'email'          => 'required|email|max:255|unique:users,email,' . $user->id,
-            'phone'          => 'nullable|string|max:15',
+            'name' => 'required|string|max:100',
+            'email' => 'required|email|max:255|unique:users,email,'.$user->id,
+            'phone' => ['nullable', 'string', 'max:25', new ValidPhoneNumber],
             'class_level_id' => 'required|exists:class_levels,id',
-            'dob'            => 'nullable|date|before:today',
-            'school'         => 'nullable|string|max:200',
+            'dob' => 'nullable|date|before:today',
+            'school' => 'nullable|string|max:200',
             'school_address' => 'nullable|string|max:255',
-            'city'           => 'nullable|string|max:100',
-            'pincode'        => 'nullable|digits:6',
-            'state'          => 'nullable|string|max:100',
+            'city' => 'nullable|string|max:100',
+            'pincode' => 'nullable|digits:6',
+            'state' => 'nullable|string|max:100',
         ]);
 
         // Re-verification flow not enforced — email is editable directly.
@@ -95,7 +96,7 @@ class ProfileController extends Controller
     {
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password'         => ['required', 'confirmed', Password::defaults()],
+            'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
         $request->user()->update([

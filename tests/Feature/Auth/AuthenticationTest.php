@@ -27,7 +27,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('student.dashboard', absolute: false));
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
@@ -39,6 +39,18 @@ class AuthenticationTest extends TestCase
             'password' => 'wrong-password',
         ]);
 
+        $this->assertGuest();
+    }
+
+    public function test_admin_and_inactive_student_cannot_use_the_student_password_login(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $inactive = User::factory()->create(['role' => 'student', 'is_active' => false]);
+
+        $this->post('/login', ['email' => $admin->email, 'password' => 'password']);
+        $this->assertGuest();
+
+        $this->post('/login', ['email' => $inactive->email, 'password' => 'password']);
         $this->assertGuest();
     }
 

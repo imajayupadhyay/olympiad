@@ -52,4 +52,17 @@ return [
         'support_phone' => env('SUPPORT_PHONE', '+91 72890 89009'),
     ],
 
+    'aisensy' => [
+        'api_key' => env('AISENSY_API_KEY'),
+        'campaign_name' => env('AISENSY_CAMPAIGN_NAME'),
+        'endpoint' => env('AISENSY_ENDPOINT', 'https://backend.aisensy.com/campaign/t1/api/v2'),
+        'source' => env('AISENSY_SOURCE', 'neo_student_login'),
+    ],
+
+    'auth_otp' => [
+        // Use a dedicated random production secret. APP_KEY is a safe fallback
+        // for development and prevents an empty pepper from weakening hashes.
+        'pepper' => env('OTP_PEPPER') ?: env('APP_KEY'),
+    ],
+
 ];

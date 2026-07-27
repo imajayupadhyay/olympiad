@@ -7,6 +7,7 @@ use App\Models\ClassLevel;
 use App\Models\Exam;
 use App\Models\ExamEnrollment;
 use App\Models\User;
+use App\Rules\ValidPhoneNumber;
 use App\Services\ManagedEmailService;
 use App\Services\PaymentService;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class UserController extends Controller
     {
         return [
             'classLevels' => ClassLevel::active(),
-            'states'      => User::indianStates(),
+            'states' => User::indianStates(),
         ];
     }
 
@@ -100,9 +101,9 @@ class UserController extends Controller
             $s = $request->search;
             $query->where(function ($q) use ($s) {
                 $q->where('name', 'like', "%{$s}%")
-                  ->orWhere('email', 'like', "%{$s}%")
-                  ->orWhere('school', 'like', "%{$s}%")
-                  ->orWhere('city', 'like', "%{$s}%");
+                    ->orWhere('email', 'like', "%{$s}%")
+                    ->orWhere('school', 'like', "%{$s}%")
+                    ->orWhere('city', 'like', "%{$s}%");
             });
         }
 
@@ -127,16 +128,16 @@ class UserController extends Controller
         }
 
         return Inertia::render('Admin/Users/Index', [
-            'students'    => $query->paginate(20)->withQueryString(),
+            'students' => $query->paginate(20)->withQueryString(),
             'classLevels' => ClassLevel::active(),
-            'states'      => User::indianStates(),
-            'sources'     => User::REGISTRATION_SOURCES,
-            'filters'     => $request->only(['search', 'class_level_id', 'state', 'status', 'source']),
-            'totals'      => [
-                'all'       => User::where('role', 'student')->count(),
-                'active'    => User::where('role', 'student')->where('is_active', true)->count(),
-                'inactive'  => User::where('role', 'student')->where('is_active', false)->count(),
-                'today'     => User::where('role', 'student')->whereDate('created_at', today())->count(),
+            'states' => User::indianStates(),
+            'sources' => User::REGISTRATION_SOURCES,
+            'filters' => $request->only(['search', 'class_level_id', 'state', 'status', 'source']),
+            'totals' => [
+                'all' => User::where('role', 'student')->count(),
+                'active' => User::where('role', 'student')->where('is_active', true)->count(),
+                'inactive' => User::where('role', 'student')->where('is_active', false)->count(),
+                'today' => User::where('role', 'student')->whereDate('created_at', today())->count(),
                 'marketing' => User::where('role', 'student')->where('registration_source', 'marketing')->count(),
             ],
         ]);
@@ -150,20 +151,20 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'           => 'required|string|max:100',
-            'email'          => 'required|email|unique:users,email',
-            'password'       => 'required|string|min:8|confirmed',
+            'name' => 'required|string|max:100',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
             'class_level_id' => 'nullable|exists:class_levels,id',
-            'phone'          => 'nullable|string|max:15',
-            'dob'            => 'nullable|date|before:today',
-            'school'         => 'nullable|string|max:200',
-            'city'           => 'nullable|string|max:100',
-            'state'          => 'nullable|string|max:100',
-            'is_active'      => 'boolean',
+            'phone' => ['nullable', 'string', 'max:25', new ValidPhoneNumber],
+            'dob' => 'nullable|date|before:today',
+            'school' => 'nullable|string|max:200',
+            'city' => 'nullable|string|max:100',
+            'state' => 'nullable|string|max:100',
+            'is_active' => 'boolean',
         ]);
 
         $plainPassword = $data['password'];
-        $data['role']     = 'student';
+        $data['role'] = 'student';
         $data['registration_source'] = 'admin';
         $data['password'] = Hash::make($plainPassword);
 
@@ -212,16 +213,16 @@ class UserController extends Controller
         $this->assertStudent($user);
 
         $data = $request->validate([
-            'name'           => 'required|string|max:100',
-            'email'          => 'required|email|unique:users,email,' . $user->id,
-            'password'       => 'nullable|string|min:8|confirmed',
+            'name' => 'required|string|max:100',
+            'email' => 'required|email|unique:users,email,'.$user->id,
+            'password' => 'nullable|string|min:8|confirmed',
             'class_level_id' => 'nullable|exists:class_levels,id',
-            'phone'          => 'nullable|string|max:15',
-            'dob'            => 'nullable|date|before:today',
-            'school'         => 'nullable|string|max:200',
-            'city'           => 'nullable|string|max:100',
-            'state'          => 'nullable|string|max:100',
-            'is_active'      => 'boolean',
+            'phone' => ['nullable', 'string', 'max:25', new ValidPhoneNumber],
+            'dob' => 'nullable|date|before:today',
+            'school' => 'nullable|string|max:200',
+            'city' => 'nullable|string|max:100',
+            'state' => 'nullable|string|max:100',
+            'is_active' => 'boolean',
         ]);
 
         if (empty($data['password'])) {
@@ -244,6 +245,7 @@ class UserController extends Controller
         $user->update(['is_active' => $request->is_active]);
 
         $action = $request->is_active ? 'enabled' : 'disabled';
+
         return back()->with('success', "Student account {$action} successfully.");
     }
 
@@ -256,6 +258,7 @@ class UserController extends Controller
         }
 
         $user->delete();
+
         return redirect()->route('admin.users.index')->with('success', 'Student deleted successfully.');
     }
 

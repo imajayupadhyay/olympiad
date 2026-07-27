@@ -4,10 +4,11 @@ namespace App\Jobs;
 
 use App\Models\EmailLog;
 use App\Services\ManagedEmailService;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
-class SendManagedEmail implements ShouldQueue
+class SendManagedEmail implements ShouldBeEncrypted, ShouldQueue
 {
     use Queueable;
 
@@ -16,8 +17,7 @@ class SendManagedEmail implements ShouldQueue
     public function __construct(
         public int $emailLogId,
         public array $rendered,
-    ) {
-    }
+    ) {}
 
     public function handle(ManagedEmailService $emails): void
     {
