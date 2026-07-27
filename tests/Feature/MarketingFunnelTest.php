@@ -47,29 +47,29 @@ class MarketingFunnelTest extends TestCase
         $n++;
 
         return Exam::create(array_merge([
-            'subject_id'       => $this->subject->id,
-            'class_level_id'   => $this->classLevel->id,
-            'name'             => 'National Mathematics Olympiad',
-            'slug'             => 'nmo-'.$n,
-            'exam_code'        => 'NMO'.(1000 + $n),
-            'starts_at'        => now()->addWeek(),
-            'ends_at'          => now()->addWeeks(2),
+            'subject_id' => $this->subject->id,
+            'class_level_id' => $this->classLevel->id,
+            'name' => 'National Mathematics Olympiad',
+            'slug' => 'nmo-'.$n,
+            'exam_code' => 'NMO'.(1000 + $n),
+            'starts_at' => now()->addWeek(),
+            'ends_at' => now()->addWeeks(2),
             'duration_minutes' => 60,
-            'fee_amount'       => 250,
-            'fee_currency'     => 'INR',
-            'status'           => 'published',
-            'published_at'     => now(),
+            'fee_amount' => 250,
+            'fee_currency' => 'INR',
+            'status' => 'published',
+            'published_at' => now(),
         ], $overrides));
     }
 
     private function payload(array $overrides = []): array
     {
         return array_merge([
-            'name'           => 'Aarav Mehta',
-            'email'          => 'aarav@example.com',
-            'phone'          => '9876543210',
+            'name' => 'Aarav Mehta',
+            'email' => 'aarav@example.com',
+            'phone' => '9876543210',
             'class_level_id' => $this->classLevel->id,
-            'exam_ids'       => [],
+            'exam_ids' => [],
         ], $overrides);
     }
 
@@ -80,10 +80,8 @@ class MarketingFunnelTest extends TestCase
      */
     private function fakeGatewayFailure(): void
     {
-        $this->app->bind(PaymentService::class, fn ($app) => new class(
-            $app->make(EnrollmentService::class),
-            $app->make(CouponService::class),
-        ) extends PaymentService {
+        $this->app->bind(PaymentService::class, fn ($app) => new class($app->make(EnrollmentService::class), $app->make(CouponService::class)) extends PaymentService
+        {
             public function openOrder(Payment $payment): array
             {
                 throw new \RuntimeException('gateway offline');
@@ -149,10 +147,10 @@ class MarketingFunnelTest extends TestCase
         ]));
 
         $response->assertOk()->assertJson([
-            'status'   => 'ready',
-            'gross'    => 250.0,
+            'status' => 'ready',
+            'gross' => 250.0,
             'discount' => 0.0,
-            'payable'  => 250.0,
+            'payable' => 250.0,
             'currency' => 'INR',
         ]);
         $response->assertJsonPath('items.0.name', $exam->name);
@@ -199,7 +197,7 @@ class MarketingFunnelTest extends TestCase
         $user = User::where('email', 'aarav@example.com')->first();
         $this->assertDatabaseHas('email_logs', [
             'template_key' => 'student_registered',
-            'related_id'   => $user->id,
+            'related_id' => $user->id,
         ]);
     }
 
@@ -262,7 +260,7 @@ class MarketingFunnelTest extends TestCase
         $this->postJson(route('marketing.register'), [
             'name' => '', 'email' => 'not-an-email', 'phone' => '123', 'class_level_id' => '', 'exam_ids' => [],
         ])->assertStatus(422)
-          ->assertJsonValidationErrors(['name', 'email', 'phone', 'class_level_id', 'exam_ids']);
+            ->assertJsonValidationErrors(['name', 'email', 'phone', 'class_level_id', 'exam_ids']);
 
         $this->assertSame(0, User::count());
     }
@@ -311,6 +309,9 @@ class MarketingFunnelTest extends TestCase
 
     public function test_verified_marketing_payment_exposes_a_dynamic_inr_purchase_event(): void
     {
+        config()->set('services.razorpay.key_id', 'rzp_test_marketing');
+        config()->set('services.razorpay.key_secret', 'marketing-signing-secret');
+
         $student = User::factory()->create();
         $payment = Payment::create([
             'user_id' => $student->id,
@@ -326,16 +327,16 @@ class MarketingFunnelTest extends TestCase
             'notes' => ['exam_ids' => []],
             'paid_at' => now(),
         ]);
+        $signature = hash_hmac('sha256', 'order_verified|pay_verified', 'marketing-signing-secret');
 
         $this->actingAs($student)
             ->post(route('marketing.payment.verify', $payment), [
                 'razorpay_payment_id' => 'pay_verified',
                 'razorpay_order_id' => 'order_verified',
-                'razorpay_signature' => 'already_verified',
+                'razorpay_signature' => $signature,
             ])
             ->assertRedirect(route('student.dashboard'))
-            ->assertSessionHas('meta_purchase', fn (array $event) =>
-                $event['event_id'] === 'marketing_purchase_'.$payment->id
+            ->assertSessionHas('meta_purchase', fn (array $event) => $event['event_id'] === 'marketing_purchase_'.$payment->id
                 && $event['payment_id'] === $payment->id
                 && $event['value'] === 269.10
                 && $event['currency'] === 'INR'
@@ -577,15 +578,15 @@ class MarketingFunnelTest extends TestCase
     private function activeReferralProgram(): void
     {
         ReferralSetting::current()->update([
-            'is_active'                => true,
-            'referee_discount_type'    => 'percentage',
-            'referee_discount_value'   => 10,
-            'referee_max_discount'     => 50,
+            'is_active' => true,
+            'referee_discount_type' => 'percentage',
+            'referee_discount_value' => 10,
+            'referee_max_discount' => 50,
             'referee_min_order_amount' => 0,
-            'referrer_reward_type'     => 'fixed',
-            'referrer_reward_value'    => 100,
-            'unlock_threshold'         => 1,
-            'qualify_on'               => 'registration',
+            'referrer_reward_type' => 'fixed',
+            'referrer_reward_value' => 100,
+            'unlock_threshold' => 1,
+            'qualify_on' => 'registration',
         ]);
     }
 }

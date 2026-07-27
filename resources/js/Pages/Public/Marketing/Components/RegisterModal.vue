@@ -229,6 +229,11 @@ async function openRazorpay(data) {
         description: 'Olympiad exam enrolment',
         prefill: data.prefill,
         theme: { color: '#EE6A2C' },
+        // Campaign visitors commonly arrive inside Instagram/Facebook WebViews,
+        // where Razorpay's JavaScript handler is unsupported. The signed server
+        // callback works in those environments and remains safe in normal browsers.
+        callback_url: data.callback_url,
+        redirect: true,
         handler(resp) {
             router.post(route('marketing.payment.verify', data.payment_id), {
                 razorpay_payment_id: resp.razorpay_payment_id,

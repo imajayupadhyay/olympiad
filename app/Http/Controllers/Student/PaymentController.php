@@ -12,14 +12,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Razorpay\Api\Errors\SignatureVerificationError;
 
 class PaymentController extends Controller
 {
     public function __construct(
         protected PaymentService $payments,
         protected ReferralService $referrals,
-    ) {
-    }
+    ) {}
 
     /** Payment history. */
     public function index(Request $request): Response
@@ -29,15 +29,15 @@ class PaymentController extends Controller
             ->latest()
             ->get()
             ->map(fn (Payment $p) => [
-                'id'        => $p->id,
-                'amount'    => (float) $p->amount,
-                'discount'  => (float) $p->discount_amount,
-                'currency'  => $p->currency,
-                'status'    => $p->status,
-                'gateway'   => $p->gateway,
+                'id' => $p->id,
+                'amount' => (float) $p->amount,
+                'discount' => (float) $p->discount_amount,
+                'currency' => $p->currency,
+                'status' => $p->status,
+                'gateway' => $p->gateway,
                 'reference' => $p->razorpay_payment_id ?? $p->razorpay_order_id,
-                'created_at'=> $p->created_at,
-                'exams'     => $p->enrollments->map(fn ($e) => $e->exam?->name)->filter()->values(),
+                'created_at' => $p->created_at,
+                'exams' => $p->enrollments->map(fn ($e) => $e->exam?->name)->filter()->values(),
             ]);
 
         return Inertia::render('Student/Payments/Index', ['payments' => $rows]);
@@ -69,22 +69,22 @@ class PaymentController extends Controller
 
         return Inertia::render('Student/Payments/Pay', [
             'payment' => [
-                'id'       => $payment->id,
-                'gross'    => (float) $payment->gross_amount,
+                'id' => $payment->id,
+                'gross' => (float) $payment->gross_amount,
                 'discount' => (float) $payment->discount_amount,
-                'amount'   => (float) $payment->amount,
+                'amount' => (float) $payment->amount,
                 'currency' => $payment->currency,
-                'coupon'   => $payment->coupon ? [
-                    'code'   => $payment->coupon->code,
-                    'type'   => $payment->coupon->type,
+                'coupon' => $payment->coupon ? [
+                    'code' => $payment->coupon->code,
+                    'type' => $payment->coupon->type,
                     'source' => $payment->coupon->source,
                 ] : null,
             ],
-            'items'    => $items,
-            'keyId'    => config('services.razorpay.key_id'),
-            'prefill'  => [
-                'name'    => $user->name,
-                'email'   => $user->email,
+            'items' => $items,
+            'keyId' => config('services.razorpay.key_id'),
+            'prefill' => [
+                'name' => $user->name,
+                'email' => $user->email,
                 'contact' => $user->phone,
             ],
             // Refer & Earn share container — same state/feed as the exams + registration pages.
@@ -140,20 +140,27 @@ class PaymentController extends Controller
             $this->payments->enrollFreeByCoupon($payment);
 
             return response()->json([
-                'status'   => 'free',
+                'status' => 'free',
+                'redirect' => route('student.exams'),
+            ]);
+        }
+
+        if ($result['status'] === 'paid') {
+            return response()->json([
+                'status' => 'free',
                 'redirect' => route('student.exams'),
             ]);
         }
 
         return response()->json([
-            'status'   => 'ok',
+            'status' => 'ok',
             'order_id' => $result['order_id'],
-            'amount'   => $result['amount_paise'],
+            'amount' => $result['amount_paise'],
             'currency' => $result['currency'],
-            'key_id'   => $result['key_id'],
-            'prefill'  => [
-                'name'    => $request->user()->name,
-                'email'   => $request->user()->email,
+            'key_id' => $result['key_id'],
+            'prefill' => [
+                'name' => $request->user()->name,
+                'email' => $request->user()->email,
                 'contact' => $request->user()->phone,
             ],
         ]);
@@ -166,18 +173,21 @@ class PaymentController extends Controller
 
         $data = $request->validate([
             'razorpay_payment_id' => 'required|string',
-            'razorpay_order_id'   => 'required|string',
-            'razorpay_signature'  => 'required|string',
+            'razorpay_order_id' => 'required|string',
+            'razorpay_signature' => 'required|string',
         ]);
 
         abort_unless($data['razorpay_order_id'] === $payment->razorpay_order_id, 400);
 
         try {
             $this->payments->verifyAndEnroll($payment, $data['razorpay_payment_id'], $data['razorpay_signature']);
-        } catch (\Razorpay\Api\Errors\SignatureVerificationError $e) {
+        } catch (SignatureVerificationError $e) {
             return redirect()->route('student.payments.show', $payment)
                 ->with('error', 'Payment verification failed. Please try again.');
         }
+
+        $payment->refresh();
+        abort_unless($payment->isPaid(), 409, 'The payment order changed while verification was running.');
 
         return redirect()->route('student.exams')
             ->with('success', 'Payment successful — you are now enrolled. 🎉');

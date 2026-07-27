@@ -47,6 +47,8 @@ Route::get('/faq', [HomeController::class, 'faq'])->name('faq');
 Route::get('/marketing', [MarketingController::class, 'index'])->name('marketing');
 Route::post('/marketing/register', [MarketingController::class, 'register'])
     ->middleware('throttle:8,1')->name('marketing.register');
+Route::post('/marketing/payment/{payment}/callback', [MarketingController::class, 'paymentCallback'])
+    ->name('marketing.payment.callback');
 Route::middleware('auth')->group(function () {
     Route::post('/marketing/payment/{payment}/order', [MarketingController::class, 'createOrder'])
         ->name('marketing.payment.order');

@@ -6,6 +6,7 @@ use App\Models\Payment;
 use App\Services\PaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Razorpay webhook receiver — the reliability net for payments where the browser
@@ -16,8 +17,7 @@ class RazorpayWebhookController extends Controller
 {
     public function __construct(
         protected PaymentService $payments,
-    ) {
-    }
+    ) {}
 
     public function __invoke(Request $request): Response
     {
@@ -47,7 +47,20 @@ class RazorpayWebhookController extends Controller
                 $payment = Payment::where('razorpay_order_id', $orderId)->first();
 
                 if ($payment && $payment->status !== 'paid') {
-                    $this->payments->markPaidFromWebhook($payment, $paymentId);
+                    $this->payments->markPaidFromWebhook(
+                        $payment,
+                        $paymentId,
+                        isset($entity['amount']) ? (int) $entity['amount'] : null,
+                        $entity['currency'] ?? null,
+                        $entity['method'] ?? null,
+                    );
+                } elseif (! $payment) {
+                    Log::warning('Razorpay webhook did not match a local order.', [
+                        'event' => $event,
+                        'razorpay_order_id' => $orderId,
+                        'razorpay_payment_id' => $paymentId,
+                        'razorpay_event_id' => $request->header('X-Razorpay-Event-Id'),
+                    ]);
                 }
             }
         }

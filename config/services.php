@@ -39,6 +39,11 @@ return [
         'key_id' => env('RAZORPAY_KEY_ID'),
         'key_secret' => env('RAZORPAY_KEY_SECRET'),
         'webhook_secret' => env('RAZORPAY_WEBHOOK_SECRET'),
+        'reconciliation' => [
+            'delay_minutes' => (int) env('RAZORPAY_RECONCILIATION_DELAY_MINUTES', 2),
+            'lookback_days' => (int) env('RAZORPAY_RECONCILIATION_LOOKBACK_DAYS', 30),
+            'batch_size' => (int) env('RAZORPAY_RECONCILIATION_BATCH_SIZE', 100),
+        ],
     ],
 
     'brevo' => [

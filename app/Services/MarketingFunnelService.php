@@ -30,8 +30,7 @@ class MarketingFunnelService
         protected EnrollmentService $enrollments,
         protected PaymentService $payments,
         protected ReferralService $referrals,
-    ) {
-    }
+    ) {}
 
     /**
      * Every published olympiad, flattened for the landing page. The visitor has no
@@ -48,15 +47,15 @@ class MarketingFunnelService
             ->orderBy('starts_at')
             ->get()
             ->map(fn (Exam $e) => [
-                'id'               => $e->id,
-                'name'             => $e->name,
-                'class_level_id'   => $e->class_level_id,
-                'class_level'      => $e->classLevel?->label,
-                'subject'          => $e->subject?->only(['name', 'icon', 'color']),
-                'questions_count'  => $e->questions_count,
+                'id' => $e->id,
+                'name' => $e->name,
+                'class_level_id' => $e->class_level_id,
+                'class_level' => $e->classLevel?->label,
+                'subject' => $e->subject?->only(['name', 'icon', 'color']),
+                'questions_count' => $e->questions_count,
                 'duration_minutes' => $e->duration_minutes,
-                'fee_amount'       => (float) $e->fee_amount,
-                'is_free'          => $e->isFree(),
+                'fee_amount' => (float) $e->fee_amount,
+                'is_free' => $e->isFree(),
             ])
             ->all();
     }
@@ -77,11 +76,11 @@ class MarketingFunnelService
         }
 
         return [
-            'type'             => $settings->referee_discount_type,
-            'value'            => (float) $settings->referee_discount_value,
-            'max_discount'     => $settings->referee_max_discount !== null ? (float) $settings->referee_max_discount : null,
+            'type' => $settings->referee_discount_type,
+            'value' => (float) $settings->referee_discount_value,
+            'max_discount' => $settings->referee_max_discount !== null ? (float) $settings->referee_max_discount : null,
             'min_order_amount' => (float) $settings->referee_min_order_amount,
-            'label'            => $settings->refereeDiscountLabel(),
+            'label' => $settings->refereeDiscountLabel(),
         ];
     }
 
@@ -102,10 +101,10 @@ class MarketingFunnelService
         }
 
         return [
-            'welcome'   => $settings->refereeDiscountLabel(),
-            'reward'    => $settings->referrerRewardLabel(),
+            'welcome' => $settings->refereeDiscountLabel(),
+            'reward' => $settings->referrerRewardLabel(),
             'threshold' => max(1, (int) $settings->unlock_threshold),
-            'mode'      => $settings->qualify_on,
+            'mode' => $settings->qualify_on,
         ];
     }
 
@@ -131,7 +130,7 @@ class MarketingFunnelService
         }
 
         return [
-            'name'  => Str::of($referrer->name)->trim()->explode(' ')->first(),
+            'name' => Str::of($referrer->name)->trim()->explode(' ')->first(),
             'label' => $settings->refereeDiscountLabel(),
         ];
     }
@@ -172,8 +171,8 @@ class MarketingFunnelService
         Auth::login($user);
 
         $exams = Exam::whereIn('id', $examIds)->get();
-        $free  = $exams->filter->isFree()->pluck('id')->all();
-        $paid  = $exams->reject->isFree()->pluck('id')->all();
+        $free = $exams->filter->isFree()->pluck('id')->all();
+        $paid = $exams->reject->isFree()->pluck('id')->all();
 
         // Free olympiads never touch the gateway — enrol them straight away.
         if ($free) {
@@ -182,9 +181,9 @@ class MarketingFunnelService
 
         if (! $paid) {
             return [
-                'status'   => 'free',
+                'status' => 'free',
                 'redirect' => route('student.dashboard'),
-                'message'  => 'You are enrolled. Welcome aboard! 🎉',
+                'message' => 'You are enrolled. Welcome aboard! 🎉',
             ];
         }
 
@@ -193,27 +192,27 @@ class MarketingFunnelService
         $payment->refresh()->load('coupon');
 
         return [
-            'status'     => 'ready',
+            'status' => 'ready',
             'payment_id' => $payment->id,
             // Server-confirmed figures — the single source of truth for what the
             // student is about to be charged. The form's live preview is only a hint.
-            'gross'      => (float) $payment->gross_amount,
-            'discount'   => (float) $payment->discount_amount,
-            'payable'    => (float) $payment->amount,
-            'currency'   => $payment->currency,
-            'coupon'     => $payment->coupon ? [
-                'code'   => $payment->coupon->code,
+            'gross' => (float) $payment->gross_amount,
+            'discount' => (float) $payment->discount_amount,
+            'payable' => (float) $payment->amount,
+            'currency' => $payment->currency,
+            'coupon' => $payment->coupon ? [
+                'code' => $payment->coupon->code,
                 'source' => $payment->coupon->source,
             ] : null,
-            'items'      => Exam::whereIn('id', $paid)->get(['id', 'name', 'fee_amount'])
+            'items' => Exam::whereIn('id', $paid)->get(['id', 'name', 'fee_amount'])
                 ->map(fn (Exam $e) => [
-                    'id'         => $e->id,
-                    'name'       => $e->name,
+                    'id' => $e->id,
+                    'name' => $e->name,
                     'fee_amount' => (float) $e->fee_amount,
                 ])->all(),
             // The account now exists, so the Refer & earn card can carry a real link
             // and live counts — the same payload the registration wizard renders.
-            'referral'   => $this->referrals->shareState($user),
+            'referral' => $this->referrals->shareState($user),
         ];
     }
 
@@ -237,9 +236,9 @@ class MarketingFunnelService
             report($e);
 
             return [
-                'status'     => 'failed',
+                'status' => 'failed',
                 'payment_id' => $payment->id,
-                'message'    => 'We could not reach the payment gateway. Your account and selection are saved — please try again.',
+                'message' => 'We could not reach the payment gateway. Your account and selection are saved — please try again.',
             ];
         }
 
@@ -248,9 +247,17 @@ class MarketingFunnelService
             $this->payments->enrollFreeByCoupon($payment);
 
             return [
-                'status'   => 'free',
+                'status' => 'free',
                 'redirect' => route('student.dashboard'),
-                'message'  => 'Your discount covered the full amount — you are enrolled! 🎉',
+                'message' => 'Your discount covered the full amount — you are enrolled! 🎉',
+            ];
+        }
+
+        if ($order['status'] === 'paid') {
+            return [
+                'status' => 'free',
+                'redirect' => route('student.dashboard'),
+                'message' => 'Your payment was already completed — you are enrolled! 🎉',
             ];
         }
 
@@ -258,18 +265,21 @@ class MarketingFunnelService
         $user = $payment->user;
 
         return [
-            'status'     => 'ok',
+            'status' => 'ok',
             'payment_id' => $payment->id,
-            'order_id'   => $order['order_id'],
-            'amount'     => $order['amount_paise'],
-            'currency'   => $order['currency'],
-            'key_id'     => $order['key_id'],
-            'gross'      => (float) $payment->gross_amount,
-            'discount'   => (float) $payment->discount_amount,
-            'payable'    => (float) $payment->amount,
-            'prefill'    => [
-                'name'    => $user->name,
-                'email'   => $user->email,
+            'order_id' => $order['order_id'],
+            'amount' => $order['amount_paise'],
+            'currency' => $order['currency'],
+            'key_id' => $order['key_id'],
+            // Razorpay's signed POST callback is reliable in Instagram/Facebook
+            // WebViews where the JavaScript handler is not supported.
+            'callback_url' => route('marketing.payment.callback', $payment),
+            'gross' => (float) $payment->gross_amount,
+            'discount' => (float) $payment->discount_amount,
+            'payable' => (float) $payment->amount,
+            'prefill' => [
+                'name' => $user->name,
+                'email' => $user->email,
                 'contact' => $user->phone,
             ],
         ];
@@ -286,14 +296,14 @@ class MarketingFunnelService
         $plainPassword = Str::password(12, letters: true, numbers: true, symbols: false);
 
         $user = DB::transaction(fn () => User::create([
-            'name'           => $data['name'],
-            'email'          => $data['email'],
-            'phone'          => $data['phone'],
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
             'class_level_id' => $data['class_level_id'],
-            'role'           => 'student',
+            'role' => 'student',
             'registration_source' => 'marketing',
-            'is_active'      => true,
-            'password'       => Hash::make($plainPassword),
+            'is_active' => true,
+            'password' => Hash::make($plainPassword),
         ]));
 
         event(new Registered($user));

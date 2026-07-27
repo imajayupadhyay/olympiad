@@ -110,7 +110,47 @@ class MarketingController extends Controller
         }
 
         $payment->refresh();
+        abort_unless($payment->isPaid(), 409, 'The payment order changed while verification was running.');
 
+        return $this->successfulPaymentRedirect($payment);
+    }
+
+    /**
+     * Razorpay's WebView/redirect callback. It is intentionally public and CSRF
+     * exempt: authenticity comes from the Razorpay signature and the order ID
+     * stored on our server, not from a browser session.
+     */
+    public function paymentCallback(Request $request, Payment $payment): RedirectResponse
+    {
+        $data = $request->validate([
+            'razorpay_payment_id' => 'required|string',
+            'razorpay_order_id' => 'required|string',
+            'razorpay_signature' => 'required|string',
+        ]);
+
+        abort_unless($payment->gateway === 'razorpay', 400);
+        abort_unless($data['razorpay_order_id'] === $payment->razorpay_order_id, 400);
+
+        try {
+            $this->payments->verifyAndEnroll($payment, $data['razorpay_payment_id'], $data['razorpay_signature']);
+        } catch (SignatureVerificationError $e) {
+            abort(400, 'Payment signature verification failed.');
+        }
+
+        $payment->refresh();
+        abort_unless($payment->isPaid(), 409, 'Payment is no longer eligible for fulfilment.');
+
+        // The callback can return from a cross-site WebView without the original
+        // session cookie. A valid signed payment safely re-establishes the buyer's
+        // student session before redirecting to the dashboard.
+        Auth::login($payment->user);
+        $request->session()->regenerate();
+
+        return $this->successfulPaymentRedirect($payment);
+    }
+
+    private function successfulPaymentRedirect(Payment $payment): RedirectResponse
+    {
         return redirect()->route('student.dashboard')
             ->with('success', 'Payment successful — you are enrolled. 🎉')
             ->with('meta_purchase', [

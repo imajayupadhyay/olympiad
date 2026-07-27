@@ -11,6 +11,11 @@ Artisan::command('inspire', function () {
 
 Schedule::command('emails:send-exam-reminders --hours=24')->hourly();
 
+Schedule::command('payments:reconcile-razorpay')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer();
+
 Schedule::call(function (): void {
     LoginOtpChallenge::where('created_at', '<', now()->subDay())->delete();
 })->dailyAt('02:20')->name('prune-login-otp-challenges')->withoutOverlapping();

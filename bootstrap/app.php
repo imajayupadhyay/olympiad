@@ -1,8 +1,14 @@
 <?php
 
+use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\CaptureReferral;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\PreventPrivateIndexing;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,23 +18,24 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-            \App\Http\Middleware\CaptureReferral::class,
-            \App\Http\Middleware\PreventPrivateIndexing::class,
-            \App\Http\Middleware\HandleInertiaRequests::class,
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            CaptureReferral::class,
+            PreventPrivateIndexing::class,
+            HandleInertiaRequests::class,
+            AddLinkHeadersForPreloadedAssets::class,
         ]);
 
         $middleware->alias([
-            'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'admin' => AdminMiddleware::class,
         ]);
 
         // Razorpay posts server-to-server — exempt the webhook from CSRF.
         $middleware->validateCsrfTokens(except: [
             'razorpay/webhook',
+            'marketing/payment/*/callback',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response) {
+        $exceptions->respond(function (Response $response) {
             $path = '/'.ltrim(request()->path(), '/');
 
             if (! in_array($path, ['/', '/robots.txt', '/sitemap.xml'], true)) {
