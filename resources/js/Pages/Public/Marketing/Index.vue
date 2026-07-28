@@ -241,8 +241,7 @@ const year = new Date().getFullYear();
                     </h1>
 
                     <p class="lede">
-                        India’s Leading Olympiad for Classes 1–10<br>
-                        Compete for Official National Ranks &amp; Win Prizes Worth Over ₹10 Lakh
+                        India’s Leading Olympiad for Classes 1–10 Compete for Official National Ranks &amp; Win Prizes Worth Over ₹10 Lakh
                     </p>
 
                     <div class="offer-timer" :class="{ urgent: offerUrgent }">
