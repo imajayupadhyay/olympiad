@@ -241,8 +241,8 @@ const year = new Date().getFullYear();
                     </h1>
 
                     <p class="lede">
-                        India’s online olympiad for Classes 1–12 — with an official rank and certificate
-                        for every participant, plus 60+ prizes worth over ₹5 lakh.
+                        India’s Leading Olympiad for Classes 1–10<br>
+                        Compete for Official National Ranks &amp; Win Prizes Worth Over ₹10 Lakh
                     </p>
 
                     <div class="offer-timer" :class="{ urgent: offerUrgent }">
