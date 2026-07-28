@@ -20,6 +20,8 @@ class SeoIndexingTest extends TestCase
         $response->assertSee('index, follow, max-image-preview:large', false);
         $response->assertSee('application/ld+json', false);
         $response->assertSee('EducationalOrganization', false);
+        $response->assertSee('https://www.clarity.ms/tag/', false);
+        $response->assertSee('xtjc6kiloc', false);
     }
 
     public function test_non_home_pages_receive_noindex_header(): void
