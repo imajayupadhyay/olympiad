@@ -4,6 +4,7 @@ use App\Http\Controllers\Public\ExamController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\MarketingController;
 use App\Http\Controllers\Public\SchoolController;
+use App\Http\Controllers\Public\SyllabusController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/sitemap.xml', function () {
@@ -21,6 +22,12 @@ Route::get('/sitemap.xml', function () {
             'changefreq' => 'weekly',
             'priority' => '0.9',
         ],
+        [
+            'loc' => $siteUrl.'/syllabus',
+            'lastmod' => now()->toDateString(),
+            'changefreq' => 'monthly',
+            'priority' => '0.8',
+        ],
     ];
 
     return response()
@@ -31,6 +38,7 @@ Route::get('/sitemap.xml', function () {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/exams', [ExamController::class, 'index'])->name('exams');
+Route::get('/syllabus', [SyllabusController::class, 'index'])->name('syllabus');
 Route::post('/exams/enroll', [ExamController::class, 'enroll'])->name('exams.enroll');
 Route::get('/results', [HomeController::class, 'results'])->name('results');
 Route::get('/blog', [HomeController::class, 'blog'])->name('blog');

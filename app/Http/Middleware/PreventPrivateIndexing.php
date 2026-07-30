@@ -16,6 +16,7 @@ class PreventPrivateIndexing
     private const INDEXABLE_PATHS = [
         '/',
         '/marketing',
+        '/syllabus',
     ];
 
     public function handle(Request $request, Closure $next): Response

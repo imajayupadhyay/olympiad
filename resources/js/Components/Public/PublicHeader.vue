@@ -10,12 +10,12 @@ const props = defineProps({
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user ?? null);
-const currentPath = computed(() => (page.url || '/').split('?')[0]);
+const currentPath = computed(() => (page.url || '/').split(/[?#]/)[0]);
 
 const navLinks = [
     { id: 'subjects', label: 'Subjects' },
-    { id: 'how', label: 'How it Works' },
     { id: 'exams', label: 'Exams', to: '/exams' },
+    { id: 'syllabus', label: 'Syllabus', to: '/syllabus' },
     { id: 'rewards', label: 'Rewards' },
     { id: 'faq', label: 'FAQ' },
     { id: 'contact', label: 'Contact' },
