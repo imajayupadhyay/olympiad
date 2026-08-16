@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
-use App\Models\Exam;
 use App\Models\HomepageSection;
 use App\Models\Lead;
+use App\Services\ExamCatalogueService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,26 +13,12 @@ use Inertia\Response;
 
 class HomeController extends Controller
 {
-    public function index(): Response
+    public function index(ExamCatalogueService $catalogue): Response
     {
-        $upcomingExams = Exam::where('status', 'published')
-            ->with('subject:id,name')
-            ->orderByRaw('starts_at IS NULL, starts_at')
-            ->take(8)
-            ->get()
-            ->map(function (Exam $e) {
-                $state = $e->availabilityState();
-
-                return [
-                    'name'        => $e->subject?->name ?? $e->name,
-                    'description' => $e->description,
-                    'ribbon'      => $state === 'live' ? 'LIVE' : '',
-                    'fee'         => $e->isFree() ? 'Free' : '₹'.number_format((float) $e->fee_amount, 0),
-                ];
-            });
-
         return Inertia::render('Public/Home/Index', [
-            'upcomingExams' => $upcomingExams,
+            // One card per subject — see ExamCatalogueService for why this is rolled
+            // up server-side rather than deduped in the page component.
+            'upcomingExams' => $catalogue->homepageSubjectCards(),
             'homepageContent' => HomepageSection::publicPayload(),
         ]);
     }

@@ -168,21 +168,22 @@
           <div class="carousel__viewport">
             <div class="carousel__track" ref="examTrack" :style="{ transform: examTX }"
                  @touchstart.passive="onTouchStart($event, 'exam')" @touchend.passive="onTouchEnd($event, 'exam')">
-              <article class="ecard" v-for="(e, i) in exams" :key="i">
+              <article class="ecard" v-for="e in exams" :key="e.id">
                 <div class="ecard__head">
                   <div class="ecard__ribbon" v-if="e.ribbon">{{ e.ribbon }}</div>
                   <h3>{{ e.name }}</h3>
-                  <p class="ecard__desc" v-if="e.description">{{ e.description }}</p>
+                  <span class="ecard__class" v-if="e.classRange">{{ e.classRange }}</span>
                 </div>
                 <div class="ecard__body">
                   <div class="ecard__foot">
                     <div class="ecard__fee"><b>{{ e.fee }}</b><small>per attempt</small></div>
+                    <Link href="/exams" class="btn btn-primary btn-shine">Select Your Exam</Link>
                   </div>
                 </div>
               </article>
             </div>
           </div>
-          <div class="carousel__nav">
+          <div class="carousel__nav" v-if="examMaxIndex > 0">
             <div class="carousel__dots">
               <button v-for="(d, i) in examPages" :key="i" class="cdot" :class="{ active: examIndex === i }" @click="goExam(i)"></button>
             </div>
@@ -851,9 +852,9 @@ onUnmounted(() => {
 .ecard__head{ padding:26px 26px 0; position:relative; }
 .ecard__ribbon{ position:absolute; top:18px; right:-34px; transform:rotate(40deg); background:var(--saffron); color:#fff; font:700 11px/1 var(--body); letter-spacing:.06em; padding:6px 40px; }
 .ecard h3{ font-family:var(--display); font-size:24px; font-weight:600; line-height:1.1; margin-bottom:8px; }
-.ecard__desc{ color:var(--paper-45); font-size:13.5px; line-height:1.5; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.ecard__class{ display:inline-flex; align-items:center; font:600 12px/1 var(--mono); letter-spacing:.04em; color:var(--gold-lt); background:rgba(242,200,75,.12); border:1px solid rgba(242,200,75,.25); border-radius:100px; padding:7px 13px; }
 .ecard__body{ padding:22px 26px 26px; }
-.ecard__foot{ display:flex; align-items:center; justify-content:space-between; padding-top:20px; border-top:1px solid rgba(255,255,255,.08); }
+.ecard__foot{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding-top:20px; border-top:1px solid rgba(255,255,255,.08); }
 .ecard__fee b{ font-family:var(--mono); font-size:24px; font-weight:700; color:var(--gold-lt); }
 .ecard__fee small{ display:block; font-size:11px; color:var(--paper-45); letter-spacing:.04em; }
 .ecard .btn{ padding:11px 18px; font-size:13.5px; }
