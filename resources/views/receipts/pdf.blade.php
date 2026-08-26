@@ -128,7 +128,6 @@
                         <td class="center">{{ $loop->iteration }}</td>
                         <td>
                             <span class="strong">{{ $line['description'] ?? ($company['service_description'] ?? 'Online service') }}</span>
-                            @if(! empty($line['exam_code']))<br><span class="muted">{{ $line['exam_code'] }}</span>@endif
                         </td>
                         @if($show('hsn_sac'))<td>{{ $company['hsn_sac'] ?? ($line['hsn_sac'] ?? '-') ?: '-' }}</td>@endif
                         <td class="center">{{ $line['quantity'] ?? 1 }}</td>

@@ -212,6 +212,8 @@ class AdminReceiptSystemTest extends TestCase
         $this->assertStringContainsString('27BBBBB2222B1Z5', $receiptHtml);
         $this->assertStringContainsString('999999', $receiptHtml);
         $this->assertStringContainsString('New receipt footer.', $receiptHtml);
+        $this->assertStringContainsString('Math Challenge', $receiptHtml);
+        $this->assertStringNotContainsString('MATH-5', $receiptHtml);
         $this->assertStringNotContainsString('Old Office Road', $receiptHtml);
         $this->assertStringNotContainsString('654321', $receiptHtml);
 
