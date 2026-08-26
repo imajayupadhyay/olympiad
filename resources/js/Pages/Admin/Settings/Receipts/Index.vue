@@ -77,7 +77,7 @@
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-5">
             <label class="block md:col-span-2">
               <span class="field-label">Prefix *</span>
-              <input v-model="form.receipt_prefix" type="text" class="field-control font-number" placeholder="NOH/{FY}/" />
+              <input v-model="form.receipt_prefix" type="text" class="field-control font-number" placeholder="NEO/{FY}/" />
               <p v-if="form.errors.receipt_prefix" class="field-error">{{ form.errors.receipt_prefix }}</p>
               <p class="field-hint">Tokens: {FY}, {YYYY}, {YY}, {MM}</p>
             </label>
@@ -226,7 +226,7 @@ const form = useForm({
   service_description: props.settings.service_description || 'Online Olympiad Exam Registration',
   gst_rate: props.settings.gst_rate ?? 18,
   prices_include_gst: Boolean(props.settings.prices_include_gst),
-  receipt_prefix: props.settings.receipt_prefix || 'NOH/{FY}/',
+  receipt_prefix: props.settings.receipt_prefix || 'NEO/{FY}/',
   receipt_padding: props.settings.receipt_padding || 4,
   financial_year_start_month: props.settings.financial_year_start_month || 4,
   next_sequence_number: props.sequence.next_number || 1,

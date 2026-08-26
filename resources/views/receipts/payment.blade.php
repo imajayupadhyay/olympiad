@@ -75,7 +75,7 @@
             </div>
             <div class="rcpt-tag">
                 Receipt No.
-                <strong>NOH-{{ str_pad($payment->id, 6, '0', STR_PAD_LEFT) }}</strong>
+                <strong>NEO-{{ str_pad($payment->id, 6, '0', STR_PAD_LEFT) }}</strong>
                 <span class="status">{{ strtoupper($payment->status) }}</span>
             </div>
         </div>
@@ -132,7 +132,7 @@
         <div class="foot">
             This is a computer-generated receipt and does not require a signature.
             For any queries regarding this payment, contact support quoting Receipt No.
-            <strong>NOH-{{ str_pad($payment->id, 6, '0', STR_PAD_LEFT) }}</strong>.
+            <strong>NEO-{{ str_pad($payment->id, 6, '0', STR_PAD_LEFT) }}</strong>.
         </div>
     </div>
 </body>

@@ -379,7 +379,7 @@ class AdminExamManagementTest extends TestCase
         $exam = Exam::create([
             ...$this->examPayload($subject, $classLevel),
             'slug' => 'national-science-olympiad-class-6',
-            'exam_code' => 'NOH-2606-TEST',
+            'exam_code' => 'NEO-2606-TEST',
             'created_by' => $admin->id,
             'updated_by' => $admin->id,
         ]);

@@ -79,7 +79,7 @@ class ReceiptSetting extends Model
             'service_description' => 'Online Olympiad Exam Registration',
             'gst_rate' => 18,
             'prices_include_gst' => true,
-            'receipt_prefix' => 'NOH/{FY}/',
+            'receipt_prefix' => 'NEO/{FY}/',
             'receipt_padding' => 4,
             'financial_year_start_month' => 4,
             'visible_fields' => static::DEFAULT_VISIBLE_FIELDS,

@@ -289,7 +289,7 @@ async function openRazorpay(data) {
                     <div class="ticket-body">
                         <div class="t-head">
                             <span class="t-eyebrow">Admission ticket</span>
-                            <span class="t-code">#NOH-{{ payment.id }}</span>
+                            <span class="t-code">#NEO-{{ payment.id }}</span>
                         </div>
 
                         <div class="order">

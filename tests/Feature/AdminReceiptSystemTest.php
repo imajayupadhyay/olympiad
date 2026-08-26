@@ -149,8 +149,8 @@ class AdminReceiptSystemTest extends TestCase
         $bulk->assertOk()->assertHeader('content-type', 'application/pdf');
         $this->assertStringStartsWith('%PDF-', $bulk->getContent());
 
-        $this->assertSame('NOH/2026-27/0001', Receipt::where('payment_id', $first->id)->first()->receipt_number);
-        $this->assertSame('NOH/2026-27/0002', Receipt::where('payment_id', $second->id)->first()->receipt_number);
+        $this->assertSame('NEO/2026-27/0001', Receipt::where('payment_id', $first->id)->first()->receipt_number);
+        $this->assertSame('NEO/2026-27/0002', Receipt::where('payment_id', $second->id)->first()->receipt_number);
 
         $report = $this->actingAs($admin)->get(route('admin.receipts.sales-report', [
             'date_from' => '2026-07-01',
@@ -268,7 +268,7 @@ class AdminReceiptSystemTest extends TestCase
             'service_description' => 'Online Olympiad Exam Registration',
             'gst_rate' => 18,
             'prices_include_gst' => true,
-            'receipt_prefix' => 'NOH/{FY}/',
+            'receipt_prefix' => 'NEO/{FY}/',
             'receipt_padding' => 4,
             'financial_year_start_month' => 4,
             'next_sequence_number' => 1,

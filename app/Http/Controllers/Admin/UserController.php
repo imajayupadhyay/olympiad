@@ -297,7 +297,7 @@ class UserController extends Controller
             'assigned_at' => now(),
         ]);
 
-        return back()->with('success', "{$exam->name} assigned to {$user->name}. Manual payment NOH-".str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT).' recorded.');
+        return back()->with('success', "{$exam->name} assigned to {$user->name}. Manual payment NEO-".str_pad((string) $payment->id, 6, '0', STR_PAD_LEFT).' recorded.');
     }
 
     public function cancelEnrollment(Request $request, User $user, ExamEnrollment $enrollment)

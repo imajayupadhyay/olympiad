@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('service_description')->default('Online Olympiad Exam Registration');
             $table->decimal('gst_rate', 5, 2)->default(18);
             $table->boolean('prices_include_gst')->default(true);
-            $table->string('receipt_prefix', 60)->default('NOH/{FY}/');
+            $table->string('receipt_prefix', 60)->default('NEO/{FY}/');
             $table->unsignedTinyInteger('receipt_padding')->default(4);
             $table->unsignedTinyInteger('financial_year_start_month')->default(4);
             $table->json('visible_fields')->nullable();

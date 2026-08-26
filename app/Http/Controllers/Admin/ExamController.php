@@ -579,7 +579,7 @@ class ExamController extends Controller
     private function generateExamCode(): string
     {
         do {
-            $code = 'NOH-'.now()->format('ym').'-'.strtoupper(Str::random(4));
+            $code = 'NEO-'.now()->format('ym').'-'.strtoupper(Str::random(4));
         } while (Exam::where('exam_code', $code)->exists());
 
         return $code;

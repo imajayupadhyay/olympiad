@@ -204,7 +204,7 @@
       <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
         <h3 class="font-heading font-bold text-text-main text-base mb-2">Verify Pending Payment</h3>
         <p class="text-text-muted text-sm mb-5">
-          Mark NOH-{{ String(reconcileTarget.id).padStart(6, '0') }} as paid and grant access to the attached olympiad(s).
+          Mark NEO-{{ String(reconcileTarget.id).padStart(6, '0') }} as paid and grant access to the attached olympiad(s).
         </p>
 
         <div class="space-y-4">
@@ -253,7 +253,7 @@
       <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
         <h3 class="font-heading font-bold text-text-main text-base mb-2">Downgrade Payment</h3>
         <p class="text-text-muted text-sm mb-5">
-          Downgrade NOH-{{ String(downgradeTarget.id).padStart(6, '0') }}. Paid payments move to refunded and linked olympiad access is cancelled. Pending payments move out of the pending queue.
+          Downgrade NEO-{{ String(downgradeTarget.id).padStart(6, '0') }}. Paid payments move to refunded and linked olympiad access is cancelled. Pending payments move out of the pending queue.
         </p>
 
         <div>
