@@ -11,14 +11,16 @@ use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\QuestionController;
+use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\ReferralController;
 use App\Http\Controllers\Admin\ReferralSettingController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ResultController;
-use App\Http\Controllers\Admin\SupportController;
 use App\Http\Controllers\Admin\Settings\ClassLevelController;
 use App\Http\Controllers\Admin\Settings\QuestionCategoryController;
+use App\Http\Controllers\Admin\Settings\ReceiptSettingController;
 use App\Http\Controllers\Admin\Settings\SubjectController;
+use App\Http\Controllers\Admin\SupportController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -63,6 +65,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/payments/{payment}/receipt', [PaymentController::class, 'receipt'])->name('payments.receipt');
     Route::patch('/payments/{payment}/reconcile', [PaymentController::class, 'reconcile'])->name('payments.reconcile');
     Route::post('/payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund');
+
+    Route::get('/receipts', [ReceiptController::class, 'index'])->name('receipts.index');
+    Route::get('/receipts/bulk/download', [ReceiptController::class, 'bulk'])->name('receipts.bulk');
+    Route::get('/receipts/sales-report', [ReceiptController::class, 'salesReport'])->name('receipts.sales-report');
+    Route::get('/receipts/payments/{payment}/download', [ReceiptController::class, 'download'])->name('receipts.download');
 
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export/excel', [ReportController::class, 'excel'])->name('reports.excel');
@@ -118,5 +125,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/classes', [ClassLevelController::class, 'store'])->name('classes.store');
         Route::put('/classes/{classLevel}', [ClassLevelController::class, 'update'])->name('classes.update');
         Route::delete('/classes/{classLevel}', [ClassLevelController::class, 'destroy'])->name('classes.destroy');
+
+        Route::get('/receipts', [ReceiptSettingController::class, 'index'])->name('receipts');
+        Route::post('/receipts', [ReceiptSettingController::class, 'update'])->name('receipts.update');
     });
 });

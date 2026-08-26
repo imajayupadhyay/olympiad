@@ -106,7 +106,7 @@
         <tbody class="divide-y divide-gray-50">
           <tr v-for="p in payments.data" :key="p.id" class="hover:bg-gray-50/50 transition-colors">
             <td class="px-5 py-3.5">
-              <p class="font-number text-xs font-semibold text-text-main">NOH-{{ String(p.id).padStart(6, '0') }}</p>
+              <p class="font-number text-xs font-semibold text-text-main">{{ p.receipt_number || `Payment #${p.id}` }}</p>
               <p v-if="p.payment_id" class="text-text-muted text-[11px] font-number truncate max-w-[130px]">{{ p.payment_id }}</p>
               <span v-if="p.is_manual" class="inline-flex mt-1 bg-accent/10 text-accent text-[10px] font-bold px-2 py-0.5 rounded-full">
                 Manual

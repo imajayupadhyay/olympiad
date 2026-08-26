@@ -102,6 +102,15 @@
           Payments
         </SidebarLink>
 
+        <SidebarLink :href="route('admin.receipts.index')" :active="isActive('/admin/receipts')">
+          <template #icon>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 14h6m-6 4h6M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2z"/>
+            </svg>
+          </template>
+          Receipts
+        </SidebarLink>
+
         <SidebarLink :href="route('admin.coupons')" :active="isActive('/admin/coupons')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -198,6 +207,15 @@
             </svg>
           </template>
           Class Levels
+        </SidebarLink>
+
+        <SidebarLink :href="route('admin.settings.receipts')" :active="isActive('/admin/settings/receipts')">
+          <template #icon>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 14h6m-6 4h6M8 3h8l3 3v15H5V6l3-3z"/>
+            </svg>
+          </template>
+          Receipt Settings
         </SidebarLink>
       </nav>
 

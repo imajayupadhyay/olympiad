@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\Payment;
 use App\Services\PaymentService;
-use Illuminate\Contracts\View\View;
+use App\Services\ReceiptExportService;
+use App\Services\ReceiptService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -19,6 +22,7 @@ class PaymentController extends Controller
             'user:id,name,email,phone,class_level_id',
             'user.classLevel:id,label',
             'enrollments.exam:id,name',
+            'receipt:id,payment_id,receipt_number,issued_at',
             'recordedByAdmin:id,name',
         ])->latest();
 
@@ -26,10 +30,10 @@ class PaymentController extends Controller
             $s = trim($request->search);
             $query->where(function ($q) use ($s) {
                 $q->where('razorpay_order_id', 'like', "%{$s}%")
-                  ->orWhere('razorpay_payment_id', 'like', "%{$s}%")
-                  ->orWhere('manual_reference', 'like', "%{$s}%")
-                  ->orWhere('id', $s)
-                  ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%")->orWhere('email', 'like', "%{$s}%"));
+                    ->orWhere('razorpay_payment_id', 'like', "%{$s}%")
+                    ->orWhere('manual_reference', 'like', "%{$s}%")
+                    ->orWhere('id', $s)
+                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%")->orWhere('email', 'like', "%{$s}%"));
             });
         }
 
@@ -66,25 +70,26 @@ class PaymentController extends Controller
             : collect();
 
         $rows = $payments->through(fn (Payment $p) => [
-            'id'          => $p->id,
-            'amount'      => (float) $p->amount,
-            'currency'    => $p->currency,
-            'status'      => $p->status,
-            'gateway'     => $p->gateway,
-            'source'      => $p->source ?: 'checkout',
+            'id' => $p->id,
+            'amount' => (float) $p->amount,
+            'currency' => $p->currency,
+            'status' => $p->status,
+            'gateway' => $p->gateway,
+            'source' => $p->source ?: 'checkout',
             'source_label' => $p->sourceLabel(),
-            'method'      => $p->method,
-            'is_manual'   => (bool) $p->is_manual,
+            'method' => $p->method,
+            'is_manual' => (bool) $p->is_manual,
             'manual_reference' => $p->manual_reference,
             'manual_note' => $p->manual_note,
             'recorded_by' => $p->recordedByAdmin?->only(['id', 'name']),
-            'order_id'    => $p->razorpay_order_id,
-            'payment_id'  => $p->razorpay_payment_id,
-            'created_at'  => $p->created_at,
-            'paid_at'     => $p->paid_at,
-            'student'     => $p->user ? ['name' => $p->user->name, 'email' => $p->user->email] : null,
-            'class'       => $p->user?->classLevel?->label,
-            'exams'       => $p->enrollments->isNotEmpty()
+            'order_id' => $p->razorpay_order_id,
+            'payment_id' => $p->razorpay_payment_id,
+            'receipt_number' => $p->receipt?->receipt_number,
+            'created_at' => $p->created_at,
+            'paid_at' => $p->paid_at,
+            'student' => $p->user ? ['name' => $p->user->name, 'email' => $p->user->email] : null,
+            'class' => $p->user?->classLevel?->label,
+            'exams' => $p->enrollments->isNotEmpty()
                 ? $p->enrollments->map(fn ($e) => $e->exam?->name)->filter()->values()
                 : collect(data_get($p->notes, 'exam_ids', []))
                     ->map(fn ($id) => $examNames[$id] ?? null)->filter()->values(),
@@ -92,30 +97,33 @@ class PaymentController extends Controller
 
         return Inertia::render('Admin/Payments/Index', [
             'payments' => $rows,
-            'sources'  => Payment::SOURCES,
-            'filters'  => $request->only(['search', 'status', 'date_from', 'date_to', 'source']),
-            'totals'   => [
+            'sources' => Payment::SOURCES,
+            'filters' => $request->only(['search', 'status', 'date_from', 'date_to', 'source']),
+            'totals' => [
                 'collected' => (float) Payment::where('status', 'paid')->sum('amount'),
-                'month'     => (float) Payment::where('status', 'paid')
+                'month' => (float) Payment::where('status', 'paid')
                     ->whereMonth('paid_at', now()->month)->whereYear('paid_at', now()->year)->sum('amount'),
-                'paid'      => Payment::where('status', 'paid')->count(),
-                'pending'   => Payment::where('status', 'created')->count(),
-                'failed'    => Payment::where('status', 'failed')->count(),
+                'paid' => Payment::where('status', 'paid')->count(),
+                'pending' => Payment::where('status', 'created')->count(),
+                'failed' => Payment::where('status', 'failed')->count(),
                 'marketing' => (float) Payment::where('status', 'paid')->where('source', 'marketing')->sum('amount'),
             ],
         ]);
     }
 
     /** Printable receipt for a completed payment. */
-    public function receipt(Payment $payment): View|\Illuminate\Http\RedirectResponse
-    {
+    public function receipt(
+        Payment $payment,
+        ReceiptService $receipts,
+        ReceiptExportService $exports,
+    ): HttpResponse|RedirectResponse {
         if ($payment->status !== 'paid') {
             return redirect()->route('admin.payments')->with('info', 'A receipt is only available for completed payments.');
         }
 
-        $payment->load(['user', 'enrollments.exam:id,name']);
+        $receipt = $receipts->issueForPayment($payment, request()->user());
 
-        return view('receipts.payment', ['payment' => $payment]);
+        return $exports->receipts(collect([$receipt]));
     }
 
     public function reconcile(Request $request, Payment $payment, PaymentService $payments)

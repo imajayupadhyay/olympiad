@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Payment extends Model
 {
@@ -32,13 +33,13 @@ class Payment extends Model
     ];
 
     protected $casts = [
-        'amount'          => 'decimal:2',
-        'gross_amount'    => 'decimal:2',
+        'amount' => 'decimal:2',
+        'gross_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
-        'is_manual'       => 'boolean',
+        'is_manual' => 'boolean',
         'manually_recorded_at' => 'datetime',
-        'notes'           => 'array',
-        'paid_at'         => 'datetime',
+        'notes' => 'array',
+        'paid_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -61,6 +62,11 @@ class Payment extends Model
         return $this->hasMany(ExamEnrollment::class);
     }
 
+    public function receipt(): HasOne
+    {
+        return $this->hasOne(Receipt::class);
+    }
+
     public function isPaid(): bool
     {
         return $this->status === 'paid';
@@ -68,10 +74,10 @@ class Payment extends Model
 
     /** Which surface produced this payment — drives campaign reporting in the admin panel. */
     public const SOURCES = [
-        'checkout'   => 'Student portal',
+        'checkout' => 'Student portal',
         'onboarding' => 'Registration wizard',
-        'marketing'  => 'Marketing page',
-        'admin'      => 'Admin entry',
+        'marketing' => 'Marketing page',
+        'admin' => 'Admin entry',
     ];
 
     public function sourceLabel(): string
