@@ -39,14 +39,27 @@
 
             <label class="block">
               <span class="field-label">State</span>
-              <input v-model="form.state" type="text" class="field-control" placeholder="Delhi" />
+              <input
+                v-model="form.state"
+                type="text"
+                list="gst-state-options"
+                class="field-control"
+                placeholder="Delhi / 07"
+                @change="syncStateFromName"
+                @blur="syncStateFromName"
+              />
+              <datalist id="gst-state-options">
+                <option v-for="option in stateOptions" :key="option.code" :value="option.label"></option>
+              </datalist>
               <p v-if="form.errors.state" class="field-error">{{ form.errors.state }}</p>
+              <p class="field-hint">Type the name alone or with its GST code, e.g. <strong>Delhi / 07</strong>.</p>
             </label>
 
             <label class="block">
               <span class="field-label">State code</span>
-              <input v-model="form.state_code" type="text" maxlength="2" class="field-control" placeholder="07" />
+              <input v-model="form.state_code" type="text" inputmode="numeric" maxlength="2" class="field-control" placeholder="07" />
               <p v-if="form.errors.state_code" class="field-error">{{ form.errors.state_code }}</p>
+              <p class="field-hint">Prints as: <strong>{{ statePreview || '—' }}</strong></p>
             </label>
 
             <label class="block">
@@ -207,6 +220,7 @@ const props = defineProps({
   settings: Object,
   visibleFields: Object,
   sequence: Object,
+  stateOptions: { type: Array, default: () => [] },
 });
 
 const logoInput = ref(null);
@@ -215,7 +229,7 @@ const form = useForm({
   company_name: props.settings.company_name || '',
   gstin: props.settings.gstin || '',
   address: props.settings.address || '',
-  state: props.settings.state || '',
+  state: props.settings.state_display || props.settings.state || '',
   state_code: props.settings.state_code || '',
   email: props.settings.email || '',
   phone: props.settings.phone || '',
@@ -232,6 +246,59 @@ const form = useForm({
   next_sequence_number: props.sequence.next_number || 1,
   visible_fields: props.settings.visible_fields || Object.keys(props.visibleFields),
   footer_note: props.settings.footer_note || '',
+});
+
+const padStateCode = (value) => {
+  const digits = String(value ?? '').replace(/\D+/g, '');
+  return digits ? digits.slice(0, 2).padStart(2, '0') : '';
+};
+
+// Mirrors App\Support\GstStateCodes::split() so the box can hold "Delhi / 07".
+const splitState = (raw) => {
+  const value = String(raw ?? '').trim();
+  if (!value) return { name: '', code: '' };
+
+  const bracketed = value.match(/^(.*?)\s*\(\s*(\d{1,2})\s*\)$/);
+  if (bracketed) return { name: bracketed[1].trim(), code: padStateCode(bracketed[2]) };
+
+  const separated = value.match(/^(.*?)\s*[/|\u2013\u2014-]\s*(.*)$/);
+  if (separated) {
+    const [, left, right] = separated;
+    if (/^\d{1,2}$/.test(right.trim())) return { name: left.trim(), code: padStateCode(right) };
+    if (/^\d{1,2}$/.test(left.trim())) return { name: right.trim(), code: padStateCode(left) };
+  }
+
+  if (/^\d{1,2}$/.test(value)) {
+    const match = props.stateOptions.find((option) => option.code === padStateCode(value));
+    return { name: match?.name || '', code: padStateCode(value) };
+  }
+
+  return { name: value, code: '' };
+};
+
+const codeForStateName = (name) => {
+  const key = String(name ?? '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '');
+  if (!key) return '';
+  const match = props.stateOptions.find(
+    (option) => option.name.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '') === key,
+  );
+  return match?.code || '';
+};
+
+// Keep the two boxes in step: a code typed inside the State box wins, a known
+// state name fills a blank code box.
+const syncStateFromName = () => {
+  const { name, code } = splitState(form.state);
+  form.state = name;
+  const resolved = code || codeForStateName(name) || form.state_code;
+  form.state_code = padStateCode(resolved);
+};
+
+const statePreview = computed(() => {
+  const { name, code } = splitState(form.state);
+  const resolvedCode = padStateCode(code || form.state_code || codeForStateName(name));
+  if (!name) return resolvedCode;
+  return resolvedCode ? `${name} / ${resolvedCode}` : name;
 });
 
 const months = [

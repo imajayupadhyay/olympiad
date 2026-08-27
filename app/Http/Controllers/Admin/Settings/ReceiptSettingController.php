@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ReceiptSettingRequest;
 use App\Models\ReceiptSetting;
 use App\Services\ReceiptNumberService;
+use App\Support\GstStateCodes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -20,7 +21,9 @@ class ReceiptSettingController extends Controller
         return Inertia::render('Admin/Settings/Receipts/Index', [
             'settings' => array_merge($settings->toArray(), [
                 'logo_url' => $settings->logoUrl(),
+                'state_display' => $settings->stateDisplay(),
             ]),
+            'stateOptions' => GstStateCodes::options(),
             'visibleFields' => ReceiptSetting::VISIBLE_FIELD_LABELS,
             'sequence' => $numbers->preview(),
         ]);

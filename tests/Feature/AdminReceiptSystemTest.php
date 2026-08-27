@@ -12,6 +12,7 @@ use App\Models\ReceiptSetting;
 use App\Models\Subject;
 use App\Models\User;
 use App\Services\ReceiptService;
+use App\Support\GstStateCodes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -251,6 +252,104 @@ class AdminReceiptSystemTest extends TestCase
             ]))
             ->assertRedirect(route('admin.settings.receipts'))
             ->assertSessionHasErrors('next_sequence_number');
+    }
+
+    public function test_state_can_be_entered_with_its_gst_code_and_is_stored_split(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->from(route('admin.settings.receipts'))
+            ->post(route('admin.settings.receipts.update'), $this->settingsPayload([
+                'state' => 'Delhi / 07',
+                'state_code' => '',
+            ]))
+            ->assertRedirect(route('admin.settings.receipts'));
+
+        $settings = ReceiptSetting::current()->refresh();
+        $this->assertSame('Delhi', $settings->state);
+        $this->assertSame('07', $settings->state_code);
+        $this->assertSame('Delhi / 07', $settings->stateDisplay());
+        $this->assertSame('Delhi / 07', $settings->renderCompanyPayload()['state_display']);
+    }
+
+    public function test_a_known_state_name_alone_still_resolves_its_gst_code(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.settings.receipts.update'), $this->settingsPayload([
+                'state' => 'Karnataka',
+                'state_code' => '',
+            ]))
+            ->assertRedirect();
+
+        $settings = ReceiptSetting::current()->refresh();
+        $this->assertSame('Karnataka', $settings->state);
+        $this->assertSame('29', $settings->state_code);
+
+        // Interstate detection still compares clean state names.
+        $this->assertSame('Delhi / 07', GstStateCodes::format('Delhi', null));
+        $this->assertSame(['name' => 'Delhi', 'code' => '07'], GstStateCodes::split('Delhi (07)'));
+        $this->assertSame(['name' => 'Delhi', 'code' => '07'], GstStateCodes::split('07 - Delhi'));
+        $this->assertSame('Unlisted Region', GstStateCodes::format('Unlisted Region', null));
+    }
+
+    public function test_a_non_numeric_state_code_is_rejected(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->from(route('admin.settings.receipts'))
+            ->post(route('admin.settings.receipts.update'), $this->settingsPayload([
+                'state' => 'Delhi',
+                'state_code' => 'AB',
+            ]))
+            ->assertSessionHasErrors('state_code');
+    }
+
+    public function test_receipt_and_sales_report_pdfs_label_the_number_as_a_tax_invoice_number(): void
+    {
+        [$subject, $classLevel] = $this->taxonomy();
+        $payment = $this->paidPayment(
+            User::factory()->create(['role' => 'student', 'name' => 'Invoice Student', 'state' => 'Delhi']),
+            $this->exam($subject, $classLevel, 590),
+            590,
+            '2026-07-15 09:00:00',
+        );
+
+        ReceiptSetting::current()->update([
+            'state' => 'Delhi',
+            'state_code' => '07',
+            'visible_fields' => array_keys(ReceiptSetting::VISIBLE_FIELD_LABELS),
+        ]);
+
+        $receipt = app(ReceiptService::class)->issueForPayment($payment);
+        $company = ReceiptSetting::current()->refresh()->renderCompanyPayload();
+
+        $receiptHtml = view('receipts.pdf', [
+            'receipts' => collect([$receipt]),
+            'company' => $company,
+            'generatedAt' => now(),
+        ])->render();
+
+        $this->assertStringContainsString('Tax Invoice Number', $receiptHtml);
+        $this->assertStringNotContainsString('Receipt No.', $receiptHtml);
+        $this->assertStringContainsString('State: Delhi / 07', $receiptHtml);
+        $this->assertStringContainsString($receipt->receipt_number, $receiptHtml);
+
+        $reportHtml = view('receipts.sales-report-pdf', [
+            'receipts' => collect([$receipt]),
+            'summary' => app(ReceiptService::class)->summary(collect([$receipt])),
+            'filters' => ['date_from' => '2026-07-01', 'date_to' => '2026-07-31'],
+            'company' => $company,
+            'generatedAt' => now(),
+        ])->render();
+
+        $this->assertStringContainsString('Tax Invoice Number', $reportHtml);
+        $this->assertStringNotContainsString('Receipt No.', $reportHtml);
+        $this->assertStringContainsString('State: Delhi / 07', $reportHtml);
+        $this->assertStringContainsString($receipt->receipt_number, $reportHtml);
     }
 
     private function settingsPayload(array $overrides = []): array

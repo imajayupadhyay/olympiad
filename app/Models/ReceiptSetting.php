@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\GstStateCodes;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
@@ -92,6 +93,14 @@ class ReceiptSetting extends Model
         return in_array($field, $this->visible_fields ?: static::DEFAULT_VISIBLE_FIELDS, true);
     }
 
+    /**
+     * Printable state, e.g. "Delhi / 07". Falls back to whichever half is set.
+     */
+    public function stateDisplay(): ?string
+    {
+        return GstStateCodes::format($this->state, $this->state_code);
+    }
+
     public function logoUrl(): string
     {
         if ($this->logo_path) {
@@ -137,6 +146,7 @@ class ReceiptSetting extends Model
             'address' => $this->address,
             'state' => $this->state,
             'state_code' => $this->state_code,
+            'state_display' => $this->stateDisplay(),
             'email' => $this->email,
             'phone' => $this->phone,
             'website' => $this->website,

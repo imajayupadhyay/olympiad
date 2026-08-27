@@ -34,6 +34,8 @@
     $visible = $company['visible_fields'] ?? [];
     $show = fn (string $field): bool => in_array($field, $visible, true);
     $money = fn ($value): string => 'INR '.number_format((float) $value, 2);
+    $companyState = $company['state_display']
+        ?? \App\Support\GstStateCodes::format($company['state'] ?? null, $company['state_code'] ?? null);
     $from = date('d/m/Y', strtotime((string) $filters['date_from']));
     $to = date('d/m/Y', strtotime((string) $filters['date_to']));
 @endphp
@@ -46,7 +48,7 @@
     @if($show('address') && ! empty($company['address']))<p>{{ $company['address'] }}</p>@endif
     <p>
         @if($show('gstin') && ! empty($company['gstin'])) GSTIN: {{ $company['gstin'] }} @endif
-        @if(! empty($company['state'])) &nbsp; State: {{ $company['state'] }}@if(! empty($company['state_code'])) ({{ $company['state_code'] }})@endif @endif
+        @if(! empty($companyState)) &nbsp; State: {{ $companyState }} @endif
         @if($show('phone') && ! empty($company['phone'])) &nbsp; Phone: {{ $company['phone'] }} @endif
         @if($show('email') && ! empty($company['email'])) &nbsp; Email: {{ $company['email'] }} @endif
     </p>
@@ -56,7 +58,7 @@
 
 <table class="meta">
     <tr>
-        <td><small>Receipts</small><strong>{{ number_format($summary['count'] ?? 0) }}</strong></td>
+        <td><small>Tax Invoices</small><strong>{{ number_format($summary['count'] ?? 0) }}</strong></td>
         <td><small>Gross</small><strong>{{ $money($summary['gross_amount'] ?? 0) }}</strong></td>
         <td><small>Discount</small><strong>{{ $money($summary['discount_amount'] ?? 0) }}</strong></td>
         <td><small>GST</small><strong>{{ $money($summary['tax_amount'] ?? 0) }}</strong></td>
@@ -68,9 +70,9 @@
     <thead>
         <tr>
             <th style="width:7%;">Date</th>
-            <th style="width:12%;">Receipt No.</th>
+            <th style="width:14%;">Tax Invoice Number</th>
             <th style="width:15%;">Party Name</th>
-            <th style="width:20%;">Service / Olympiad</th>
+            <th style="width:18%;">Service / Olympiad</th>
             <th style="width:7%;">HSN/SAC</th>
             <th style="width:8%;" class="num">Taxable</th>
             <th style="width:8%;" class="num">CGST</th>

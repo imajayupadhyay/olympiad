@@ -50,6 +50,8 @@
         $money = fn ($value): string => 'INR '.number_format((float) $value, 2);
         $issuedAt = $receipt->issued_at?->timezone(config('app.timezone'));
         $lineColumnCount = 7 + ($show('hsn_sac') ? 1 : 0) + ($show('tax_breakup') ? 3 : 0);
+        $companyState = $company['state_display']
+            ?? \App\Support\GstStateCodes::format($company['state'] ?? null, $company['state_code'] ?? null);
     @endphp
 
     <section class="receipt">
@@ -61,8 +63,8 @@
                     @endif
                     <h1>{{ $company['name'] ?? 'National Olympiad Hunt' }}</h1>
                     @if($show('address') && ! empty($company['address']))<p>{{ $company['address'] }}</p>@endif
-                    @if(! empty($company['state']) || ! empty($company['state_code']))
-                        <p>State: {{ $company['state'] ?? '-' }}@if(! empty($company['state_code'])) ({{ $company['state_code'] }})@endif</p>
+                    @if(! empty($companyState))
+                        <p>State: {{ $companyState }}</p>
                     @endif
                     @if($show('gstin') && ! empty($company['gstin']))<p><span class="strong">GSTIN:</span> {{ $company['gstin'] }}</p>@endif
                     @if($show('email') && ! empty($company['email']))<p>Email: {{ $company['email'] }}</p>@endif
@@ -71,7 +73,7 @@
                 </td>
                 <td class="doc-title" style="width:42%; vertical-align:top;">
                     <h2>{{ ! empty($company['gstin']) ? 'Tax Invoice / Receipt' : 'Payment Receipt' }}</h2>
-                    <p><span class="label">Receipt No.</span><span class="strong">{{ $receipt->receipt_number }}</span></p>
+                    <p><span class="label">Tax Invoice Number</span><span class="strong">{{ $receipt->receipt_number }}</span></p>
                     <p><span class="label">Date</span>{{ $issuedAt?->format('d M Y, h:i A') }}</p>
                     <p><span class="label">Financial Year</span>{{ $receipt->financial_year }}</p>
                 </td>
