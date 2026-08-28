@@ -10,7 +10,7 @@
         <section class="panel">
           <div class="panel-head">
             <h2>Company Details</h2>
-            <p>These values are snapshotted when a receipt is issued.</p>
+            <p>These values are used when receipt PDFs and reports are rendered.</p>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
             <label class="block md:col-span-2">
@@ -85,7 +85,7 @@
         <section class="panel">
           <div class="panel-head">
             <h2>Receipt Numbering</h2>
-            <p>Numbers are reserved only once per paid payment and remain unchanged.</p>
+            <p>The saved prefix and padding control the invoice number shown on receipts and reports.</p>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-5">
             <label class="block md:col-span-2">
@@ -173,7 +173,7 @@
         <section class="panel">
           <div class="panel-head">
             <h2>Visible Fields</h2>
-            <p>Checked fields appear on newly issued receipts.</p>
+            <p>Checked fields appear on receipt PDFs and reports.</p>
           </div>
           <div class="p-5 grid grid-cols-1 gap-2">
             <label v-for="(label, key) in visibleFields" :key="key" class="flex items-center gap-3 text-sm text-text-main bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">

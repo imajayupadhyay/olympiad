@@ -43,8 +43,23 @@ class Receipt extends Model
 
     public function filename(): string
     {
-        $safeNumber = preg_replace('/[^A-Za-z0-9._-]+/', '-', $this->receipt_number);
+        $safeNumber = preg_replace('/[^A-Za-z0-9._-]+/', '-', $this->displayNumber());
 
         return 'receipt-'.$safeNumber.'.pdf';
+    }
+
+    public function displayNumber(?ReceiptSetting $settings = null): string
+    {
+        if (! $this->financial_year || ! $this->sequence_number) {
+            return $this->receipt_number;
+        }
+
+        $settings ??= ReceiptSetting::current();
+
+        return $settings->formatIssuedReceiptNumber(
+            (int) $this->sequence_number,
+            (string) $this->financial_year,
+            $this->issued_at,
+        );
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\Payment;
+use App\Models\ReceiptSetting;
 use App\Services\PaymentService;
 use App\Services\ReceiptExportService;
 use App\Services\ReceiptService;
@@ -22,7 +23,7 @@ class PaymentController extends Controller
             'user:id,name,email,phone,class_level_id',
             'user.classLevel:id,label',
             'enrollments.exam:id,name',
-            'receipt:id,payment_id,receipt_number,issued_at',
+            'receipt:id,payment_id,receipt_number,financial_year,sequence_number,issued_at',
             'recordedByAdmin:id,name',
         ])->latest();
 
@@ -69,6 +70,8 @@ class PaymentController extends Controller
             ? Exam::whereIn('id', $noteExamIds)->pluck('name', 'id')
             : collect();
 
+        $settings = ReceiptSetting::current();
+
         $rows = $payments->through(fn (Payment $p) => [
             'id' => $p->id,
             'amount' => (float) $p->amount,
@@ -84,7 +87,7 @@ class PaymentController extends Controller
             'recorded_by' => $p->recordedByAdmin?->only(['id', 'name']),
             'order_id' => $p->razorpay_order_id,
             'payment_id' => $p->razorpay_payment_id,
-            'receipt_number' => $p->receipt?->receipt_number,
+            'receipt_number' => $p->receipt?->displayNumber($settings),
             'created_at' => $p->created_at,
             'paid_at' => $p->paid_at,
             'student' => $p->user ? ['name' => $p->user->name, 'email' => $p->user->email] : null,

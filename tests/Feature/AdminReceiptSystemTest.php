@@ -237,6 +237,99 @@ class AdminReceiptSystemTest extends TestCase
         $this->assertStringNotContainsString('654321', $reportHtml);
     }
 
+    public function test_existing_receipts_and_reports_render_current_numbering_format(): void
+    {
+        [$subject, $classLevel] = $this->taxonomy();
+        $payment = $this->paidPayment(
+            User::factory()->create(['role' => 'student', 'name' => 'Prefix Student']),
+            $this->exam($subject, $classLevel, 590),
+            590,
+            '2026-07-15 09:00:00',
+        );
+
+        ReceiptSetting::current()->update([
+            'receipt_prefix' => 'NEO/{FY}/',
+            'receipt_padding' => 4,
+        ]);
+
+        $receipt = app(ReceiptService::class)->issueForPayment($payment);
+        $this->assertSame('NEO/2026-27/0001', $receipt->receipt_number);
+
+        $settings = ReceiptSetting::current();
+        $settings->update([
+            'receipt_prefix' => 'INV/{FY}/',
+            'receipt_padding' => 3,
+        ]);
+        $settings = $settings->refresh();
+        $company = $settings->renderCompanyPayload();
+
+        $receiptHtml = view('receipts.pdf', [
+            'receipts' => collect([$receipt->refresh()]),
+            'company' => $company,
+            'numberingSettings' => $settings,
+            'generatedAt' => now(),
+        ])->render();
+
+        $this->assertStringContainsString('INV/2026-27/001', $receiptHtml);
+        $this->assertStringNotContainsString('NEO/2026-27/0001', $receiptHtml);
+
+        $reportHtml = view('receipts.sales-report-pdf', [
+            'receipts' => collect([$receipt]),
+            'summary' => app(ReceiptService::class)->summary(collect([$receipt])),
+            'filters' => [
+                'date_from' => '2026-07-01',
+                'date_to' => '2026-07-31',
+            ],
+            'company' => $company,
+            'numberingSettings' => $settings,
+            'generatedAt' => now(),
+        ])->render();
+
+        $this->assertStringContainsString('INV/2026-27/001', $reportHtml);
+        $this->assertStringNotContainsString('NEO/2026-27/0001', $reportHtml);
+        $this->assertSame('NEO/2026-27/0001', $receipt->refresh()->receipt_number);
+    }
+
+    public function test_admin_payment_and_receipt_lists_render_current_numbering_format(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        [$subject, $classLevel] = $this->taxonomy();
+        $payment = $this->paidPayment(
+            User::factory()->create(['role' => 'student', 'name' => 'Listed Prefix Student']),
+            $this->exam($subject, $classLevel, 590),
+            590,
+            '2026-07-15 09:00:00',
+        );
+
+        ReceiptSetting::current()->update([
+            'receipt_prefix' => 'NEO/{FY}/',
+            'receipt_padding' => 4,
+        ]);
+
+        app(ReceiptService::class)->issueForPayment($payment);
+
+        ReceiptSetting::current()->update([
+            'receipt_prefix' => 'INV/{FY}/',
+            'receipt_padding' => 3,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.payments'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Payments/Index')
+                ->where('payments.data.0.receipt_number', 'INV/2026-27/001')
+            );
+
+        $this->actingAs($admin)
+            ->get(route('admin.receipts.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Receipts/Index')
+                ->where('payments.data.0.receipt.receipt_number', 'INV/2026-27/001')
+            );
+    }
+
     public function test_sequence_cannot_be_rewound_below_an_issued_receipt(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

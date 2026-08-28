@@ -93,10 +93,11 @@
                 $hsn = ! empty($company['hsn_sac'])
                     ? $company['hsn_sac']
                     : ($lines->pluck('hsn_sac')->filter()->unique()->implode(', ') ?: '-');
+                $receiptNumber = $receipt->displayNumber($numberingSettings ?? null);
             @endphp
             <tr>
                 <td>{{ $receipt->issued_at?->format('d/m/Y') }}</td>
-                <td>{{ $receipt->receipt_number }}</td>
+                <td>{{ $receiptNumber }}</td>
                 <td>{{ $customer['name'] ?? '-' }}<br><span class="muted">{{ $customer['state'] ?? '' }}</span></td>
                 <td>{{ $description }}</td>
                 <td>{{ $hsn }}</td>

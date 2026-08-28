@@ -52,6 +52,7 @@
         $lineColumnCount = 7 + ($show('hsn_sac') ? 1 : 0) + ($show('tax_breakup') ? 3 : 0);
         $companyState = $company['state_display']
             ?? \App\Support\GstStateCodes::format($company['state'] ?? null, $company['state_code'] ?? null);
+        $receiptNumber = $receipt->displayNumber($numberingSettings ?? null);
     @endphp
 
     <section class="receipt">
@@ -73,7 +74,7 @@
                 </td>
                 <td class="doc-title" style="width:42%; vertical-align:top;">
                     <h2>{{ ! empty($company['gstin']) ? 'Tax Invoice / Receipt' : 'Payment Receipt' }}</h2>
-                    <p><span class="label">Tax Invoice Number</span><span class="strong">{{ $receipt->receipt_number }}</span></p>
+                    <p><span class="label">Tax Invoice Number</span><span class="strong">{{ $receiptNumber }}</span></p>
                     <p><span class="label">Date</span>{{ $issuedAt?->format('d M Y, h:i A') }}</p>
                     <p><span class="label">Financial Year</span>{{ $receipt->financial_year }}</p>
                 </td>

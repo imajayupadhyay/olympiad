@@ -150,7 +150,7 @@ class ReceiptService
             ->orderByDesc('id');
     }
 
-    public function paymentRow(Payment $payment): array
+    public function paymentRow(Payment $payment, ?ReceiptSetting $settings = null): array
     {
         return [
             'id' => $payment->id,
@@ -176,7 +176,7 @@ class ReceiptService
             'exams' => $this->examNames($payment),
             'receipt' => $payment->receipt ? [
                 'id' => $payment->receipt->id,
-                'receipt_number' => $payment->receipt->receipt_number,
+                'receipt_number' => $payment->receipt->displayNumber($settings),
                 'issued_at' => $payment->receipt->issued_at,
             ] : null,
         ];

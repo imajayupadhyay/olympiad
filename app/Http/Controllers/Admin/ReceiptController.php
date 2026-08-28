@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\SalesReportRequest;
 use App\Models\Exam;
 use App\Models\Payment;
 use App\Models\Receipt;
+use App\Models\ReceiptSetting;
 use App\Services\ReceiptExportService;
 use App\Services\ReceiptNumberService;
 use App\Services\ReceiptService;
@@ -24,6 +25,7 @@ class ReceiptController extends Controller
         ReceiptNumberService $numbers,
     ): Response {
         $filters = $request->filters();
+        $settings = ReceiptSetting::current();
         $baseQuery = $receipts->paidPaymentsQuery($filters);
         $paymentIds = (clone $baseQuery)->pluck('payments.id');
         $issuedReceipts = Receipt::query()->whereIn('payment_id', $paymentIds)->get(['payment_id', 'totals']);
@@ -32,7 +34,7 @@ class ReceiptController extends Controller
         $payments = $baseQuery
             ->paginate($filters['per_page'])
             ->withQueryString()
-            ->through(fn (Payment $payment) => $receipts->paymentRow($payment));
+            ->through(fn (Payment $payment) => $receipts->paymentRow($payment, $settings));
 
         return Inertia::render('Admin/Receipts/Index', [
             'payments' => $payments,

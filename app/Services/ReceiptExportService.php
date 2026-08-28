@@ -22,13 +22,15 @@ class ReceiptExportService
     {
         abort_if($receipts->isEmpty(), 404);
 
+        $settings = ReceiptSetting::current();
         $filename ??= $receipts->count() === 1
             ? $receipts->first()->filename()
             : 'receipts-'.now()->format('Y-m-d-His').'.pdf';
 
         $dompdf = $this->dompdf(view('receipts.pdf', [
             'receipts' => $receipts,
-            'company' => $this->companyFallback(),
+            'company' => $settings->renderCompanyPayload(),
+            'numberingSettings' => $settings,
             'generatedAt' => now(),
         ])->render(), 'portrait');
 
@@ -42,12 +44,14 @@ class ReceiptExportService
     {
         $dateFrom = date('d-m-Y', strtotime((string) $filters['date_from']));
         $dateTo = date('d-m-Y', strtotime((string) $filters['date_to']));
+        $settings = ReceiptSetting::current();
 
         $dompdf = $this->dompdf(view('receipts.sales-report-pdf', [
             'receipts' => $receipts,
             'summary' => $summary,
             'filters' => $filters,
-            'company' => $this->companyFallback(),
+            'company' => $settings->renderCompanyPayload(),
+            'numberingSettings' => $settings,
             'generatedAt' => now(),
         ])->render(), 'landscape');
 
@@ -77,10 +81,5 @@ class ReceiptExportService
             'Content-Disposition' => 'attachment; filename="'.$filename.'"',
             'Cache-Control' => 'no-store, no-cache, must-revalidate',
         ]);
-    }
-
-    private function companyFallback(): array
-    {
-        return ReceiptSetting::current()->renderCompanyPayload();
     }
 }

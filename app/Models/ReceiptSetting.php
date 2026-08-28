@@ -172,7 +172,13 @@ class ReceiptSetting extends Model
     public function renderPrefix(?CarbonInterface $date = null): string
     {
         $date ??= now();
-        $financialYear = $this->financialYear($date);
+
+        return $this->renderPrefixForFinancialYear($this->financialYear($date), $date);
+    }
+
+    public function renderPrefixForFinancialYear(string $financialYear, ?CarbonInterface $date = null): string
+    {
+        $date ??= now();
 
         return strtr((string) $this->receipt_prefix, [
             '{FY}' => $financialYear,
@@ -185,5 +191,11 @@ class ReceiptSetting extends Model
     public function formatReceiptNumber(int $sequence, ?CarbonInterface $date = null): string
     {
         return $this->renderPrefix($date).str_pad((string) $sequence, (int) $this->receipt_padding, '0', STR_PAD_LEFT);
+    }
+
+    public function formatIssuedReceiptNumber(int $sequence, string $financialYear, ?CarbonInterface $date = null): string
+    {
+        return $this->renderPrefixForFinancialYear($financialYear, $date)
+            .str_pad((string) $sequence, (int) $this->receipt_padding, '0', STR_PAD_LEFT);
     }
 }
