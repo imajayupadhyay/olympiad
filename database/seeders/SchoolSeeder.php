@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\School;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class SchoolSeeder extends Seeder
 {
@@ -42,16 +42,17 @@ class SchoolSeeder extends Seeder
             }
 
             $rows[] = [
-                'name'       => $name,
-                'address'    => trim($s['address'] ?? '') ?: null,
-                'is_active'  => true,
+                'name' => $name,
+                'address' => trim($s['address'] ?? '') ?: null,
+                'is_active' => true,
+                'is_managed' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
         }
 
         DB::transaction(function () use ($rows) {
-            School::query()->delete();
+            School::query()->where('is_managed', false)->delete();
 
             foreach (array_chunk($rows, 200) as $chunk) {
                 School::insert($chunk);

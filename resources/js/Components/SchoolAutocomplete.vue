@@ -6,9 +6,12 @@ const props = defineProps({
     address:    { type: String, default: '' },    // school address (auto-filled)
     id:         { type: String, default: 'school' },
     placeholder:{ type: String, default: 'Start typing your school name…' },
+    searchRouteName: { type: String, default: 'schools.search' },
+    searchParams: { type: Object, default: () => ({}) },
+    variant: { type: String, default: 'public' },
 });
 
-const emit = defineEmits(['update:modelValue', 'update:address']);
+const emit = defineEmits(['update:modelValue', 'update:address', 'selected']);
 
 const query = ref(props.modelValue ?? '');
 const suggestions = ref([]);
@@ -27,7 +30,9 @@ const fetchSuggestions = async (term) => {
     const seq = ++requestSeq;
     loading.value = true;
     try {
-        const { data } = await window.axios.get(route('schools.search'), { params: { q: term } });
+        const { data } = await window.axios.get(route(props.searchRouteName), {
+            params: { ...props.searchParams, q: term },
+        });
         if (seq !== requestSeq) return;               // a newer request superseded this one
         suggestions.value = data?.data ?? [];
         active.value = -1;
@@ -55,6 +60,7 @@ const select = (school) => {
     query.value = school.name;
     emit('update:modelValue', school.name);
     emit('update:address', school.address ?? '');
+    emit('selected', school);
     open.value = false;
     active.value = -1;
 };
@@ -76,7 +82,7 @@ onBeforeUnmount(() => { document.removeEventListener('click', onDocClick); clear
 </script>
 
 <template>
-    <div ref="root" class="sa">
+    <div ref="root" class="sa" :class="`sa-${variant}`">
         <div class="control" :class="{ open }">
             <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg></span>
             <input
@@ -147,4 +153,36 @@ onBeforeUnmount(() => { document.removeEventListener('click', onDocClick); clear
 .menu li strong { font-size: .9rem; font-weight: 600; color: #0A1024; }
 .menu li small { font-size: .76rem; color: rgba(10,16,36,.5); line-height: 1.3;
     overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+
+.sa-admin .control {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: .75rem;
+}
+.sa-admin .control:focus-within {
+    border-color: #131C3D;
+    box-shadow: 0 0 0 2px rgba(19,28,61,.1);
+}
+.sa-admin .control.open {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.sa-admin .control input {
+    min-height: 2.5rem;
+    padding: .625rem .75rem .625rem 0;
+    font-size: .8125rem;
+    font-family: Inter, system-ui, sans-serif;
+}
+.sa-admin .menu {
+    border: 1px solid #131C3D;
+    border-top: 0;
+    border-radius: 0 0 .75rem .75rem;
+}
+.sa-admin .menu li.active {
+    background: rgba(19,28,61,.08);
+}
+.sa-admin .spin {
+    border-color: rgba(19,28,61,.2);
+    border-top-color: #131C3D;
+}
 </style>

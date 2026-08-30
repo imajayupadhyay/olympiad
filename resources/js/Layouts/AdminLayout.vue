@@ -44,6 +44,15 @@
           Students
         </SidebarLink>
 
+        <SidebarLink :href="route('admin.schools.index')" :active="isActive('/admin/schools')">
+          <template #icon>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 21V7l8-4 8 4v14M8 21v-7h8v7M7 10h.01M12 10h.01M17 10h.01"/>
+            </svg>
+          </template>
+          Schools
+        </SidebarLink>
+
         <SidebarLink :href="route('admin.reports.index')" :active="isActive('/admin/reports')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

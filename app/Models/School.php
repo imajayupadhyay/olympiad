@@ -4,12 +4,39 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class School extends Model
 {
-    protected $fillable = ['name', 'address', 'is_active'];
+    protected $fillable = [
+        'school_code',
+        'name',
+        'address',
+        'state',
+        'district',
+        'city',
+        'pin_code',
+        'email',
+        'mobile',
+        'head_phone',
+        'is_active',
+        'is_managed',
+    ];
 
-    protected $casts = ['is_active' => 'boolean'];
+    protected $casts = [
+        'is_active' => 'boolean',
+        'is_managed' => 'boolean',
+    ];
+
+    public function coordinators(): HasMany
+    {
+        return $this->hasMany(SchoolCoordinator::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function scopeManaged(Builder $query): Builder
+    {
+        return $query->where('is_managed', true);
+    }
 
     /**
      * Autocomplete search: prefix matches rank above "contains" matches, so

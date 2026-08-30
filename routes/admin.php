@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\Settings\ClassLevelController;
 use App\Http\Controllers\Admin\Settings\QuestionCategoryController;
 use App\Http\Controllers\Admin\Settings\ReceiptSettingController;
 use App\Http\Controllers\Admin\Settings\SubjectController;
+use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\SupportController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +42,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
     Route::post('/users/{user}/enrollments', [UserController::class, 'assignExam'])->name('users.enrollments.store');
     Route::patch('/users/{user}/enrollments/{enrollment}/cancel', [UserController::class, 'cancelEnrollment'])->name('users.enrollments.cancel');
+    Route::get('/schools/search', [SchoolController::class, 'search'])->name('schools.search');
+    Route::get('/schools/export/excel', [SchoolController::class, 'excel'])->name('schools.excel');
+    Route::resource('schools', SchoolController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::patch('/schools/{school}/toggle', [SchoolController::class, 'toggle'])->name('schools.toggle');
     Route::resource('questions', QuestionController::class);
     Route::resource('exams', ExamController::class);
     Route::post('/exams/{exam}/duplicate', [ExamController::class, 'duplicate'])->name('exams.duplicate');
