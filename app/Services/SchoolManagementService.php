@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\School;
+use App\Models\SchoolDesignation;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -108,6 +109,15 @@ class SchoolManagementService
                 ->all(),
             'districts' => $distinct('district')->all(),
             'cities' => $distinct('city')->all(),
+            'schoolDesignations' => SchoolDesignation::active()
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn (SchoolDesignation $designation) => [
+                    'id' => $designation->id,
+                    'name' => $designation->name,
+                ])
+                ->all(),
         ];
     }
 

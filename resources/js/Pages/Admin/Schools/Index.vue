@@ -489,12 +489,17 @@
                   <h4 class="font-heading font-bold text-text-main text-sm">Coordinator Contacts</h4>
                   <p v-if="coordinatorHasErrors" class="text-danger text-xs mt-1">Check the highlighted coordinator fields.</p>
                 </div>
-                <button type="button" @click="addCoordinator" class="inline-flex items-center gap-2 bg-royal/10 text-royal px-3 py-2 rounded-xl text-xs font-semibold hover:bg-royal/15 transition-colors">
-                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-                  </svg>
-                  Add
-                </button>
+                <div class="flex flex-wrap items-center justify-end gap-2">
+                  <Link :href="route('admin.school-designations.index')" class="inline-flex items-center gap-2 bg-white border border-gray-200 text-text-muted px-3 py-2 rounded-xl text-xs font-semibold hover:text-primary hover:border-primary/30 transition-colors">
+                    Manage Designations
+                  </Link>
+                  <button type="button" @click="addCoordinator" class="inline-flex items-center gap-2 bg-royal/10 text-royal px-3 py-2 rounded-xl text-xs font-semibold hover:bg-royal/15 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Add
+                  </button>
+                </div>
               </div>
 
               <div class="space-y-3">
@@ -518,7 +523,16 @@
                     <div class="flex gap-2">
                       <label class="block flex-1 min-w-0">
                         <span class="form-label">Designation</span>
-                        <input v-model="coordinator.designation" type="text" class="form-control bg-white" placeholder="Principal, teacher…" />
+                        <select v-model="coordinator.designation" class="form-control bg-white">
+                          <option value="">Select designation</option>
+                          <option
+                            v-for="designation in designationOptionsFor(coordinator.designation)"
+                            :key="designation"
+                            :value="designation"
+                          >
+                            {{ designation }}
+                          </option>
+                        </select>
                         <span v-if="coordinatorError(index, 'designation')" class="form-error">{{ coordinatorError(index, 'designation') }}</span>
                       </label>
                       <button
@@ -608,6 +622,7 @@ const props = defineProps({
   filters: Object,
   summary: Object,
   exportLimits: Object,
+  schoolDesignations: Array,
 });
 
 const filterDefaults = {
@@ -655,6 +670,13 @@ const clearFilters = () => {
 };
 
 const blankCoordinator = () => ({ name: '', email: '', phone: '', designation: '' });
+const activeDesignationNames = computed(() => props.schoolDesignations.map(designation => designation.name));
+const designationOptionsFor = (currentValue) => {
+  const names = [...activeDesignationNames.value];
+  if (currentValue && !names.includes(currentValue)) names.push(currentValue);
+
+  return names;
+};
 const form = useForm({
   id: null,
   school_code: '',

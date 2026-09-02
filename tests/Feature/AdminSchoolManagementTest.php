@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\School;
+use App\Models\SchoolDesignation;
 use App\Models\User;
 use Database\Seeders\SchoolSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -78,6 +79,8 @@ class AdminSchoolManagementTest extends TestCase
     public function test_admin_can_manage_school_records_with_multiple_coordinators(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
+        SchoolDesignation::firstOrCreate(['name' => 'Olympiad Coordinator'], ['is_active' => true, 'sort_order' => 1]);
+        SchoolDesignation::firstOrCreate(['name' => 'Academic Head'], ['is_active' => true, 'sort_order' => 2]);
 
         $response = $this->actingAs($admin)->post(route('admin.schools.store'), [
             'school_code' => 'sch-001',
@@ -117,6 +120,7 @@ class AdminSchoolManagementTest extends TestCase
                 ->where('schools.data.0.school_code', 'SCH-001')
                 ->where('schools.data.0.coordinators_count', 2)
                 ->where('schools.data.0.coordinators.0.name', 'Anita Sharma')
+                ->has('schoolDesignations')
                 ->where('summary.matched', 1)
             );
 
@@ -153,6 +157,47 @@ class AdminSchoolManagementTest extends TestCase
 
         $this->assertDatabaseMissing('schools', ['id' => $school->id]);
         $this->assertDatabaseMissing('school_coordinators', ['school_id' => $school->id]);
+    }
+
+    public function test_admin_can_manage_school_designations(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->assertDatabaseHas('school_designations', ['name' => 'Principal', 'is_active' => true]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.school-designations.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/SchoolDesignations/Index')
+                ->has('designations')
+                ->where('summary.active', SchoolDesignation::where('is_active', true)->count())
+            );
+
+        $this->actingAs($admin)
+            ->post(route('admin.school-designations.store'), ['name' => 'Senior Coordinator'])
+            ->assertSessionHasNoErrors();
+
+        $designation = SchoolDesignation::where('name', 'Senior Coordinator')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->put(route('admin.school-designations.update', $designation), [
+                'name' => 'Regional Coordinator',
+                'is_active' => false,
+                'sort_order' => 25,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $designation->refresh();
+        $this->assertSame('Regional Coordinator', $designation->name);
+        $this->assertFalse($designation->is_active);
+        $this->assertSame(25, $designation->sort_order);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.school-designations.destroy', $designation))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseMissing('school_designations', ['id' => $designation->id]);
     }
 
     public function test_validation_and_seeded_school_protection(): void

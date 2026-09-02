@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\Settings\QuestionCategoryController;
 use App\Http\Controllers\Admin\Settings\ReceiptSettingController;
 use App\Http\Controllers\Admin\Settings\SubjectController;
 use App\Http\Controllers\Admin\SchoolController;
+use App\Http\Controllers\Admin\SchoolDesignationController;
 use App\Http\Controllers\Admin\SupportController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
@@ -46,6 +47,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/schools/export/excel', [SchoolController::class, 'excel'])->name('schools.excel');
     Route::resource('schools', SchoolController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::patch('/schools/{school}/toggle', [SchoolController::class, 'toggle'])->name('schools.toggle');
+    Route::resource('school-designations', SchoolDesignationController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('questions', QuestionController::class);
     Route::resource('exams', ExamController::class);
     Route::post('/exams/{exam}/duplicate', [ExamController::class, 'duplicate'])->name('exams.duplicate');
