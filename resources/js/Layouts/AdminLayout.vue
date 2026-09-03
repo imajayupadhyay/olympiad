@@ -24,9 +24,9 @@
 
       <!-- Nav -->
       <nav class="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto text-sm" @click="closeOnMobile">
-        <p class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-1">Main</p>
+        <p v-if="hasSection(['dashboard', 'students', 'reports'])" class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-1">Main</p>
 
-        <SidebarLink :href="route('admin.dashboard')" :active="isActive('/admin/dashboard')">
+        <SidebarLink v-if="can('dashboard')" :href="route('admin.dashboard')" :active="isActive('/admin/dashboard')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
@@ -35,7 +35,7 @@
           Dashboard
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.users.index')" :active="isActive('/admin/users')">
+        <SidebarLink v-if="can('students')" :href="route('admin.users.index')" :active="isActive('/admin/users')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -44,7 +44,7 @@
           Students
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.reports.index')" :active="isActive('/admin/reports')">
+        <SidebarLink v-if="can('reports')" :href="route('admin.reports.index')" :active="isActive('/admin/reports')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-5m3 5V7m3 10v-3M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/>
@@ -53,9 +53,29 @@
           Reports
         </SidebarLink>
 
-        <p class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">School Data</p>
+        <p v-if="hasSection(['staff_users', 'roles'])" class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">Access</p>
 
-        <SidebarLink :href="route('admin.schools.index')" :active="isActive('/admin/schools')">
+        <SidebarLink v-if="can('staff_users')" :href="route('admin.staff-users.index')" :active="isActive('/admin/staff-users')">
+          <template #icon>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 14a4 4 0 10-8 0m8 0a6 6 0 012 4v1H6v-1a6 6 0 012-4m8 0H8m9-7h4m-2-2v4"/>
+            </svg>
+          </template>
+          Users
+        </SidebarLink>
+
+        <SidebarLink v-if="can('roles')" :href="route('admin.roles.index')" :active="isActive('/admin/roles')">
+          <template #icon>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 4v5c0 4.5-2.9 7.8-7 9-4.1-1.2-7-4.5-7-9V7l7-4zm-2 9l1.5 1.5L15 10"/>
+            </svg>
+          </template>
+          Permission Management
+        </SidebarLink>
+
+        <p v-if="hasSection(['schools', 'data_entry', 'school_designations'])" class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">School Data</p>
+
+        <SidebarLink v-if="can('schools')" :href="route('admin.schools.index')" :active="isActive('/admin/schools')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4 21V7l8-4 8 4v14M8 21v-7h8v7M7 10h.01M12 10h.01M17 10h.01"/>
@@ -64,7 +84,7 @@
           Schools
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.data-entry.index')" :active="isActive('/admin/data-entry')">
+        <SidebarLink v-if="can('data_entry')" :href="route('admin.data-entry.index')" :active="isActive('/admin/data-entry')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h18M3 12h18M3 19h18M8 5v14M16 5v14"/>
@@ -73,7 +93,7 @@
           Data Entry
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.school-designations.index')" :active="isActive('/admin/school-designations')">
+        <SidebarLink v-if="can('school_designations')" :href="route('admin.school-designations.index')" :active="isActive('/admin/school-designations')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h10M7 12h10M7 17h6M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/>
@@ -82,9 +102,9 @@
           School Designations
         </SidebarLink>
 
-        <p class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">Exams</p>
+        <p v-if="hasSection(['questions', 'exams', 'results', 'certificates'])" class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">Exams</p>
 
-        <SidebarLink :href="route('admin.questions.index')" :active="isActive('/admin/questions')">
+        <SidebarLink v-if="can('questions')" :href="route('admin.questions.index')" :active="isActive('/admin/questions')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -93,7 +113,7 @@
           Question Bank
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.exams.index')" :active="isActive('/admin/exams')">
+        <SidebarLink v-if="can('exams')" :href="route('admin.exams.index')" :active="isActive('/admin/exams')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
@@ -102,7 +122,7 @@
           Exams
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.results')" :active="isActive('/admin/results')">
+        <SidebarLink v-if="can('results')" :href="route('admin.results')" :active="isActive('/admin/results')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
@@ -111,7 +131,7 @@
           Results
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.certificates')" :active="isActive('/admin/certificates')">
+        <SidebarLink v-if="can('certificates')" :href="route('admin.certificates')" :active="isActive('/admin/certificates')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
@@ -120,9 +140,9 @@
           Certificates
         </SidebarLink>
 
-        <p class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">Finance & Comms</p>
+        <p v-if="hasSection(['payments', 'receipts', 'coupons', 'referrals', 'notifications', 'support', 'emails', 'content', 'forms'])" class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">Finance & Comms</p>
 
-        <SidebarLink :href="route('admin.payments')" :active="isActive('/admin/payments')">
+        <SidebarLink v-if="can('payments')" :href="route('admin.payments')" :active="isActive('/admin/payments')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
@@ -131,7 +151,7 @@
           Payments
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.receipts.index')" :active="isActive('/admin/receipts')">
+        <SidebarLink v-if="can('receipts')" :href="route('admin.receipts.index')" :active="isActive('/admin/receipts')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 14h6m-6 4h6M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2z"/>
@@ -140,7 +160,7 @@
           Receipts
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.coupons')" :active="isActive('/admin/coupons')">
+        <SidebarLink v-if="can('coupons')" :href="route('admin.coupons')" :active="isActive('/admin/coupons')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/>
@@ -149,7 +169,7 @@
           Coupons
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.referrals')" :active="isActive('/admin/referrals')">
+        <SidebarLink v-if="can('referrals')" :href="route('admin.referrals')" :active="isActive('/admin/referrals')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6 0a3 3 0 10-2.83-4M5 12a3 3 0 102.83-4"/>
@@ -158,7 +178,7 @@
           Referrals
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.notifications')" :active="isActive('/admin/notifications')">
+        <SidebarLink v-if="can('notifications')" :href="route('admin.notifications')" :active="isActive('/admin/notifications')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
@@ -167,7 +187,7 @@
           Notifications
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.support.index')" :active="isActive('/admin/support')">
+        <SidebarLink v-if="can('support')" :href="route('admin.support.index')" :active="isActive('/admin/support')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12a8 8 0 01-11.6 7.15L3 21l1.85-6.4A8 8 0 1121 12z"/>
@@ -182,7 +202,7 @@
           </span>
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.emails')" :active="isActive('/admin/emails')">
+        <SidebarLink v-if="can('emails')" :href="route('admin.emails')" :active="isActive('/admin/emails')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-18 8h18a2 2 0 002-2V8a2 2 0 00-2-2H3a2 2 0 00-2 2v6a2 2 0 002 2z"/>
@@ -191,7 +211,7 @@
           Emails
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.content')" :active="isActive('/admin/content')">
+        <SidebarLink v-if="can('content')" :href="route('admin.content')" :active="isActive('/admin/content')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -200,7 +220,7 @@
           Content
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.forms.index')" :active="isActive('/admin/forms')">
+        <SidebarLink v-if="can('forms')" :href="route('admin.forms.index')" :active="isActive('/admin/forms')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -209,9 +229,9 @@
           Forms
         </SidebarLink>
 
-        <p class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">Settings</p>
+        <p v-if="hasSection(['settings_subjects', 'settings_categories', 'settings_classes', 'settings_receipts'])" class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">Settings</p>
 
-        <SidebarLink :href="route('admin.settings.subjects')" :active="isActive('/admin/settings/subjects')">
+        <SidebarLink v-if="can('settings_subjects')" :href="route('admin.settings.subjects')" :active="isActive('/admin/settings/subjects')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
@@ -220,7 +240,7 @@
           Subjects
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.settings.categories')" :active="isActive('/admin/settings/categories')">
+        <SidebarLink v-if="can('settings_categories')" :href="route('admin.settings.categories')" :active="isActive('/admin/settings/categories')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/>
@@ -229,7 +249,7 @@
           Categories
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.settings.classes')" :active="isActive('/admin/settings/classes')">
+        <SidebarLink v-if="can('settings_classes')" :href="route('admin.settings.classes')" :active="isActive('/admin/settings/classes')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
@@ -238,7 +258,7 @@
           Class Levels
         </SidebarLink>
 
-        <SidebarLink :href="route('admin.settings.receipts')" :active="isActive('/admin/settings/receipts')">
+        <SidebarLink v-if="can('settings_receipts')" :href="route('admin.settings.receipts')" :active="isActive('/admin/settings/receipts')">
           <template #icon>
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 14h6m-6 4h6M8 3h8l3 3v15H5V6l3-3z"/>
@@ -259,7 +279,7 @@
           </div>
           <div class="min-w-0">
             <p class="text-white text-sm font-semibold truncate">{{ $page.props.auth.user?.name }}</p>
-            <p class="text-blue-300 text-xs">Administrator</p>
+            <p class="text-blue-300 text-xs truncate">{{ roleLabel }}</p>
           </div>
         </div>
         <Link
@@ -324,7 +344,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import SidebarLink from '@/Components/Shared/SidebarLink.vue';
 import AppLogo from '@/Components/Shared/AppLogo.vue';
@@ -336,6 +356,7 @@ defineProps({
 });
 
 const STORAGE_KEY = 'noh-admin-sidebar-open';
+const page = usePage();
 
 // Open by default; the real value is resolved on mount (desktop reads the saved
 // preference, mobile always starts closed). The layout remounts on every Inertia
@@ -385,5 +406,9 @@ onBeforeUnmount(() => {
   clearTimeout(resizeTimer);
 });
 
-const isActive = (path) => usePage().url.startsWith(path);
+const permissions = computed(() => page.props.admin_permissions || {});
+const roleLabel = computed(() => page.props.admin_is_super ? 'Super Admin' : (page.props.admin_role?.name || 'Administrator'));
+const can = (module, action = 'read') => !!permissions.value?.[module]?.[action];
+const hasSection = (modules) => modules.some(module => can(module));
+const isActive = (path) => page.url.startsWith(path);
 </script>

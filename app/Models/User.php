@@ -4,8 +4,10 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Services\PhoneNumberService;
+use App\Support\AdminPermissions;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
@@ -22,7 +24,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name', 'email', 'role', 'registration_source', 'password', 'password_changed_at',
+        'name', 'email', 'role', 'admin_role_id', 'registration_source', 'password', 'password_changed_at',
         'class_level_id', 'phone', 'phone_e164', 'phone_verified_at', 'dob', 'school', 'school_address', 'city', 'pincode', 'state', 'photo', 'is_active',
         'referral_code', 'referred_by',
     ];
@@ -96,6 +98,26 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function adminRole(): BelongsTo
+    {
+        return $this->belongsTo(AdminRole::class, 'admin_role_id');
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->isAdmin() && $this->admin_role_id === null;
+    }
+
+    public function canAdmin(string $module, string $action = 'read'): bool
+    {
+        return AdminPermissions::allows($this, $module, $action);
+    }
+
+    public function adminPermissionMatrix(): array
+    {
+        return AdminPermissions::matrixForUser($this);
     }
 
     /**
@@ -227,6 +249,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'phone_verified_at' => 'datetime',
             'password' => 'hashed',
+            'admin_role_id' => 'integer',
             'password_changed_at' => 'datetime',
             'dob' => 'date',
             'is_active' => 'boolean',

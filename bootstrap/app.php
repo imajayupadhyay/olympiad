@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\AdminPermissionMiddleware;
 use App\Http\Middleware\CaptureReferral;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\PreventPrivateIndexing;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'admin' => AdminMiddleware::class,
+            'admin.permission' => AdminPermissionMiddleware::class,
         ]);
 
         // Razorpay posts server-to-server — exempt the webhook from CSRF.

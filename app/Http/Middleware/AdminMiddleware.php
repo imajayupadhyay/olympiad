@@ -11,8 +11,9 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check() || !Auth::user()->isAdmin()) {
+        if (! Auth::check() || ! Auth::user()->isAdmin() || Auth::user()->is_active === false) {
             Auth::logout();
+
             return redirect()->route('admin.login')
                 ->withErrors(['email' => 'Administrator access required.']);
         }

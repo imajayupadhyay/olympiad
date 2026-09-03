@@ -134,7 +134,7 @@
                   <SheetInput :row-index="rowIndex" field="mobile" :row="row" :errors="errors" @dirty="markDirty" @paste-grid="handlePaste" />
                   <SheetInput :row-index="rowIndex" field="head_phone" :row="row" :errors="errors" @dirty="markDirty" @paste-grid="handlePaste" />
                   <td>
-                    <select v-model="row.is_active" class="cell-input w-28" :class="{ dirty: isDirty(row.id, 'is_active') }" @change="markDirty(row.id, 'is_active')">
+                    <select v-model="row.is_active" class="cell-input w-28" :class="{ dirty: isDirty(row.id, 'is_active') }" :disabled="!canWrite" @change="markDirty(row.id, 'is_active')">
                       <option :value="true">Active</option>
                       <option :value="false">Blocked</option>
                     </select>
@@ -169,7 +169,7 @@
       </section>
     </div>
 
-    <div v-if="dirtyRowCount > 0" class="fixed bottom-5 right-5 z-30 bg-primary text-white rounded-xl shadow-2xl border border-white/10 px-4 py-3 flex items-center gap-3">
+    <div v-if="canWrite && dirtyRowCount > 0" class="fixed bottom-5 right-5 z-30 bg-primary text-white rounded-xl shadow-2xl border border-white/10 px-4 py-3 flex items-center gap-3">
       <div>
         <p class="text-sm font-semibold">{{ dirtyRowCount }} changed {{ dirtyRowCount === 1 ? 'row' : 'rows' }}</p>
         <p class="text-xs text-white/65">Save before changing page or queue.</p>
@@ -183,6 +183,7 @@
 
 <script setup>
 import { computed, defineComponent, h, reactive, ref } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 const props = defineProps({
@@ -230,6 +231,8 @@ const loading = ref(false);
 const saving = ref(false);
 const message = ref('');
 const messageType = ref('success');
+const page = usePage();
+const canWrite = computed(() => !!page.props.admin_permissions?.data_entry?.write);
 
 const summaryCards = computed(() => [
   { key: 'total', label: 'Total', value: summary.value.total || 0, queue: 'all' },
@@ -268,6 +271,8 @@ function normalizeRows(sourceRows) {
 }
 
 function markDirty(rowId, field) {
+  if (!canWrite.value) return;
+
   if (!dirtyCells[rowId]) dirtyCells[rowId] = {};
   dirtyCells[rowId][field] = true;
   savedRows.value.delete(rowId);
@@ -360,7 +365,7 @@ function toPayload(row) {
 }
 
 async function saveRows() {
-  if (dirtyRowCount.value === 0 || saving.value) return;
+  if (!canWrite.value || dirtyRowCount.value === 0 || saving.value) return;
 
   saving.value = true;
   message.value = '';
@@ -414,6 +419,8 @@ function setValue(row, field, value) {
 }
 
 function handlePaste({ rowIndex, field, event }) {
+  if (!canWrite.value) return;
+
   const text = event.clipboardData?.getData('text/plain') || '';
   if (!text.includes('\t') && !text.includes('\n')) return;
 
@@ -476,6 +483,7 @@ const SheetInput = defineComponent({
         ],
         onInput: (event) => { model.value = event.target.value; },
         onPaste: (event) => emit('paste-grid', { rowIndex: componentProps.rowIndex, field: componentProps.field, event }),
+        disabled: !canWrite.value,
       }),
       hasError.value ? h('p', { class: 'cell-error-text' }, componentProps.errors[errorKey.value][0]) : null,
     ]);
@@ -514,6 +522,7 @@ const SheetSelect = defineComponent({
           hasError.value ? 'invalid' : '',
         ],
         onChange: (event) => { model.value = event.target.value; },
+        disabled: !canWrite.value,
       }, [
         h('option', { value: '' }, 'Select role'),
         ...componentProps.options.map((option) => h('option', { value: option }, option)),

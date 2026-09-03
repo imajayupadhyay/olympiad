@@ -1,8 +1,24 @@
 <template>
   <AdminLayout title="Dashboard" subtitle="Platform overview & analytics">
+    <div v-if="kpis.length === 0" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+      <h2 class="font-heading font-bold text-text-main text-base mb-2">Assigned Modules</h2>
+      <p class="text-text-muted text-sm mb-4">
+        {{ availableModules.length ? 'Dashboard analytics are hidden for this role. Open one of the modules assigned to your account.' : 'No dashboard widgets are assigned to this role yet.' }}
+      </p>
+      <div v-if="availableModules.length" class="flex flex-wrap gap-2">
+        <Link
+          v-for="module in availableModules"
+          :key="module.module"
+          :href="route(module.route)"
+          class="inline-flex items-center px-3 py-2 rounded-xl border border-primary/15 bg-primary/5 text-primary text-sm font-semibold hover:bg-primary/10"
+        >
+          {{ module.label }}
+        </Link>
+      </div>
+    </div>
 
     <!-- ══════════ KPI CARDS ══════════ -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+    <div v-if="kpis.length" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
       <div v-for="k in kpis" :key="k.label"
            class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden">
         <div class="absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-[.07]" :style="{ background: k.color }"></div>
@@ -25,10 +41,10 @@
     </div>
 
     <!-- ══════════ ROW: Registrations area + Exam status donut ══════════ -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <div v-if="widgets.students || widgets.exams" class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
       <!-- Registrations trend -->
-      <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div v-if="widgets.students" class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div class="flex items-center justify-between mb-5">
           <div>
             <h2 class="font-heading font-bold text-text-main text-base">Student Registrations</h2>
@@ -66,7 +82,7 @@
       </div>
 
       <!-- Exam status donut -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col">
+      <div v-if="widgets.exams" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col">
         <h2 class="font-heading font-bold text-text-main text-base mb-1">Exam Status</h2>
         <p class="text-text-muted text-xs mb-4">{{ stats.totalExams }} exams total</p>
 
@@ -101,10 +117,10 @@
     </div>
 
     <!-- ══════════ ROW: Questions by subject + difficulty + students by class ══════════ -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <div v-if="widgets.questions || widgets.students" class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
       <!-- Questions by subject -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div v-if="widgets.questions" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <h2 class="font-heading font-bold text-text-main text-base mb-1">Question Bank by Subject</h2>
         <p class="text-text-muted text-xs mb-5">{{ stats.totalQuestions }} questions across subjects</p>
 
@@ -124,7 +140,7 @@
       </div>
 
       <!-- Difficulty split -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div v-if="widgets.questions" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <h2 class="font-heading font-bold text-text-main text-base mb-1">Difficulty Mix</h2>
         <p class="text-text-muted text-xs mb-5">Question difficulty distribution</p>
 
@@ -150,7 +166,7 @@
       </div>
 
       <!-- Students by class -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div v-if="widgets.students" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <h2 class="font-heading font-bold text-text-main text-base mb-1">Students by Class</h2>
         <p class="text-text-muted text-xs mb-5">Enrollment across class levels</p>
 
@@ -168,10 +184,10 @@
     </div>
 
     <!-- ══════════ ROW: Recent students + Upcoming exams + Side panels ══════════ -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div v-if="widgets.students || widgets.exams || engagementVisible" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
       <!-- Recent registrations -->
-      <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100">
+      <div v-if="widgets.students" class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 class="font-heading font-bold text-text-main text-base">Recent Registrations</h2>
           <Link :href="route('admin.users.index')" class="text-accent text-xs font-semibold hover:underline">View all →</Link>
@@ -194,10 +210,10 @@
       </div>
 
       <!-- Right column -->
-      <div class="space-y-6">
+      <div v-if="widgets.exams || engagementVisible || widgets.students" class="space-y-6">
 
         <!-- Upcoming exams -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div v-if="widgets.exams" class="bg-white rounded-2xl shadow-sm border border-gray-100">
           <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 class="font-heading font-bold text-text-main text-base">Upcoming Exams</h2>
             <Link :href="route('admin.exams.index')" class="text-accent text-xs font-semibold hover:underline">All →</Link>
@@ -221,30 +237,30 @@
         </div>
 
         <!-- Engagement snapshot -->
-        <div class="rounded-2xl p-5 text-white" style="background:linear-gradient(150deg,#0A1024,#131C3D);">
+        <div v-if="engagementVisible" class="rounded-2xl p-5 text-white" style="background:linear-gradient(150deg,#0A1024,#131C3D);">
           <h2 class="font-heading font-bold text-base mb-4">Engagement Snapshot</h2>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <p class="font-number font-bold text-2xl text-gold-light">{{ stats.totalAttempts }}</p>
+              <p class="font-number font-bold text-2xl text-gold-light">{{ stats.totalAttempts || 0 }}</p>
               <p class="text-blue-200 text-[11px] mt-0.5">Exam attempts</p>
             </div>
             <div>
-              <p class="font-number font-bold text-2xl text-gold-light">{{ stats.avgScore }}%</p>
+              <p class="font-number font-bold text-2xl text-gold-light">{{ stats.avgScore || 0 }}%</p>
               <p class="text-blue-200 text-[11px] mt-0.5">Avg score</p>
             </div>
             <div>
-              <p class="font-number font-bold text-2xl text-gold-light">{{ stats.certsIssued }}</p>
+              <p class="font-number font-bold text-2xl text-gold-light">{{ stats.certsIssued || 0 }}</p>
               <p class="text-blue-200 text-[11px] mt-0.5">Certificates</p>
             </div>
             <div>
-              <p class="font-number font-bold text-2xl text-gold-light">{{ stats.totalReach.toLocaleString() }}</p>
+              <p class="font-number font-bold text-2xl text-gold-light">{{ (stats.totalReach || 0).toLocaleString() }}</p>
               <p class="text-blue-200 text-[11px] mt-0.5">Notification reach</p>
             </div>
           </div>
         </div>
 
         <!-- Top states -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <div v-if="widgets.students" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
           <h2 class="font-heading font-bold text-text-main text-base mb-4">Top States</h2>
           <div v-if="charts.topStates.length === 0" class="py-4 text-center text-text-muted text-xs">No location data yet.</div>
           <div v-else class="space-y-3">
@@ -273,6 +289,8 @@ const props = defineProps({
   charts:         { type: Object, default: () => ({ registrations: [], questionsBySubject: [], difficulty: [], examStatus: [], studentsByClass: [], topStates: [] }) },
   recentStudents: { type: Array,  default: () => [] },
   upcomingExams:  { type: Array,  default: () => [] },
+  widgets:        { type: Object, default: () => ({}) },
+  availableModules: { type: Array, default: () => [] },
 });
 
 /* ── KPI cards ── */
@@ -284,12 +302,14 @@ const ic = {
   revenue: '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" width="24" height="24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-2.761 0-5-.895-5-2s2.239-2 5-2 5 .895 5 2-2.239 2-5 2zm-5 2c0 1.105 2.239 2 5 2s5-.895 5-2m-10 4c0 1.105 2.239 2 5 2s5-.895 5-2m-10 4c0 1.105 2.239 2 5 2s5-.895 5-2"/></svg>',
 };
 const kpis = computed(() => [
-  { label: 'Total Students', value: (props.stats.totalStudents || 0).toLocaleString(), color: '#131C3D', icon: ic.students, deltaUp: props.stats.newToday > 0, sub: props.stats.newToday > 0 ? `+${props.stats.newToday} today` : `${props.stats.activeStudents || 0} active` },
-  { label: 'Active Exams',   value: props.stats.activeExams || 0, color: '#EE6A2C', icon: ic.exam, deltaUp: false, sub: `${props.stats.totalExams || 0} total` },
-  { label: 'Revenue',        value: inrCompact(props.stats.totalRevenue || 0), color: '#168A66', icon: ic.revenue, deltaUp: props.stats.revenueMonth > 0, sub: `${inrCompact(props.stats.revenueMonth || 0)} this month` },
-  { label: 'Questions',      value: (props.stats.totalQuestions || 0).toLocaleString(), color: '#168A66', icon: ic.question, deltaUp: false, sub: `${props.stats.activeQuestions || 0} active` },
-  { label: 'Exam Attempts',  value: (props.stats.totalAttempts || 0).toLocaleString(), color: '#D6991F', icon: ic.attempts, deltaUp: props.stats.attemptsWeek > 0, sub: props.stats.attemptsWeek > 0 ? `+${props.stats.attemptsWeek} this week` : 'all time' },
-]);
+  props.widgets.students ? { label: 'Total Students', value: (props.stats.totalStudents || 0).toLocaleString(), color: '#131C3D', icon: ic.students, deltaUp: props.stats.newToday > 0, sub: props.stats.newToday > 0 ? `+${props.stats.newToday} today` : `${props.stats.activeStudents || 0} active` } : null,
+  props.widgets.exams ? { label: 'Active Exams', value: props.stats.activeExams || 0, color: '#EE6A2C', icon: ic.exam, deltaUp: false, sub: `${props.stats.totalExams || 0} total` } : null,
+  props.widgets.payments ? { label: 'Revenue', value: inrCompact(props.stats.totalRevenue || 0), color: '#168A66', icon: ic.revenue, deltaUp: props.stats.revenueMonth > 0, sub: `${inrCompact(props.stats.revenueMonth || 0)} this month` } : null,
+  props.widgets.questions ? { label: 'Questions', value: (props.stats.totalQuestions || 0).toLocaleString(), color: '#168A66', icon: ic.question, deltaUp: false, sub: `${props.stats.activeQuestions || 0} active` } : null,
+  props.widgets.results ? { label: 'Exam Attempts', value: (props.stats.totalAttempts || 0).toLocaleString(), color: '#D6991F', icon: ic.attempts, deltaUp: props.stats.attemptsWeek > 0, sub: props.stats.attemptsWeek > 0 ? `+${props.stats.attemptsWeek} this week` : 'all time' } : null,
+].filter(Boolean));
+
+const engagementVisible = computed(() => props.widgets.results || props.widgets.certificates || props.widgets.notifications);
 
 /* ── Area chart (registrations) ── */
 const areaW = 560, areaH = 170;

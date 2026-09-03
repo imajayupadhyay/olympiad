@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\StudentNotification;
 use App\Models\SupportTicket;
+use App\Support\AdminPermissions;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -38,8 +39,8 @@ class HandleInertiaRequests extends Middleware
             ],
             'flash' => [
                 'success' => $request->session()->get('success'),
-                'error'   => $request->session()->get('error'),
-                'info'    => $request->session()->get('info'),
+                'error' => $request->session()->get('error'),
+                'info' => $request->session()->get('info'),
                 'meta_purchase' => $request->session()->get('meta_purchase'),
             ],
             ...$this->badges($request),
@@ -63,7 +64,13 @@ class HandleInertiaRequests extends Middleware
 
         if ($user->isAdmin()) {
             return [
-                'admin_support_unread' => (int) SupportTicket::where('admin_unread', '>', 0)->count(),
+                'admin_permissions' => AdminPermissions::matrixForUser($user),
+                'admin_modules' => AdminPermissions::moduleOptions(),
+                'admin_role' => $user->adminRole?->only(['id', 'name', 'slug']),
+                'admin_is_super' => $user->isSuperAdmin(),
+                'admin_support_unread' => AdminPermissions::allows($user, 'support', 'read')
+                    ? (int) SupportTicket::where('admin_unread', '>', 0)->count()
+                    : 0,
             ];
         }
 

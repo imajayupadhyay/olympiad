@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Support\AdminPermissions;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -16,8 +17,8 @@ class AuthController extends Controller
     public function showLogin(): Response
     {
         // If already authenticated as admin, skip to dashboard
-        if (Auth::check() && Auth::user()->isAdmin()) {
-            return Inertia::location(route('admin.dashboard'));
+        if (Auth::check() && Auth::user()->isAdmin() && Auth::user()->is_active !== false) {
+            return Inertia::location(AdminPermissions::firstAllowedRoute(Auth::user()) ?? route('admin.dashboard'));
         }
 
         return Inertia::render('Admin/Auth/Login');
@@ -26,15 +27,16 @@ class AuthController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $request->validate([
-            'email'    => ['required', 'email'],
+            'email' => ['required', 'email'],
             'password' => ['required', 'string'],
         ]);
 
         // Rate limit: 5 attempts per minute per IP+email combo
-        $key = 'admin-login:' . Str::lower($request->email) . '|' . $request->ip();
+        $key = 'admin-login:'.Str::lower($request->email).'|'.$request->ip();
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $seconds = RateLimiter::availableIn($key);
+
             return back()->withErrors([
                 'email' => "Too many login attempts. Please try again in {$seconds} seconds.",
             ]);
@@ -43,7 +45,7 @@ class AuthController extends Controller
         $credentials = $request->only('email', 'password');
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            if (!Auth::user()->isAdmin()) {
+            if (! Auth::user()->isAdmin() || Auth::user()->is_active === false) {
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
@@ -58,7 +60,19 @@ class AuthController extends Controller
             RateLimiter::clear($key);
             $request->session()->regenerate();
 
-            return redirect()->route('admin.dashboard');
+            $route = AdminPermissions::firstAllowedRoute(Auth::user());
+
+            if (! $route) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()->withErrors([
+                    'email' => 'No admin permissions are assigned to this account.',
+                ]);
+            }
+
+            return redirect($route);
         }
 
         RateLimiter::hit($key);
