@@ -283,10 +283,10 @@ class AdminSchoolManagementTest extends TestCase
 
         $schools = $spreadsheet->getSheetByName('Schools');
         $this->assertNotNull($schools);
-        $this->assertSame('SCH-XLSX', $schools->getCell('B7')->getValue());
-        $this->assertSame('=2+2', $schools->getCell('C7')->getValue());
-        $this->assertSame('s', $schools->getCell('C7')->getDataType());
-        $this->assertSame('', (string) $schools->getCell('B8')->getValue());
+        $this->assertSame('SCH-XLSX', $schools->getCell('C7')->getValue());
+        $this->assertSame('=2+2', $schools->getCell('D7')->getValue());
+        $this->assertSame('s', $schools->getCell('D7')->getDataType());
+        $this->assertSame('', (string) $schools->getCell('C8')->getValue());
 
         $coordinators = $spreadsheet->getSheetByName('Coordinators');
         $this->assertNotNull($coordinators);

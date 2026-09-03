@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\CertificateController;
 use App\Http\Controllers\Admin\ContentController;
+use App\Http\Controllers\Admin\DataEntryController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmailTemplateController;
@@ -47,6 +48,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/schools/export/excel', [SchoolController::class, 'excel'])->name('schools.excel');
     Route::resource('schools', SchoolController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::patch('/schools/{school}/toggle', [SchoolController::class, 'toggle'])->name('schools.toggle');
+    Route::get('/data-entry', [DataEntryController::class, 'index'])->name('data-entry.index');
+    Route::get('/data-entry/rows', [DataEntryController::class, 'rows'])->name('data-entry.rows');
+    Route::patch('/data-entry/rows', [DataEntryController::class, 'updateRows'])->name('data-entry.rows.update');
     Route::resource('school-designations', SchoolDesignationController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('questions', QuestionController::class);
     Route::resource('exams', ExamController::class);

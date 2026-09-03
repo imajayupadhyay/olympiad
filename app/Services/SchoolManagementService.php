@@ -54,6 +54,7 @@ class SchoolManagementService
     {
         return [
             'id' => $school->id,
+            'external_school_id' => $school->external_school_id,
             'school_code' => $school->school_code,
             'name' => $school->name,
             'address' => $school->address,

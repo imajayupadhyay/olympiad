@@ -42,9 +42,9 @@ class SchoolExportService
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Schools');
         $sheet->setCellValue('A1', 'National Olympiad Hunt - School Management');
-        $sheet->mergeCells('A1:P1');
+        $sheet->mergeCells('A1:Q1');
         $sheet->setCellValue('A2', 'Generated: '.now()->format('d M Y, h:i A'));
-        $sheet->mergeCells('A2:P2');
+        $sheet->mergeCells('A2:Q2');
         $sheet->setCellValue('A3', sprintf(
             'Matched: %s | Active: %s | Inactive: %s | With Coordinators: %s | States: %s',
             number_format($summary['matched']),
@@ -53,12 +53,12 @@ class SchoolExportService
             number_format($summary['with_coordinators']),
             number_format($summary['states']),
         ));
-        $sheet->mergeCells('A3:P3');
+        $sheet->mergeCells('A3:Q3');
         $sheet->setCellValueExplicit('A4', 'Filters: '.implode(' | ', $filterLabels), DataType::TYPE_STRING);
-        $sheet->mergeCells('A4:P4');
+        $sheet->mergeCells('A4:Q4');
 
         $headers = [
-            'School ID', 'School Code', 'School Name', 'Address', 'State', 'District',
+            'School ID', 'Source SchId', 'School Code', 'School Name', 'Address', 'State', 'District',
             'City', 'PIN Code', 'Email', 'Mobile', 'Head Contact', 'Status',
             'Coordinator Count', 'Coordinators', 'Added On', 'Updated On',
         ];
@@ -68,6 +68,7 @@ class SchoolExportService
         foreach ($rows as $row) {
             $values = [
                 $row['id'],
+                $row['external_school_id'] ?: '-',
                 $row['school_code'],
                 $row['name'],
                 $row['address'] ?: '-',
@@ -87,7 +88,7 @@ class SchoolExportService
 
             foreach ($values as $columnIndex => $value) {
                 $cell = $sheet->getCell([$columnIndex + 1, $rowNumber]);
-                if (in_array($columnIndex, [0, 12], true)) {
+                if (in_array($columnIndex, [0, 13], true)) {
                     $cell->setValueExplicit($value, DataType::TYPE_NUMERIC);
                 } else {
                     $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
@@ -97,14 +98,14 @@ class SchoolExportService
             $rowNumber++;
         }
 
-        $this->styleHeader($sheet, 'A1:P1', 'A6:P6');
-        $sheet->getStyle('A1:P'.$rowNumber)->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
-        $sheet->getStyle('D7:D'.$rowNumber)->getAlignment()->setWrapText(true);
-        $sheet->getStyle('N7:N'.$rowNumber)->getAlignment()->setWrapText(true);
+        $this->styleHeader($sheet, 'A1:Q1', 'A6:Q6');
+        $sheet->getStyle('A1:Q'.$rowNumber)->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
+        $sheet->getStyle('E7:E'.$rowNumber)->getAlignment()->setWrapText(true);
+        $sheet->getStyle('O7:O'.$rowNumber)->getAlignment()->setWrapText(true);
         $sheet->freezePane('A7');
-        $sheet->setAutoFilter('A6:P'.max(6, $rowNumber - 1));
+        $sheet->setAutoFilter('A6:Q'.max(6, $rowNumber - 1));
 
-        $widths = [10, 16, 30, 42, 20, 20, 18, 12, 30, 18, 18, 12, 16, 48, 16, 16];
+        $widths = [10, 14, 16, 30, 42, 20, 20, 18, 12, 30, 18, 18, 12, 16, 48, 16, 16];
         foreach ($widths as $index => $width) {
             $sheet->getColumnDimensionByColumn($index + 1)->setWidth($width);
         }
