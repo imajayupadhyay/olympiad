@@ -17,13 +17,14 @@ class SchoolIndexRequest extends FormRequest
         return [
             'search' => ['nullable', 'string', 'max:120'],
             'state' => ['nullable', 'string', 'max:100'],
+            'category' => ['nullable', 'string', 'max:20'],
             'district' => ['nullable', 'string', 'max:100'],
             'city' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', Rule::in(['active', 'inactive'])],
             'has_coordinators' => ['nullable', Rule::in(['yes', 'no'])],
             'date_from' => ['nullable', 'date_format:Y-m-d'],
             'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
-            'sort' => ['nullable', Rule::in(['created_at', 'name', 'school_code', 'state', 'city', 'coordinators'])],
+            'sort' => ['nullable', Rule::in(['created_at', 'name', 'school_code', 'category', 'state', 'city', 'coordinators'])],
             'direction' => ['nullable', Rule::in(['asc', 'desc'])],
             'per_page' => ['nullable', 'integer', Rule::in([20, 50, 100])],
         ];

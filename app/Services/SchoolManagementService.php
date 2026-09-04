@@ -11,6 +11,16 @@ use Illuminate\Support\Facades\DB;
 
 class SchoolManagementService
 {
+    private const CATEGORY_PRIORITY = [
+        'A+' => 0,
+        'A' => 1,
+        'B' => 2,
+        'C' => 3,
+        'D' => 4,
+        'E' => 5,
+        'UE' => 6,
+    ];
+
     public function query(array $filters): Builder
     {
         $query = $this->filteredQuery($filters)->withCount('coordinators');
@@ -56,6 +66,7 @@ class SchoolManagementService
             'id' => $school->id,
             'external_school_id' => $school->external_school_id,
             'school_code' => $school->school_code,
+            'category' => $school->category,
             'name' => $school->name,
             'address' => $school->address,
             'state' => $school->state,
@@ -110,6 +121,7 @@ class SchoolManagementService
                 ->all(),
             'districts' => $distinct('district')->all(),
             'cities' => $distinct('city')->all(),
+            'categories' => $this->categories(),
             'schoolDesignations' => SchoolDesignation::active()
                 ->orderBy('sort_order')
                 ->orderBy('name')
@@ -130,7 +142,7 @@ class SchoolManagementService
             $labels[] = 'Search: '.$filters['search'];
         }
 
-        foreach (['state' => 'State', 'district' => 'District', 'city' => 'City'] as $key => $label) {
+        foreach (['category' => 'Category', 'state' => 'State', 'district' => 'District', 'city' => 'City'] as $key => $label) {
             if (isset($filters[$key])) {
                 $labels[] = "{$label}: {$filters[$key]}";
             }
@@ -164,6 +176,7 @@ class SchoolManagementService
 
             $query->where(function (Builder $query) use ($like) {
                 $query->where('school_code', 'like', $like)
+                    ->orWhere('category', 'like', $like)
                     ->orWhere('name', 'like', $like)
                     ->orWhere('address', 'like', $like)
                     ->orWhere('state', 'like', $like)
@@ -186,6 +199,10 @@ class SchoolManagementService
             if (isset($filters[$field])) {
                 $query->where($field, $filters[$field]);
             }
+        }
+
+        if (isset($filters['category'])) {
+            $query->where('category', strtoupper($filters['category']));
         }
 
         if (isset($filters['status'])) {
@@ -218,11 +235,40 @@ class SchoolManagementService
         return match ($filters['sort'] ?? 'created_at') {
             'name' => $query->orderBy('name', $direction)->orderBy('id'),
             'school_code' => $query->orderBy('school_code', $direction)->orderBy('id'),
+            'category' => $query->orderByRaw($this->categoryOrderSql($direction))->orderBy('school_code')->orderBy('id'),
             'state' => $query->orderBy('state', $direction)->orderBy('district')->orderBy('city')->orderBy('name'),
             'city' => $query->orderBy('city', $direction)->orderBy('name'),
             'coordinators' => $query->orderBy('coordinators_count', $direction)->orderBy('name'),
             default => $query->orderBy('created_at', $direction)->orderBy('id'),
         };
+    }
+
+    private function categories(): array
+    {
+        return School::managed()
+            ->whereNotNull('category')
+            ->where('category', '!=', '')
+            ->selectRaw('UPPER(category) as category')
+            ->distinct()
+            ->pluck('category')
+            ->sortBy(fn (string $category): int => self::CATEGORY_PRIORITY[strtoupper($category)] ?? 99)
+            ->values()
+            ->all();
+    }
+
+    private function categoryOrderSql(string $direction = 'asc'): string
+    {
+        $direction = strtolower($direction) === 'desc' ? 'DESC' : 'ASC';
+
+        return "CASE UPPER(COALESCE(category, '')) "
+            ."WHEN 'A+' THEN 0 "
+            ."WHEN 'A' THEN 1 "
+            ."WHEN 'B' THEN 2 "
+            ."WHEN 'C' THEN 3 "
+            ."WHEN 'D' THEN 4 "
+            ."WHEN 'E' THEN 5 "
+            ."WHEN 'UE' THEN 6 "
+            ."ELSE 99 END {$direction}";
     }
 
     private function syncCoordinators(School $school, array $coordinators): void

@@ -22,6 +22,7 @@ class DataEntryController extends Controller
             'filters' => $filters,
             'summary' => $dataEntry->summary(),
             'states' => $dataEntry->states(),
+            'categories' => $dataEntry->categories(),
             'queues' => $dataEntry->queueOptions(),
             'schoolDesignations' => SchoolDesignation::active()
                 ->orderBy('sort_order')

@@ -17,7 +17,7 @@ class SchoolRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $fields = [
-            'school_code', 'name', 'address', 'state', 'district', 'city',
+            'school_code', 'category', 'name', 'address', 'state', 'district', 'city',
             'pin_code', 'email', 'mobile', 'head_phone',
         ];
 
@@ -28,6 +28,10 @@ class SchoolRequest extends FormRequest
 
         if (filled($normalized['school_code'])) {
             $normalized['school_code'] = Str::upper($normalized['school_code']);
+        }
+
+        if (filled($normalized['category'])) {
+            $normalized['category'] = Str::upper($normalized['category']);
         }
 
         if (filled($normalized['email'])) {
@@ -62,6 +66,7 @@ class SchoolRequest extends FormRequest
                 'regex:/\A[A-Za-z0-9][A-Za-z0-9._\/-]*\z/',
                 Rule::unique('schools', 'school_code')->ignore($schoolId),
             ],
+            'category' => ['nullable', 'string', 'max:20'],
             'name' => ['required', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:500'],
             'state' => ['required', 'string', 'max:100'],

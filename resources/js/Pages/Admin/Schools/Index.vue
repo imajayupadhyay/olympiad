@@ -83,6 +83,14 @@
           </label>
 
           <label class="block">
+            <span class="filter-label">Category</span>
+            <select v-model="filterForm.category" class="filter-control">
+              <option value="">All categories</option>
+              <option v-for="category in categories" :key="category" :value="category">{{ category }}</option>
+            </select>
+          </label>
+
+          <label class="block">
             <span class="filter-label">District</span>
             <select v-model="filterForm.district" class="filter-control">
               <option value="">All districts</option>
@@ -198,6 +206,7 @@
             <tr>
               <th class="table-head w-12">#</th>
               <th class="table-head">School</th>
+              <th class="table-head">Category</th>
               <th class="table-head">Location</th>
               <th class="table-head">Primary Contact</th>
               <th class="table-head">Head Contact</th>
@@ -222,6 +231,9 @@
                     <p class="text-xs text-text-muted mt-1 max-w-80 line-clamp-2">{{ school.address || 'No address recorded' }}</p>
                   </div>
                 </div>
+              </td>
+              <td class="table-cell">
+                <span class="category-badge">{{ school.category || '-' }}</span>
               </td>
               <td class="table-cell">
                 <p class="text-xs font-semibold text-text-main max-w-48 truncate">{{ locationLine(school) }}</p>
@@ -315,6 +327,7 @@
             <div class="flex items-center gap-2 flex-wrap">
               <h3 class="font-heading font-bold text-text-main text-lg truncate">{{ viewTarget.name }}</h3>
               <span class="font-number text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{{ viewTarget.school_code }}</span>
+              <span class="category-badge">{{ viewTarget.category || '-' }}</span>
             </div>
             <p class="text-text-muted text-xs mt-1">{{ locationLine(viewTarget) }}</p>
           </div>
@@ -350,6 +363,10 @@
               <div>
                 <p class="detail-label">PIN Code</p>
                 <p class="detail-box font-number">{{ viewTarget.pin_code || '—' }}</p>
+              </div>
+              <div>
+                <p class="detail-label">Category</p>
+                <p class="detail-box font-number">{{ viewTarget.category || '—' }}</p>
               </div>
             </div>
           </div>
@@ -411,6 +428,15 @@
                   <span class="form-label">School Code</span>
                   <input v-model="form.school_code" type="text" class="form-control font-number uppercase tracking-wide" placeholder="SCH-001" />
                   <span v-if="form.errors.school_code" class="form-error">{{ form.errors.school_code }}</span>
+                </label>
+
+                <label class="block">
+                  <span class="form-label">Category</span>
+                  <select v-model="form.category" class="form-control">
+                    <option value="">Select category</option>
+                    <option v-for="category in categoryOptionsFor(form.category)" :key="category" :value="category">{{ category }}</option>
+                  </select>
+                  <span v-if="form.errors.category" class="form-error">{{ form.errors.category }}</span>
                 </label>
 
                 <label class="block md:col-span-2">
@@ -617,6 +643,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 const props = defineProps({
   schools: Object,
   states: Array,
+  categories: Array,
   districts: Array,
   cities: Array,
   filters: Object,
@@ -628,6 +655,7 @@ const props = defineProps({
 const filterDefaults = {
   search: '',
   state: '',
+  category: '',
   district: '',
   city: '',
   status: '',
@@ -643,7 +671,7 @@ const filterForm = reactive(Object.fromEntries(
   Object.entries(filterDefaults).map(([key, fallback]) => [key, props.filters[key] != null ? String(props.filters[key]) : fallback]),
 ));
 
-const filterKeys = ['search', 'state', 'district', 'city', 'status', 'has_coordinators', 'date_from', 'date_to'];
+const filterKeys = ['search', 'state', 'category', 'district', 'city', 'status', 'has_coordinators', 'date_from', 'date_to'];
 const hasFilters = computed(() => filterKeys.some(key => filterForm[key]));
 const query = computed(() => Object.fromEntries(Object.entries(filterForm).filter(([, value]) => value !== '')));
 const exportQuery = computed(() => new URLSearchParams(query.value).toString());
@@ -670,6 +698,12 @@ const clearFilters = () => {
 };
 
 const blankCoordinator = () => ({ name: '', email: '', phone: '', designation: '' });
+const categoryOptionsFor = (currentValue) => {
+  const names = [...props.categories];
+  if (currentValue && !names.includes(currentValue)) names.push(currentValue);
+
+  return names;
+};
 const activeDesignationNames = computed(() => props.schoolDesignations.map(designation => designation.name));
 const designationOptionsFor = (currentValue) => {
   const names = [...activeDesignationNames.value];
@@ -680,6 +714,7 @@ const designationOptionsFor = (currentValue) => {
 const form = useForm({
   id: null,
   school_code: '',
+  category: '',
   name: '',
   address: '',
   state: '',
@@ -703,6 +738,7 @@ const resetForm = () => {
   form.clearErrors();
   form.id = null;
   form.school_code = '';
+  form.category = '';
   form.name = '';
   form.address = '';
   form.state = '';
@@ -726,6 +762,7 @@ const openEdit = (school) => {
   resetForm();
   form.id = school.id;
   form.school_code = school.school_code || '';
+  form.category = school.category || '';
   form.name = school.name || '';
   form.address = school.address || '';
   form.state = school.state || '';
@@ -773,6 +810,7 @@ const updateSchoolName = (value) => {
 
 const selectSuggestedSchool = (school) => {
   form.source_school_id = school.id;
+  if (school.category) form.category = school.category;
 };
 
 const coordinatorError = (index, field) => form.errors[`coordinators.${index}.${field}`];

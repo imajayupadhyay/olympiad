@@ -30,8 +30,11 @@ class SchoolVisitManagedSchoolSeeder extends Seeder
         $now = now();
         $seen = [];
         $rows = [];
+        $sampleSchoolCodes = [];
+        $sampleExternalIds = [];
         $skipped = 0;
         $imported = 0;
+        $deletedSamples = 0;
         $lineNumber = 0;
         $handle = fopen($path, 'rb');
 
@@ -56,6 +59,21 @@ class SchoolVisitManagedSchoolSeeder extends Seeder
             $name = $this->clean($school['name'] ?? null);
             $state = $this->clean($school['state'] ?? null);
 
+            if ($this->isSampleSchool($school)) {
+                if ($schoolCode !== null) {
+                    $sampleSchoolCodes[] = $schoolCode;
+                }
+
+                $externalSchoolId = $this->clean($school['external_school_id'] ?? null);
+                if ($externalSchoolId !== null) {
+                    $sampleExternalIds[] = $externalSchoolId;
+                }
+
+                $skipped++;
+
+                continue;
+            }
+
             if ($schoolCode === null || $name === null || $state === null || isset($seen[$schoolCode])) {
                 $skipped++;
 
@@ -67,6 +85,7 @@ class SchoolVisitManagedSchoolSeeder extends Seeder
             $rows[] = [
                 'external_school_id' => $this->clean($school['external_school_id'] ?? null),
                 'school_code' => $schoolCode,
+                'category' => $this->category($school['category'] ?? null),
                 'name' => $name,
                 'address' => $this->clean($school['address'] ?? null),
                 'state' => $state,
@@ -90,7 +109,13 @@ class SchoolVisitManagedSchoolSeeder extends Seeder
             $imported += $this->upsert($rows);
         }
 
+        $deletedSamples = $this->deleteSamples($sampleSchoolCodes, $sampleExternalIds);
+
         $this->command?->info("Seeded/updated {$imported} managed schools from school_visit_schools.jsonl.");
+
+        if ($deletedSamples > 0) {
+            $this->command?->warn("Deleted {$deletedSamples} sample/test managed school row(s).");
+        }
 
         if ($skipped > 0) {
             $this->command?->warn("Skipped {$skipped} invalid or duplicate source rows.");
@@ -112,11 +137,51 @@ class SchoolVisitManagedSchoolSeeder extends Seeder
         return preg_replace('/\s+/', ' ', $value);
     }
 
+    private function category(mixed $value): ?string
+    {
+        $category = $this->clean($value);
+
+        return $category === null ? null : strtoupper($category);
+    }
+
     private function pinCode(mixed $value): ?string
     {
         $pin = $this->clean($value);
 
         return $pin !== null && preg_match('/\A\d{6}\z/', $pin) ? $pin : null;
+    }
+
+    private function isSampleSchool(array $school): bool
+    {
+        $name = strtolower((string) ($school['name'] ?? ''));
+        $remarks = strtolower((string) ($school['blacklisted_remarks'] ?? ''));
+
+        return preg_match('/\b(sample|test|dummy|demo)\b/', $name) === 1
+            || preg_match('/\b(sample|test|dummy|demo)\b/', $remarks) === 1;
+    }
+
+    private function deleteSamples(array $schoolCodes, array $externalSchoolIds): int
+    {
+        $schoolCodes = array_values(array_unique(array_filter($schoolCodes)));
+        $externalSchoolIds = array_values(array_unique(array_filter($externalSchoolIds)));
+
+        if ($schoolCodes === [] && $externalSchoolIds === []) {
+            return 0;
+        }
+
+        return School::query()
+            ->managed()
+            ->where(function ($query) use ($schoolCodes, $externalSchoolIds): void {
+                if ($schoolCodes !== []) {
+                    $query->whereIn('school_code', $schoolCodes);
+                }
+
+                if ($externalSchoolIds !== []) {
+                    $method = $schoolCodes === [] ? 'whereIn' : 'orWhereIn';
+                    $query->{$method}('external_school_id', $externalSchoolIds);
+                }
+            })
+            ->delete();
     }
 
     private function upsert(array $rows): int
@@ -126,6 +191,7 @@ class SchoolVisitManagedSchoolSeeder extends Seeder
             ['school_code'],
             [
                 'external_school_id',
+                'category',
                 'name',
                 'address',
                 'state',

@@ -18,6 +18,30 @@
         </button>
       </section>
 
+      <section v-if="categoryCards.length > 0" class="bg-white border border-gray-100 rounded-xl shadow-sm p-4">
+        <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="category-filter"
+              :class="filters.category === '' ? 'active' : ''"
+              @click="selectCategory('')"
+            >
+              All
+            </button>
+            <button
+              v-for="card in categoryCards"
+              :key="card.category"
+              type="button"
+              class="category-filter"
+              :class="filters.category === card.category ? 'active' : ''"
+              @click="selectCategory(card.category)"
+            >
+              <span>{{ card.category }}</span>
+              <span class="font-number">{{ formatNumber(card.count) }}</span>
+            </button>
+        </div>
+      </section>
+
       <section class="bg-white border border-gray-100 rounded-xl shadow-sm">
         <div class="p-4 border-b border-gray-100 flex flex-col xl:flex-row xl:items-end gap-3">
           <div class="flex-1 min-w-[220px]">
@@ -40,6 +64,14 @@
             <label class="block text-xs font-semibold text-text-muted mb-1">Work queue</label>
             <select v-model="filters.queue" class="field h-10" @change="reloadRows(1)">
               <option v-for="queue in queues" :key="queue.value" :value="queue.value">{{ queue.label }}</option>
+            </select>
+          </div>
+
+          <div class="w-full sm:w-44">
+            <label class="block text-xs font-semibold text-text-muted mb-1">Category</label>
+            <select v-model="filters.category" class="field h-10" @change="reloadRows(1)">
+              <option value="">All categories</option>
+              <option v-for="category in categories" :key="category" :value="category">{{ category }}</option>
             </select>
           </div>
 
@@ -88,12 +120,13 @@
           </div>
 
           <div class="overflow-auto max-h-[68vh]">
-            <table class="sheet-table">
+            <table class="sheet-table" :style="{ minWidth: sheetMinWidth }">
               <thead>
                 <tr>
                   <th class="sticky-col col-index">#</th>
                   <th class="sticky-col col-code">Code</th>
                   <th>SchId</th>
+                  <th>Category</th>
                   <th>School Name</th>
                   <th>Address</th>
                   <th>State</th>
@@ -104,19 +137,18 @@
                   <th>Mobile</th>
                   <th>Head Phone</th>
                   <th>Status</th>
-                  <th>Coord 1 Name</th>
-                  <th>Coord 1 Role</th>
-                  <th>Coord 1 Phone</th>
-                  <th>Coord 1 Email</th>
-                  <th>Coord 2 Name</th>
-                  <th>Coord 2 Role</th>
-                  <th>Coord 2 Phone</th>
-                  <th>Coord 2 Email</th>
+                  <template v-for="coordIndex in coordinatorColumnIndexes" :key="`head-coord-${coordIndex}`">
+                    <th>Coord {{ coordIndex + 1 }} Name</th>
+                    <th>Coord {{ coordIndex + 1 }} Role</th>
+                    <th>Coord {{ coordIndex + 1 }} Phone</th>
+                    <th>Coord {{ coordIndex + 1 }} Email</th>
+                  </template>
+                  <th>Add Coordinator</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="rows.length === 0">
-                  <td colspan="21" class="empty-cell">No schools match this queue.</td>
+                  <td :colspan="emptyColumnCount" class="empty-cell">No schools match this queue.</td>
                 </tr>
                 <tr v-for="(row, rowIndex) in rows" :key="row.id" :class="{ 'row-saved': savedRows.has(row.id) }">
                   <td class="sticky-col col-index text-xs text-text-muted font-number">{{ (rowsMeta.from || 1) + rowIndex }}</td>
@@ -124,6 +156,7 @@
                     <button type="button" class="code-pill" @click="copyCode(row.school_code)">{{ row.school_code }}</button>
                   </td>
                   <td class="readonly-cell">{{ row.external_school_id || '-' }}</td>
+                  <SheetSelect :row-index="rowIndex" field="category" :row="row" :errors="errors" :options="categoryOptionsFor(row.category)" placeholder="Category" compact @dirty="markDirty" />
                   <SheetInput :row-index="rowIndex" field="name" :row="row" :errors="errors" @dirty="markDirty" @paste-grid="handlePaste" />
                   <SheetInput :row-index="rowIndex" field="address" :row="row" :errors="errors" wide @dirty="markDirty" @paste-grid="handlePaste" />
                   <SheetInput :row-index="rowIndex" field="state" :row="row" :errors="errors" @dirty="markDirty" @paste-grid="handlePaste" />
@@ -139,14 +172,17 @@
                       <option :value="false">Blocked</option>
                     </select>
                   </td>
-                  <SheetInput :row-index="rowIndex" field="coordinators.0.name" :row="row" :errors="errors" @dirty="markDirty" @paste-grid="handlePaste" />
-                  <SheetSelect :row-index="rowIndex" field="coordinators.0.designation" :row="row" :errors="errors" :options="designationOptionsFor(getValue(row, 'coordinators.0.designation'))" @dirty="markDirty" />
-                  <SheetInput :row-index="rowIndex" field="coordinators.0.phone" :row="row" :errors="errors" @dirty="markDirty" @paste-grid="handlePaste" />
-                  <SheetInput :row-index="rowIndex" field="coordinators.0.email" :row="row" :errors="errors" @dirty="markDirty" @paste-grid="handlePaste" />
-                  <SheetInput :row-index="rowIndex" field="coordinators.1.name" :row="row" :errors="errors" @dirty="markDirty" @paste-grid="handlePaste" />
-                  <SheetSelect :row-index="rowIndex" field="coordinators.1.designation" :row="row" :errors="errors" :options="designationOptionsFor(getValue(row, 'coordinators.1.designation'))" @dirty="markDirty" />
-                  <SheetInput :row-index="rowIndex" field="coordinators.1.phone" :row="row" :errors="errors" @dirty="markDirty" @paste-grid="handlePaste" />
-                  <SheetInput :row-index="rowIndex" field="coordinators.1.email" :row="row" :errors="errors" @dirty="markDirty" @paste-grid="handlePaste" />
+                  <template v-for="coordIndex in coordinatorColumnIndexes" :key="`${row.id}-coord-${coordIndex}`">
+                    <SheetInput :row-index="rowIndex" :field="`coordinators.${coordIndex}.name`" :row="row" :errors="errors" @dirty="markDirty" @paste-grid="handlePaste" />
+                    <SheetSelect :row-index="rowIndex" :field="`coordinators.${coordIndex}.designation`" :row="row" :errors="errors" :options="designationOptionsFor(getValue(row, `coordinators.${coordIndex}.designation`))" @dirty="markDirty" />
+                    <SheetInput :row-index="rowIndex" :field="`coordinators.${coordIndex}.phone`" :row="row" :errors="errors" @dirty="markDirty" @paste-grid="handlePaste" />
+                    <SheetInput :row-index="rowIndex" :field="`coordinators.${coordIndex}.email`" :row="row" :errors="errors" @dirty="markDirty" @paste-grid="handlePaste" />
+                  </template>
+                  <td>
+                    <button type="button" class="add-coordinator-btn" :disabled="!canWrite" @click="addCoordinator(row)">
+                      Add Coordinator
+                    </button>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -191,11 +227,12 @@ const props = defineProps({
   filters: { type: Object, required: true },
   summary: { type: Object, required: true },
   states: { type: Array, default: () => [] },
+  categories: { type: Array, default: () => [] },
   queues: { type: Array, default: () => [] },
   schoolDesignations: { type: Array, default: () => [] },
 });
 
-const editableFields = [
+const baseEditableFields = [
   'name',
   'address',
   'state',
@@ -205,14 +242,6 @@ const editableFields = [
   'email',
   'mobile',
   'head_phone',
-  'coordinators.0.name',
-  'coordinators.0.designation',
-  'coordinators.0.phone',
-  'coordinators.0.email',
-  'coordinators.1.name',
-  'coordinators.1.designation',
-  'coordinators.1.phone',
-  'coordinators.1.email',
 ];
 
 const rows = ref(normalizeRows(props.initialRows.data));
@@ -221,6 +250,7 @@ const summary = ref(props.summary);
 const filters = reactive({
   search: props.filters.search || '',
   state: props.filters.state || '',
+  category: props.filters.category || '',
   queue: props.filters.queue || 'incomplete',
   per_page: Number(props.filters.per_page || 100),
 });
@@ -244,9 +274,31 @@ const summaryCards = computed(() => [
   { key: 'pin', label: 'PIN', value: summary.value.missing_pin || 0, queue: 'missing_pin' },
   { key: 'blocked', label: 'Blocked', value: summary.value.blocked || 0, queue: 'blocked' },
 ]);
+const categoryCards = computed(() => summary.value.categories || []);
+const coordinatorColumnCount = computed(() => Math.max(1, ...rows.value.map((row) => row.coordinators?.length || 0)));
+const coordinatorColumnIndexes = computed(() => Array.from({ length: coordinatorColumnCount.value }, (_, index) => index));
+const emptyColumnCount = computed(() => 15 + (coordinatorColumnCount.value * 4));
+const sheetMinWidth = computed(() => `${2520 + (coordinatorColumnCount.value * 720)}px`);
+const editableFields = computed(() => [
+  ...baseEditableFields,
+  ...coordinatorColumnIndexes.value.flatMap((index) => [
+    `coordinators.${index}.name`,
+    `coordinators.${index}.designation`,
+    `coordinators.${index}.phone`,
+    `coordinators.${index}.email`,
+  ]),
+]);
 
 const dirtyRowCount = computed(() => Object.keys(dirtyCells).length);
 const activeDesignationNames = computed(() => props.schoolDesignations.map((designation) => designation.name));
+const activeCategoryNames = computed(() => props.categories);
+
+function categoryOptionsFor(currentValue) {
+  const names = [...activeCategoryNames.value];
+  if (currentValue && !names.includes(currentValue)) names.push(currentValue);
+
+  return names;
+}
 
 function designationOptionsFor(currentValue) {
   const names = [...activeDesignationNames.value];
@@ -262,12 +314,26 @@ function normalizeRows(sourceRows) {
       coordinators: [...(row.coordinators || [])],
     };
 
-    while (normalized.coordinators.length < 2) {
-      normalized.coordinators.push({ name: '', designation: '', phone: '', email: '' });
-    }
+    ensureCoordinatorSlot(normalized);
 
     return normalized;
   });
+}
+
+function blankCoordinator() {
+  return { name: '', designation: '', phone: '', email: '' };
+}
+
+function ensureCoordinatorSlot(row) {
+  if (!Array.isArray(row.coordinators)) row.coordinators = [];
+  if (row.coordinators.length === 0) row.coordinators.push(blankCoordinator());
+}
+
+function addCoordinator(row) {
+  if (!canWrite.value) return;
+
+  ensureCoordinatorSlot(row);
+  row.coordinators.push(blankCoordinator());
 }
 
 function markDirty(rowId, field) {
@@ -291,6 +357,11 @@ function selectQueue(queue) {
   reloadRows(1);
 }
 
+function selectCategory(category) {
+  filters.category = category;
+  reloadRows(1);
+}
+
 function queryParams(page = 1) {
   const params = {
     queue: filters.queue,
@@ -300,6 +371,7 @@ function queryParams(page = 1) {
 
   if (filters.search) params.search = filters.search;
   if (filters.state) params.state = filters.state;
+  if (filters.category) params.category = filters.category;
 
   return params;
 }
@@ -327,6 +399,7 @@ async function reloadRows(page = 1) {
 function clearFilters() {
   filters.search = '';
   filters.state = '';
+  filters.category = '';
   filters.queue = 'incomplete';
   filters.per_page = 100;
   reloadRows(1);
@@ -345,6 +418,7 @@ function clearDirty() {
 function toPayload(row) {
   return {
     id: row.id,
+    category: row.category,
     name: row.name,
     address: row.address,
     state: row.state,
@@ -355,7 +429,7 @@ function toPayload(row) {
     mobile: row.mobile,
     head_phone: row.head_phone,
     is_active: row.is_active,
-    coordinators: row.coordinators.slice(0, 2).map((coordinator) => ({
+    coordinators: row.coordinators.map((coordinator) => ({
       name: coordinator.name,
       designation: coordinator.designation,
       phone: coordinator.phone,
@@ -426,7 +500,7 @@ function handlePaste({ rowIndex, field, event }) {
 
   event.preventDefault();
 
-  const startFieldIndex = editableFields.indexOf(field);
+  const startFieldIndex = editableFields.value.indexOf(field);
   if (startFieldIndex < 0) return;
 
   text.replace(/\r/g, '').split('\n').filter((line) => line.length > 0).forEach((line, lineIndex) => {
@@ -434,7 +508,7 @@ function handlePaste({ rowIndex, field, event }) {
     if (!row) return;
 
     line.split('\t').forEach((cell, cellIndex) => {
-      const nextField = editableFields[startFieldIndex + cellIndex];
+      const nextField = editableFields.value[startFieldIndex + cellIndex];
       if (!nextField) return;
       setValue(row, nextField, cell.trim());
       markDirty(row.id, nextField);
@@ -497,6 +571,8 @@ const SheetSelect = defineComponent({
     row: { type: Object, required: true },
     errors: { type: Object, required: true },
     options: { type: Array, default: () => [] },
+    placeholder: { type: String, default: 'Select role' },
+    compact: { type: Boolean, default: false },
   },
   emits: ['dirty'],
   setup(componentProps, { emit }) {
@@ -516,7 +592,7 @@ const SheetSelect = defineComponent({
         value: model.value,
         class: [
           'cell-input',
-          'w-44',
+          componentProps.compact ? 'w-28' : 'w-44',
           'bg-white',
           isDirty(componentProps.row.id, componentProps.field) ? 'dirty' : '',
           hasError.value ? 'invalid' : '',
@@ -524,7 +600,7 @@ const SheetSelect = defineComponent({
         onChange: (event) => { model.value = event.target.value; },
         disabled: !canWrite.value,
       }, [
-        h('option', { value: '' }, 'Select role'),
+        h('option', { value: '' }, componentProps.placeholder),
         ...componentProps.options.map((option) => h('option', { value: option }, option)),
       ]),
       hasError.value ? h('p', { class: 'cell-error-text' }, componentProps.errors[errorKey.value][0]) : null,
@@ -589,10 +665,31 @@ const SheetSelect = defineComponent({
   cursor: not-allowed;
 }
 
+.category-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  border-radius: 10px;
+  border: 1px solid #E7D9BE;
+  background: #FBF6EC;
+  color: #131C3D;
+  padding: 0 11px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.category-filter:hover,
+.category-filter.active {
+  border-color: #EE6A2C;
+  background: rgba(238, 106, 44, .10);
+  color: #C9501A;
+}
+
 .sheet-table {
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 3160px;
+  min-width: 3260px;
   width: 100%;
   font-size: 12px;
 }
@@ -684,6 +781,20 @@ tr:nth-child(even) td.sticky-col {
   padding-top: 12px !important;
 }
 
+.category-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: #131C3D;
+  color: #F2C84B;
+  border: 1px solid rgba(10, 16, 36, .14);
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+}
+
 .code-pill {
   min-width: 92px;
   border-radius: 999px;
@@ -693,6 +804,30 @@ tr:nth-child(even) td.sticky-col {
   padding: 5px 8px;
   font-family: "Rajdhani", sans-serif;
   font-weight: 700;
+}
+
+.add-coordinator-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 126px;
+  min-height: 32px;
+  border-radius: 8px;
+  background: #131C3D;
+  color: #fff;
+  border: 1px solid rgba(10, 16, 36, .12);
+  padding: 4px 7px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.add-coordinator-btn:hover:not(:disabled) {
+  background: #0A1024;
+}
+
+.add-coordinator-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
 }
 
 .cell-error-text {

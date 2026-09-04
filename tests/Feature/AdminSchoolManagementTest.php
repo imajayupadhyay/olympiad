@@ -55,6 +55,7 @@ class AdminSchoolManagementTest extends TestCase
         $this->actingAs($admin)->post(route('admin.schools.store'), [
             'source_school_id' => $seeded->id,
             'school_code' => 'SCH-DPS-PNVL',
+            'category' => 'a',
             'name' => 'Delhi Public School, Panvel',
             'address' => '27 Sangurli, Panvel',
             'state' => 'Maharashtra',
@@ -68,6 +69,7 @@ class AdminSchoolManagementTest extends TestCase
         $seeded->refresh();
         $this->assertTrue($seeded->is_managed);
         $this->assertSame('SCH-DPS-PNVL', $seeded->school_code);
+        $this->assertSame('A', $seeded->category);
         $this->assertSame('Maharashtra', $seeded->state);
 
         $this->actingAs($admin)
@@ -84,6 +86,7 @@ class AdminSchoolManagementTest extends TestCase
 
         $response = $this->actingAs($admin)->post(route('admin.schools.store'), [
             'school_code' => 'sch-001',
+            'category' => 'a+',
             'name' => 'National Public School',
             'address' => 'Sector 12, Dwarka',
             'state' => 'Delhi',
@@ -118,14 +121,17 @@ class AdminSchoolManagementTest extends TestCase
                 ->has('schools.data', 1)
                 ->where('schools.data.0.id', $school->id)
                 ->where('schools.data.0.school_code', 'SCH-001')
+                ->where('schools.data.0.category', 'A+')
                 ->where('schools.data.0.coordinators_count', 2)
                 ->where('schools.data.0.coordinators.0.name', 'Anita Sharma')
+                ->where('categories', ['A+'])
                 ->has('schoolDesignations')
                 ->where('summary.matched', 1)
             );
 
         $this->actingAs($admin)->put(route('admin.schools.update', $school), [
             'school_code' => 'SCH-001',
+            'category' => 'B',
             'name' => 'National Public School Updated',
             'address' => 'Updated campus address',
             'state' => 'Delhi',
@@ -143,6 +149,7 @@ class AdminSchoolManagementTest extends TestCase
 
         $school->refresh();
         $this->assertSame('National Public School Updated', $school->name);
+        $this->assertSame('B', $school->category);
         $this->assertFalse($school->is_active);
         $this->assertSame(['Meera Iyer'], $school->coordinators()->pluck('name')->all());
 
@@ -247,6 +254,7 @@ class AdminSchoolManagementTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $school = School::create([
             'school_code' => 'SCH-XLSX',
+            'category' => 'A+',
             'name' => '=2+2',
             'address' => 'Formula campus',
             'state' => 'Maharashtra',
@@ -284,8 +292,9 @@ class AdminSchoolManagementTest extends TestCase
         $schools = $spreadsheet->getSheetByName('Schools');
         $this->assertNotNull($schools);
         $this->assertSame('SCH-XLSX', $schools->getCell('C7')->getValue());
-        $this->assertSame('=2+2', $schools->getCell('D7')->getValue());
-        $this->assertSame('s', $schools->getCell('D7')->getDataType());
+        $this->assertSame('A+', $schools->getCell('D7')->getValue());
+        $this->assertSame('=2+2', $schools->getCell('E7')->getValue());
+        $this->assertSame('s', $schools->getCell('E7')->getDataType());
         $this->assertSame('', (string) $schools->getCell('C8')->getValue());
 
         $coordinators = $spreadsheet->getSheetByName('Coordinators');

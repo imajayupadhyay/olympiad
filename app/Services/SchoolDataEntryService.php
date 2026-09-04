@@ -9,11 +9,22 @@ use Illuminate\Support\Facades\DB;
 
 class SchoolDataEntryService
 {
+    private const CATEGORY_PRIORITY = [
+        'A+' => 0,
+        'A' => 1,
+        'B' => 2,
+        'C' => 3,
+        'D' => 4,
+        'E' => 5,
+        'UE' => 6,
+    ];
+
     public function filters(array $input): array
     {
         $validated = validator($input, [
             'search' => ['nullable', 'string', 'max:120'],
             'state' => ['nullable', 'string', 'max:100'],
+            'category' => ['nullable', 'string', 'max:20'],
             'queue' => ['nullable', 'in:all,incomplete,missing_district,missing_email,missing_phone,missing_coordinator,missing_pin,blocked'],
             'per_page' => ['nullable', 'integer', 'in:50,100,200'],
             'page' => ['nullable', 'integer', 'min:1'],
@@ -54,9 +65,10 @@ class SchoolDataEntryService
             abort_if($schools->count() !== count(array_unique($ids)), 404, 'One or more schools are not available for data entry.');
 
             foreach ($rows as $row) {
-                /** @var \App\Models\School $school */
+                /** @var School $school */
                 $school = $schools->get($row['id']);
                 $school->update([
+                    'category' => $row['category'] ?? null,
                     'name' => $row['name'],
                     'address' => $row['address'] ?? null,
                     'state' => $row['state'],
@@ -85,7 +97,9 @@ class SchoolDataEntryService
             return School::query()
                 ->whereIn('id', $ids)
                 ->with('coordinators')
+                ->orderByRaw($this->categoryOrderSql())
                 ->orderBy('school_code')
+                ->orderBy('id')
                 ->get()
                 ->map(fn (School $school): array => $this->row($school))
                 ->values()
@@ -106,6 +120,7 @@ class SchoolDataEntryService
             'missing_coordinator' => $this->applyQueue((clone $base), 'missing_coordinator')->count(),
             'missing_pin' => $this->applyQueue((clone $base), 'missing_pin')->count(),
             'blocked' => $this->applyQueue((clone $base), 'blocked')->count(),
+            'categories' => $this->categoryCounts(),
         ];
     }
 
@@ -117,6 +132,19 @@ class SchoolDataEntryService
             ->distinct()
             ->orderBy('state')
             ->pluck('state')
+            ->values()
+            ->all();
+    }
+
+    public function categories(): array
+    {
+        return School::managed()
+            ->whereNotNull('category')
+            ->where('category', '!=', '')
+            ->selectRaw('UPPER(category) as category')
+            ->distinct()
+            ->pluck('category')
+            ->sortBy(fn (string $category): int => $this->categoryPriority($category))
             ->values()
             ->all();
     }
@@ -163,6 +191,7 @@ class SchoolDataEntryService
                         ->orWhere('name', 'like', $like)
                         ->orWhere('address', 'like', $like)
                         ->orWhere('state', 'like', $like)
+                        ->orWhere('category', 'like', $like)
                         ->orWhere('district', 'like', $like)
                         ->orWhere('city', 'like', $like)
                         ->orWhere('pin_code', 'like', $like)
@@ -177,11 +206,18 @@ class SchoolDataEntryService
             $query->where('state', $filters['state']);
         }
 
+        if (! $exactIdentityMatch && isset($filters['category'])) {
+            $query->where('category', strtoupper($filters['category']));
+        }
+
         if (! $exactIdentityMatch) {
             $this->applyQueue($query, $filters['queue'] ?? 'incomplete');
         }
 
-        return $query->orderBy('school_code')->orderBy('id');
+        return $query
+            ->orderByRaw($this->categoryOrderSql())
+            ->orderBy('school_code')
+            ->orderBy('id');
     }
 
     private function forcedIdentity(string $term): ?array
@@ -247,6 +283,7 @@ class SchoolDataEntryService
             'id' => $school->id,
             'external_school_id' => $school->external_school_id,
             'school_code' => $school->school_code,
+            'category' => $school->category,
             'name' => $school->name,
             'address' => $school->address,
             'state' => $school->state,
@@ -268,5 +305,40 @@ class SchoolDataEntryService
                 ->all(),
             'updated_at' => $school->updated_at?->toIso8601String(),
         ];
+    }
+
+    private function categoryCounts(): array
+    {
+        return School::managed()
+            ->whereNotNull('category')
+            ->where('category', '!=', '')
+            ->selectRaw('UPPER(category) as category, COUNT(*) as aggregate')
+            ->groupByRaw('UPPER(category)')
+            ->get()
+            ->sortBy(fn ($row): int => $this->categoryPriority($row->category))
+            ->map(fn ($row): array => [
+                'category' => $row->category,
+                'count' => (int) $row->aggregate,
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function categoryPriority(?string $category): int
+    {
+        return self::CATEGORY_PRIORITY[strtoupper((string) $category)] ?? 99;
+    }
+
+    private function categoryOrderSql(): string
+    {
+        return "CASE UPPER(COALESCE(category, '')) "
+            ."WHEN 'A+' THEN 0 "
+            ."WHEN 'A' THEN 1 "
+            ."WHEN 'B' THEN 2 "
+            ."WHEN 'C' THEN 3 "
+            ."WHEN 'D' THEN 4 "
+            ."WHEN 'E' THEN 5 "
+            ."WHEN 'UE' THEN 6 "
+            .'ELSE 99 END';
     }
 }

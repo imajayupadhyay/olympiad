@@ -87,8 +87,10 @@ class AdminSchoolDataEntryTest extends TestCase
                 ->where('initialRows.meta.total', 1)
                 ->where('summary.total', 3)
                 ->where('summary.incomplete', 1)
+                ->where('summary.categories', [])
                 ->has('schoolDesignations')
                 ->has('queues')
+                ->has('categories')
             );
 
         $data = $this->actingAs($admin)
@@ -110,6 +112,62 @@ class AdminSchoolDataEntryTest extends TestCase
         $this->assertCount(1, $data);
     }
 
+    public function test_data_entry_orders_and_filters_rows_by_school_category_priority(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        School::create([
+            'school_code' => '10001',
+            'category' => 'B',
+            'name' => 'B Category School',
+            'state' => 'Delhi',
+            'is_active' => true,
+            'is_managed' => true,
+        ]);
+        $top = School::create([
+            'school_code' => '99999',
+            'category' => 'A+',
+            'name' => 'A Plus Category School',
+            'state' => 'Delhi',
+            'is_active' => true,
+            'is_managed' => true,
+        ]);
+        School::create([
+            'school_code' => '10000',
+            'category' => 'C',
+            'name' => 'C Category School',
+            'state' => 'Delhi',
+            'is_active' => true,
+            'is_managed' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.data-entry.index', ['queue' => 'all']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('initialRows.data.0.id', $top->id)
+                ->where('initialRows.data.0.category', 'A+')
+                ->where('categories', ['A+', 'B', 'C'])
+                ->where('summary.categories.0.category', 'A+')
+            );
+
+        $data = $this->actingAs($admin)
+            ->getJson(route('admin.data-entry.rows', ['queue' => 'all']))
+            ->assertOk()
+            ->json('rows.data');
+
+        $this->assertSame(['A+', 'B', 'C'], array_column($data, 'category'));
+
+        $data = $this->actingAs($admin)
+            ->getJson(route('admin.data-entry.rows', ['queue' => 'all', 'category' => 'B']))
+            ->assertOk()
+            ->json('rows.data');
+
+        $this->assertCount(1, $data);
+        $this->assertSame('B', $data[0]['category']);
+        $this->assertSame('10001', $data[0]['school_code']);
+    }
+
     public function test_admin_can_bulk_update_school_rows_and_coordinators(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -128,6 +186,7 @@ class AdminSchoolDataEntryTest extends TestCase
         $response = $this->actingAs($admin)->patchJson(route('admin.data-entry.rows.update'), [
             'rows' => [[
                 'id' => $school->id,
+                'category' => 'b',
                 'name' => 'Nashik Cambridge School',
                 'address' => 'Indra Nagar, Wadala Road',
                 'state' => 'Maharashtra',
@@ -140,24 +199,33 @@ class AdminSchoolDataEntryTest extends TestCase
                 'is_active' => true,
                 'coordinators' => [
                     ['name' => 'Anita Sharma', 'designation' => 'Olympiad Coordinator', 'phone' => '9876543212', 'email' => 'anita@nashik.test'],
-                    ['name' => '', 'designation' => '', 'phone' => '', 'email' => ''],
+                    ['name' => 'Rahul Verma', 'designation' => 'Academic Head', 'phone' => '9876543213', 'email' => 'rahul@nashik.test'],
+                    ['name' => 'Meera Iyer', 'designation' => 'Principal', 'phone' => '9876543214', 'email' => 'meera@nashik.test'],
                 ],
             ]],
         ]);
 
         $response->assertOk()
             ->assertJsonPath('success', true)
+            ->assertJsonPath('rows.0.category', 'B')
             ->assertJsonPath('rows.0.district', 'Nashik')
-            ->assertJsonPath('rows.0.coordinators.0.name', 'Anita Sharma');
+            ->assertJsonPath('rows.0.coordinators.0.name', 'Anita Sharma')
+            ->assertJsonPath('rows.0.coordinators.2.name', 'Meera Iyer');
 
         $school->refresh();
+        $this->assertSame('B', $school->category);
         $this->assertSame('Nashik', $school->district);
         $this->assertSame('office@nashik.test', $school->email);
-        $this->assertSame(1, $school->coordinators()->count());
+        $this->assertSame(3, $school->coordinators()->count());
         $this->assertDatabaseHas('school_coordinators', [
             'school_id' => $school->id,
             'name' => 'Anita Sharma',
             'designation' => 'Olympiad Coordinator',
+        ]);
+        $this->assertDatabaseHas('school_coordinators', [
+            'school_id' => $school->id,
+            'name' => 'Meera Iyer',
+            'designation' => 'Principal',
         ]);
     }
 
@@ -192,5 +260,72 @@ class AdminSchoolDataEntryTest extends TestCase
             'rows.0.mobile',
             'rows.0.coordinators.0.name',
         ]);
+    }
+
+    public function test_school_visit_category_sync_backfills_existing_rows_and_removes_source_samples(): void
+    {
+        School::create([
+            'external_school_id' => '22709',
+            'school_code' => '72282',
+            'name' => 'DAV Sushil Kedia Vishwa Bharti Higher Secondary School',
+            'state' => 'Kathmandu',
+            'is_active' => true,
+            'is_managed' => true,
+        ]);
+        School::create([
+            'external_school_id' => '1',
+            'school_code' => '10000',
+            'name' => 'Sample School teste',
+            'state' => 'Delhi',
+            'is_active' => true,
+            'is_managed' => true,
+        ]);
+        School::create([
+            'external_school_id' => '28442',
+            'school_code' => '69092',
+            'name' => 'VIBGYOR HIGH',
+            'address' => 'NEAR POWER GRID AND RTO OFFICE DRIVING TEST TRACK',
+            'state' => 'Karnataka',
+            'is_active' => true,
+            'is_managed' => true,
+        ]);
+        School::create([
+            'external_school_id' => '47573',
+            'school_code' => '10154',
+            'name' => 'Real Name In Database',
+            'state' => 'Delhi',
+            'is_active' => false,
+            'is_managed' => true,
+        ]);
+        School::create([
+            'school_code' => 'SCH-DEMO-001',
+            'name' => 'Demo National Public School',
+            'state' => 'Delhi',
+            'is_active' => true,
+            'is_managed' => true,
+        ]);
+
+        $source = tempnam(sys_get_temp_dir(), 'school-visit-').'.jsonl';
+        file_put_contents($source, implode("\n", [
+            json_encode(['external_school_id' => '22709', 'school_code' => '72282', 'name' => 'DAV SUSHIL KEDIA VISHWA BHARTI HIGHER SECONDARY SCHOOL', 'state' => 'Kathmandu', 'category' => 'a+']),
+            json_encode(['external_school_id' => '1', 'school_code' => '10000', 'name' => 'Sample School teste', 'state' => 'Delhi', 'category' => 'c']),
+            json_encode(['external_school_id' => '28442', 'school_code' => '69092', 'name' => 'VIBGYOR HIGH', 'address' => 'NEAR POWER GRID AND RTO OFFICE DRIVING TEST TRACK', 'state' => 'Karnataka', 'category' => 'UE']),
+            json_encode(['external_school_id' => '47573', 'school_code' => '10154', 'name' => 'Test 1 school', 'state' => 'Delhi', 'category' => 'UE', 'blacklisted_remarks' => 'Test School']),
+        ])."\n");
+
+        $this->artisan('schools:sync-visit-categories', ['--source' => $source])
+            ->assertExitCode(0);
+
+        $this->assertDatabaseHas('schools', [
+            'school_code' => '72282',
+            'category' => 'A+',
+        ]);
+        $this->assertDatabaseHas('schools', [
+            'school_code' => '69092',
+            'category' => 'UE',
+        ]);
+        $this->assertDatabaseMissing('schools', ['school_code' => '10000']);
+        $this->assertDatabaseMissing('schools', ['school_code' => '10154']);
+        $this->assertDatabaseMissing('schools', ['school_code' => 'SCH-DEMO-001']);
     }
 }

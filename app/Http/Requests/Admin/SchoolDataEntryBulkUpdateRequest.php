@@ -22,6 +22,7 @@ class SchoolDataEntryBulkUpdateRequest extends FormRequest
 
                 $normalized = [
                     'id' => $row['id'] ?? null,
+                    'category' => filled($row['category'] ?? null) ? Str::upper($clean($row['category'])) : null,
                     'name' => $clean($row['name'] ?? null),
                     'address' => $clean($row['address'] ?? null),
                     'state' => $clean($row['state'] ?? null),
@@ -59,6 +60,7 @@ class SchoolDataEntryBulkUpdateRequest extends FormRequest
         return [
             'rows' => ['required', 'array', 'min:1', 'max:200'],
             'rows.*.id' => ['required', 'integer', 'exists:schools,id'],
+            'rows.*.category' => ['nullable', 'string', 'max:20'],
             'rows.*.name' => ['required', 'string', 'max:255'],
             'rows.*.address' => ['nullable', 'string', 'max:500'],
             'rows.*.state' => ['required', 'string', 'max:100'],
@@ -69,7 +71,7 @@ class SchoolDataEntryBulkUpdateRequest extends FormRequest
             'rows.*.mobile' => ['nullable', 'string', 'max:25', 'regex:/\A[0-9+\-\s().]{6,25}\z/'],
             'rows.*.head_phone' => ['nullable', 'string', 'max:25', 'regex:/\A[0-9+\-\s().]{6,25}\z/'],
             'rows.*.is_active' => ['required', 'boolean'],
-            'rows.*.coordinators' => ['nullable', 'array', 'max:5'],
+            'rows.*.coordinators' => ['nullable', 'array'],
             'rows.*.coordinators.*.name' => ['required', 'string', 'max:150'],
             'rows.*.coordinators.*.designation' => ['nullable', 'string', 'max:120'],
             'rows.*.coordinators.*.phone' => ['nullable', 'string', 'max:25', 'regex:/\A[0-9+\-\s().]{6,25}\z/'],

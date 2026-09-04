@@ -48,7 +48,7 @@ class SchoolController extends Controller
             ->where('is_managed', false)
             ->search($term)
             ->limit(10)
-            ->get(['id', 'name', 'address']);
+            ->get(['id', 'name', 'address', 'category']);
 
         return response()->json(['success' => true, 'data' => $schools]);
     }
