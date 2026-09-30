@@ -35,6 +35,26 @@
 
       <span class="divider"></span>
 
+      <button v-if="allowImages" type="button" :disabled="uploadingImage" @click="imageInput?.click()" title="Insert image">
+        <svg v-if="!uploadingImage" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="5" width="18" height="14" rx="2"/>
+          <circle cx="8.5" cy="10" r="1.5"/>
+          <path d="M21 15l-4.5-4.5L10 17l-2.5-2.5L3 19"/>
+        </svg>
+        <svg v-else class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+          <circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3"/>
+          <path class="opacity-75" fill="currentColor" d="M12 3a9 9 0 00-9 9h3a6 6 0 016-6V3z"/>
+        </svg>
+      </button>
+      <input
+        v-if="allowImages"
+        ref="imageInput"
+        type="file"
+        accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+        class="hidden"
+        @change="uploadImage"
+      />
+
       <button type="button" @click="editor.chain().focus().clearNodes().unsetAllMarks().run()" title="Clear formatting">
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 16.5l3-2.94c-.39-.29-.77-.62-1.14-.99C6.13 10.84 5 8.55 5 6h2c0 2 .96 3.75 2.46 4.83L10.92 9h.01L14 5h-8l1.5-1.5h11.33L5.72 17zM19 6.41L17.59 5 13 9.59l1.41 1.41L19 6.41zM13.5 18c0 1.1-.9 2-2 2s-2-.9-2-2l2-4.94L13.5 18z"/></svg>
       </button>
@@ -47,17 +67,51 @@
     <div v-if="showCount && editor" class="editor-footer">
       {{ editor.storage.characterCount?.characters() ?? 0 }} characters
     </div>
+    <p v-if="uploadError" class="editor-error">{{ uploadError }}</p>
   </div>
 </template>
 
 <script setup>
-import { watch, onBeforeUnmount } from 'vue';
+import { ref, watch, onBeforeUnmount } from 'vue';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
+import { Node, mergeAttributes } from '@tiptap/core';
 import Underline from '@tiptap/extension-underline';
 import Superscript from '@tiptap/extension-superscript';
 import Subscript from '@tiptap/extension-subscript';
 import Placeholder from '@tiptap/extension-placeholder';
+
+const ImageNode = Node.create({
+  name: 'image',
+  group: 'block',
+  atom: true,
+  draggable: true,
+
+  addAttributes() {
+    return {
+      src: { default: null },
+      alt: { default: null },
+      title: { default: null },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: 'img[src]' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['img', mergeAttributes(HTMLAttributes)];
+  },
+
+  addCommands() {
+    return {
+      setImage: (options) => ({ commands }) => commands.insertContent({
+        type: this.name,
+        attrs: options,
+      }),
+    };
+  },
+});
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -65,14 +119,20 @@ const props = defineProps({
   error:       { type: Boolean, default: false },
   showCount:   { type: Boolean, default: false },
   minHeight:   { type: String, default: '120px' },
+  allowImages: { type: Boolean, default: false },
+  imageUploadUrl: { type: String, default: '/admin/questions/editor-images' },
 });
 
 const emit = defineEmits(['update:modelValue']);
+const imageInput = ref(null);
+const uploadingImage = ref(false);
+const uploadError = ref('');
 
 const editor = useEditor({
   content: props.modelValue,
   extensions: [
     StarterKit.configure({ heading: false, codeBlock: false, code: false }),
+    ImageNode,
     Underline,
     Superscript,
     Subscript,
@@ -89,6 +149,43 @@ const editor = useEditor({
     emit('update:modelValue', html === '<p></p>' ? '' : html);
   },
 });
+
+const uploadImage = async (event) => {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  uploadError.value = '';
+
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    uploadError.value = 'Please choose a valid image file.';
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    uploadError.value = 'Images must be 2MB or smaller.';
+    return;
+  }
+
+  const payload = new FormData();
+  payload.append('image', file);
+
+  uploadingImage.value = true;
+  try {
+    const response = await window.axios.post(props.imageUploadUrl, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    if (response.data?.url) {
+      editor.value?.chain().focus().setImage({
+        src: response.data.url,
+        alt: file.name.replace(/\.[^.]+$/, ''),
+      }).run();
+    }
+  } catch (error) {
+    uploadError.value = error.response?.data?.message || 'Image upload failed. Please try again.';
+  } finally {
+    uploadingImage.value = false;
+  }
+};
 
 // Sync external modelValue → editor (for edit page)
 watch(() => props.modelValue, (val) => {
@@ -147,6 +244,10 @@ onBeforeUnmount(() => editor.value?.destroy());
   color: #131C3D;
   font-weight: 700;
 }
+.editor-toolbar button:disabled {
+  opacity: .55;
+  cursor: wait;
+}
 .divider {
   width: 1px;
   height: 20px;
@@ -159,6 +260,13 @@ onBeforeUnmount(() => editor.value?.destroy());
   font-size: 11px;
   color: #9ca3af;
   text-align: right;
+}
+.editor-error {
+  padding: 6px 12px 8px;
+  border-top: 1px solid #fee2e2;
+  color: #DC2626;
+  font-size: 11px;
+  line-height: 1.4;
 }
 </style>
 
@@ -181,6 +289,16 @@ onBeforeUnmount(() => editor.value?.destroy());
 .editor-area li { margin: 2px 0; }
 .editor-area sup { font-size: 0.75em; vertical-align: super; }
 .editor-area sub { font-size: 0.75em; vertical-align: sub; }
+.editor-area img {
+  display: block;
+  max-width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+  margin: 8px 0;
+  border: 1px solid #E7D9BE;
+  border-radius: 10px;
+  background: #FBF6EC;
+}
 .editor-area .is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;

@@ -124,6 +124,7 @@
                     v-model="form['option_' + opt]"
                     :placeholder="`Option ${opt.toUpperCase()}…`"
                     :error="!!form.errors['option_' + opt]"
+                    allow-images
                     min-height="44px"
                   />
                 </div>

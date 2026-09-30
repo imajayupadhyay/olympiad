@@ -91,7 +91,7 @@
                 <span class="text-xs font-bold uppercase w-5 shrink-0 mt-1" :class="isCorrect(opt) ? 'text-success' : 'text-text-muted'">{{ opt }}</span>
                 <div class="flex-1" @click.stop>
                   <RichTextEditor v-model="form['option_' + opt]" :placeholder="`Option ${opt.toUpperCase()}…`"
-                                  :error="!!form.errors['option_' + opt]" min-height="44px" />
+                                  :error="!!form.errors['option_' + opt]" allow-images min-height="44px" />
                 </div>
                 <span v-if="isCorrect(opt)"
                       class="shrink-0 mt-1 text-[10px] font-bold text-success bg-green-100 px-2 py-0.5 rounded-full whitespace-nowrap self-start">✓ Correct</span>

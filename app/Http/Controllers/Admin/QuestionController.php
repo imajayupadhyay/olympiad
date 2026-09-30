@@ -94,6 +94,20 @@ class QuestionController extends Controller
         return Inertia::render('Admin/Questions/Create', $this->meta());
     }
 
+    public function uploadEditorImage(Request $request)
+    {
+        $data = $request->validate([
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+        ]);
+
+        $path = $data['image']->store('questions/editor', 'public');
+
+        return response()->json([
+            'url' => Storage::url($path),
+            'path' => $path,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate($this->validationRules());

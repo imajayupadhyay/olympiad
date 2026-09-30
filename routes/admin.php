@@ -84,6 +84,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         ->middlewareFor(['store', 'update'], 'admin.permission:school_designations,write')
         ->middlewareFor(['destroy'], 'admin.permission:school_designations,delete');
 
+    Route::post('/questions/editor-images', [QuestionController::class, 'uploadEditorImage'])
+        ->middleware('admin.permission:questions,write')
+        ->name('questions.editor-images.store');
     Route::resource('questions', QuestionController::class)
         ->middlewareFor(['index', 'show'], 'admin.permission:questions,read')
         ->middlewareFor(['create', 'edit', 'store', 'update'], 'admin.permission:questions,write')

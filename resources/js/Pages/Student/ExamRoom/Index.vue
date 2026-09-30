@@ -237,7 +237,7 @@ function doSubmit(reason = 'manual') {
                         </button>
                     </div>
 
-                    <p class="q-text">{{ q.question_text }}</p>
+                    <div class="q-text rich-content" v-html="q.question_text"></div>
                     <img v-if="q.question_image_url" :src="q.question_image_url" alt="" class="q-img" />
 
                     <div class="options">
@@ -249,7 +249,7 @@ function doSubmit(reason = 'manual') {
                             @click="pick(opt.key)"
                         >
                             <span class="opt-key">{{ opt.key.toUpperCase() }}</span>
-                            <span class="opt-text">{{ opt.text }}</span>
+                            <span class="opt-text rich-content" v-html="opt.text"></span>
                             <span class="opt-tick" :class="q.question_type">
                                 <svg v-if="answers[q.id].selected.includes(opt.key)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
                             </span>
@@ -357,7 +357,7 @@ function doSubmit(reason = 'manual') {
 .flag svg { width: 15px; height: 15px; }
 .flag.on { color: #6C3FA0; border-color: #6C3FA0; background: rgba(108,63,160,.08); }
 
-.q-text { font-size: 1.08rem; line-height: 1.6; color: #0A1024; margin: 0 0 1rem; white-space: pre-line; }
+.q-text { font-size: 1.08rem; line-height: 1.6; color: #0A1024; margin: 0 0 1rem; }
 .q-img { max-width: 100%; border-radius: 12px; margin-bottom: 1rem; border: 1px solid #E7D9BE; }
 
 .options { display: grid; gap: .7rem; max-width: 720px; }
@@ -372,6 +372,12 @@ function doSubmit(reason = 'manual') {
 .opt-tick.multiple { border-radius: 6px; }
 .opt.on .opt-tick { background: #EE6A2C; border-color: #EE6A2C; }
 .opt-tick svg { width: 13px; height: 13px; }
+:deep(.rich-content p) { margin: 0 0 .35rem; }
+:deep(.rich-content p:last-child) { margin-bottom: 0; }
+:deep(.rich-content ul) { padding-left: 1.15rem; margin: .35rem 0; }
+:deep(.rich-content li) { margin: .15rem 0; }
+:deep(.rich-content img) { display: block; max-width: 100%; max-height: 240px; object-fit: contain; margin: .5rem 0; border: 1px solid #E7D9BE; border-radius: 10px; background: #FBF6EC; }
+:deep(.opt-text img) { max-height: 180px; }
 
 .q-actions { display: flex; align-items: center; gap: .6rem; margin-top: 1.5rem; max-width: 720px; flex-wrap: wrap; }
 .q-actions .spacer { flex: 1; }

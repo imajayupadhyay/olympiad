@@ -76,19 +76,22 @@ const optClass = (opt, q) => {
                         <i>{{ q.marks_awarded >= 0 ? '+' : '' }}{{ q.marks_awarded }}</i>
                     </span>
                 </div>
-                <p class="q-text">{{ q.question_text }}</p>
+                <div class="q-text rich-content" v-html="q.question_text"></div>
                 <img v-if="q.question_image_url" :src="q.question_image_url" alt="" class="q-img" />
 
                 <div class="opts">
                     <div v-for="opt in q.options" :key="opt.key" class="opt" :class="optClass(opt, q)">
                         <span class="ok-key">{{ opt.key.toUpperCase() }}</span>
-                        <span class="ok-text">{{ opt.text }}</span>
+                        <span class="ok-text rich-content" v-html="opt.text"></span>
                         <span v-if="q.correct.includes(opt.key)" class="tag tag-correct">Correct</span>
                         <span v-else-if="q.selected.includes(opt.key)" class="tag tag-yours">Your answer</span>
                     </div>
                 </div>
 
-                <p v-if="q.explanation" class="explain"><strong>Explanation:</strong> {{ q.explanation }}</p>
+                <div v-if="q.explanation" class="explain">
+                    <strong>Explanation:</strong>
+                    <div class="rich-content" v-html="q.explanation"></div>
+                </div>
             </div>
         </div>
     </StudentLayout>
@@ -143,7 +146,7 @@ const optClass = (opt, q) => {
 .v-bad { color: #DC2626; background: rgba(220,38,38,.1); }
 .v-skip { color: #5B6373; background: #F3E9D6; }
 
-.q-text { font-size: .96rem; color: #0A1024; line-height: 1.55; margin: 0 0 .8rem; white-space: pre-line; }
+.q-text { font-size: .96rem; color: #0A1024; line-height: 1.55; margin: 0 0 .8rem; }
 .q-img { max-width: 100%; border-radius: 10px; margin-bottom: .8rem; border: 1px solid #E7D9BE; }
 
 .opts { display: grid; gap: .5rem; }
@@ -160,4 +163,10 @@ const optClass = (opt, q) => {
 
 .explain { font-size: .85rem; color: #41485a; background: #FBF6EC; border-radius: 10px; padding: .7rem .85rem; margin: .8rem 0 0; line-height: 1.55; }
 .explain strong { color: #0A1024; }
+:deep(.rich-content p) { margin: 0 0 .35rem; }
+:deep(.rich-content p:last-child) { margin-bottom: 0; }
+:deep(.rich-content ul) { padding-left: 1.15rem; margin: .35rem 0; }
+:deep(.rich-content li) { margin: .15rem 0; }
+:deep(.rich-content img) { display: block; max-width: 100%; max-height: 220px; object-fit: contain; margin: .45rem 0; border: 1px solid #E7D9BE; border-radius: 9px; background: #FBF6EC; }
+:deep(.ok-text img) { max-height: 160px; }
 </style>
