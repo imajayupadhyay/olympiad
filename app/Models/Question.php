@@ -49,6 +49,11 @@ class Question extends Model
         return $this->belongsTo(QuestionCategory::class);
     }
 
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(QuestionTag::class, 'question_question_tag')->withTimestamps();
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

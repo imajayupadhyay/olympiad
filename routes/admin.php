@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\QuestionController;
+use App\Http\Controllers\Admin\QuestionTagController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\ReferralController;
 use App\Http\Controllers\Admin\ReferralSettingController;
@@ -87,6 +88,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/questions/editor-images', [QuestionController::class, 'uploadEditorImage'])
         ->middleware('admin.permission:questions,write')
         ->name('questions.editor-images.store');
+    Route::get('/question-tags', [QuestionTagController::class, 'index'])
+        ->middleware('admin.permission:questions,read')
+        ->name('question-tags.index');
+    Route::post('/question-tags', [QuestionTagController::class, 'store'])
+        ->middleware('admin.permission:questions,write')
+        ->name('question-tags.store');
     Route::resource('questions', QuestionController::class)
         ->middlewareFor(['index', 'show'], 'admin.permission:questions,read')
         ->middlewareFor(['create', 'edit', 'store', 'update'], 'admin.permission:questions,write')

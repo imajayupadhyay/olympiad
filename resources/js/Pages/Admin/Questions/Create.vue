@@ -224,12 +224,15 @@
                 </div>
               </div>
 
-              <!-- Topic -->
-              <div>
-                <label class="block text-xs font-semibold text-text-muted mb-1.5">Topic / Tag <span class="font-normal">(optional)</span></label>
-                <input v-model="form.topic" type="text" placeholder="e.g. Fractions, Photosynthesis…"
-                       class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary" />
-              </div>
+              <!-- Topics / Tags (class + subject scoped) -->
+              <QuestionTagPicker
+                v-model="form.tag_ids"
+                :subject-id="form.subject_id"
+                :class-level-ids="form.class_level_ids"
+                :subjects="subjects"
+                :class-levels="classLevels"
+              />
+              <p v-if="form.errors.tag_ids" class="text-danger text-xs -mt-2">{{ form.errors.tag_ids }}</p>
             </div>
           </div>
 
@@ -291,6 +294,7 @@ import { computed, ref, watch } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import RichTextEditor from '@/Components/Admin/RichTextEditor.vue';
+import QuestionTagPicker from '@/Components/Admin/QuestionTagPicker.vue';
 
 const props = defineProps({
   subjects:     Array,
@@ -315,7 +319,7 @@ const blankForm = () => useForm({
   question_category_id: '',
   difficulty:      'medium',
   question_type:   'single',
-  topic:           '',
+  tag_ids:         [],
   question_text:   '',
   question_image:  null,
   option_a:        '',

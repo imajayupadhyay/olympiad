@@ -177,10 +177,30 @@
                   </button>
                 </div>
               </div>
+              <!-- Topics / Tags (class + subject scoped) -->
               <div>
-                <label class="block text-xs font-semibold text-text-muted mb-1.5">Topic / Tag</label>
-                <input v-model="form.topic" type="text" placeholder="e.g. Fractions…"
-                       class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary" />
+                <QuestionTagPicker
+                  v-model="form.tag_ids"
+                  :subject-id="form.subject_id"
+                  :class-level-ids="form.class_level_ids"
+                  :subjects="subjects"
+                  :class-levels="classLevels"
+                  :initial-tags="question.tags ?? []"
+                />
+                <p v-if="form.errors.tag_ids" class="text-danger text-xs mt-1">{{ form.errors.tag_ids }}</p>
+
+                <!-- Legacy free-text topic, kept visible until it is cleared -->
+                <div v-if="form.topic" class="mt-2 flex items-center gap-2 text-[11px] text-text-muted">
+                  <span>Old free-text topic:</span>
+                  <span class="inline-flex items-center gap-1.5 bg-gray-100 text-text-main font-semibold px-2 py-0.5 rounded-lg">
+                    {{ form.topic }}
+                    <button type="button" @click="form.topic = ''" class="hover:text-danger" title="Clear old topic">
+                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -250,6 +270,7 @@ import { computed, ref, watch } from 'vue';
 import { Link, useForm, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import RichTextEditor from '@/Components/Admin/RichTextEditor.vue';
+import QuestionTagPicker from '@/Components/Admin/QuestionTagPicker.vue';
 
 const props = defineProps({
   question:     Object,
@@ -278,6 +299,7 @@ const form = useForm({
   difficulty:      props.question.difficulty,
   question_type:   props.question.question_type,
   topic:           props.question.topic || '',
+  tag_ids:         props.question.tags?.map(tag => tag.id) ?? [],
   question_text:   props.question.question_text,
   question_image:  null,
   remove_image:    false,

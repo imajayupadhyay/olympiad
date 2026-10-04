@@ -149,6 +149,10 @@
                     <span v-if="q.question_category" class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent/10 text-accent">
                       {{ q.question_category.name }}
                     </span>
+                    <span v-for="tag in q.tags ?? []" :key="tag.id"
+                          class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                      {{ tag.name }}
+                    </span>
                     <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded"
                           :class="q.question_type === 'multiple' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'">
                       {{ q.question_type === 'multiple' ? 'Multi' : 'Single' }}

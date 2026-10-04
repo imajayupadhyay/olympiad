@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ClassLevel;
 use App\Models\Question;
 use App\Models\QuestionCategory;
+use App\Models\QuestionTag;
 use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -36,6 +37,8 @@ class QuestionController extends Controller
             'difficulty'      => ['required', 'in:easy,medium,hard'],
             'question_type'   => ['required', 'in:single,multiple'],
             'topic'           => ['nullable', 'string', 'max:100'],
+            'tag_ids'         => ['nullable', 'array'],
+            'tag_ids.*'       => ['integer', 'distinct', 'exists:question_tags,id'],
             'question_text'   => ['required', 'string'],
             'option_a'        => ['required', 'string'],
             'option_b'        => ['required', 'string'],
@@ -59,6 +62,7 @@ class QuestionController extends Controller
             'subject:id,name,slug,icon,color',
             'classLevels:id,level,label',
             'questionCategory:id,subject_id,parent_id,name,slug',
+            'tags:id,name,class_level_id',
         ])
             ->latest();
 
@@ -75,7 +79,8 @@ class QuestionController extends Controller
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('question_text', 'like', '%'.$request->search.'%')
-                    ->orWhere('topic', 'like', '%'.$request->search.'%');
+                    ->orWhere('topic', 'like', '%'.$request->search.'%')
+                    ->orWhereHas('tags', fn ($tagQuery) => $tagQuery->where('name', 'like', '%'.$request->search.'%'));
             });
         }
 
@@ -116,6 +121,9 @@ class QuestionController extends Controller
         $classLevelIds = $data['class_level_ids'];
         unset($data['class_level_ids']);
 
+        $tagIds = $this->validTagIds($data['tag_ids'] ?? [], $data['subject_id'], $classLevelIds);
+        unset($data['tag_ids']);
+
         if ($request->hasFile('question_image')) {
             $data['question_image'] = $request->file('question_image')
                 ->store('questions', 'public');
@@ -124,6 +132,7 @@ class QuestionController extends Controller
         $data['created_by'] = Auth::id();
         $question = Question::create($data);
         $question->classLevels()->sync($classLevelIds);
+        $question->tags()->sync($tagIds);
 
         return redirect()->route('admin.questions.index')
             ->with('success', 'Question added successfully.');
@@ -131,7 +140,7 @@ class QuestionController extends Controller
 
     public function edit(Question $question)
     {
-        $question->load('questionCategory', 'classLevels');
+        $question->load('questionCategory', 'classLevels', 'tags.classLevel:id,label');
 
         return Inertia::render('Admin/Questions/Edit', [
             ...$this->meta(),
@@ -146,6 +155,9 @@ class QuestionController extends Controller
 
         $classLevelIds = $data['class_level_ids'];
         unset($data['class_level_ids']);
+
+        $tagIds = $this->validTagIds($data['tag_ids'] ?? [], $data['subject_id'], $classLevelIds);
+        unset($data['tag_ids']);
 
         if ($request->hasFile('question_image')) {
             if ($question->question_image) {
@@ -165,6 +177,7 @@ class QuestionController extends Controller
 
         $question->update($data);
         $question->classLevels()->sync($classLevelIds);
+        $question->tags()->sync($tagIds);
 
         return redirect()->route('admin.questions.index')
             ->with('success', 'Question updated.');
@@ -199,6 +212,31 @@ class QuestionController extends Controller
                 'question_category_id' => 'Category must belong to the selected subject.',
             ]);
         }
+    }
+
+    /**
+     * Tags are scoped to a subject + class pair, so a tag can only be attached
+     * to a question that actually sits in that subject and one of its classes.
+     */
+    private function validTagIds(array $tagIds, int $subjectId, array $classLevelIds): array
+    {
+        if ($tagIds === []) {
+            return [];
+        }
+
+        $allowed = QuestionTag::whereIn('id', $tagIds)
+            ->where('subject_id', $subjectId)
+            ->whereIn('class_level_id', $classLevelIds)
+            ->pluck('id')
+            ->all();
+
+        if (count($allowed) !== count($tagIds)) {
+            throw ValidationException::withMessages([
+                'tag_ids' => 'Every tag must belong to the selected subject and one of the selected classes.',
+            ]);
+        }
+
+        return $allowed;
     }
 
     private function categoryOptions(): array
