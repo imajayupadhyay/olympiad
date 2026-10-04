@@ -181,7 +181,21 @@ const uploadImage = async (event) => {
       }).run();
     }
   } catch (error) {
-    uploadError.value = error.response?.data?.message || 'Image upload failed. Please try again.';
+    const status = error.response?.status;
+
+    if (status === 413) {
+      uploadError.value = 'The server rejected this image because it is too large. Please use a smaller image (under 1MB) or ask the admin to raise the upload limit.';
+    } else if (status === 419) {
+      uploadError.value = 'Your session expired. Please reload the page and try again.';
+    } else if (status === 422) {
+      uploadError.value = error.response?.data?.errors?.image?.[0]
+        || error.response?.data?.message
+        || 'That file could not be accepted. Use a JPG, PNG, GIF or WEBP under 2MB.';
+    } else if (!error.response) {
+      uploadError.value = 'Upload failed before it reached the server — the file may be too large for the server limit, or the connection dropped. Try a smaller image.';
+    } else {
+      uploadError.value = error.response?.data?.message || 'Image upload failed. Please try again.';
+    }
   } finally {
     uploadingImage.value = false;
   }
