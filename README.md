@@ -34,6 +34,46 @@ php artisan migrate --force
 Reports coverage lives in `tests/Feature/AdminStudentReportTest.php` and currently
 contains 8 tests with 179 assertions.
 
+## Question Bank Excel Import
+
+`/admin/questions` → **Download Template** / **Bulk Import**. The template's dropdowns are
+filled from live subjects, classes and categories, and row 5 is a demo row that is skipped
+unless its question text is replaced. Uploads (max 500 rows) are staged for review — every
+row can be corrected or removed — and nothing reaches the Question Bank until the admin
+confirms. Coverage: `tests/Feature/AdminQuestionBulkImportTest.php`.
+
+## Exam Builder, Sections and Excel Import
+
+Create/Edit Exam is a four-step builder: **Details → Sections & Questions → Scoring & Rules →
+Review & Publish**. Saving the details creates a draft and opens the builder.
+
+- An exam paper is an ordered list of **sections** (e.g. Reasoning → Mathematics → English).
+  Each section draws questions from its own bank subject and can override marks and add
+  instructions for students.
+- Questions are added with **Pick from bank** (search and filter, multi-select),
+  **Write new** (saved to the Question Bank and added to the section) or **Import from Excel**,
+  and reordered by drag, arrows or "move to position / section".
+- **Import from Excel** (exams list, per-exam *Import*, Create Exam → *Save & import from
+  Excel*, or the builder): download the exam's template, fill one row per question in paper
+  order with its `Section`, optionally reuse an existing question by `Question Bank ID`, then
+  review and confirm. Choose *add to the current paper* or *replace the paper*. Nothing is saved
+  before confirmation.
+- Students see section headers in the exam room; "shuffle questions" shuffles within sections.
+- Processing results stores a section-wise breakdown; admins see section averages and each
+  student's section scores, and students see a Section-wise Performance panel.
+
+Deploying this release requires the new migrations (`exam_sections`,
+`exam_questions.exam_section_id`, `results.section_scores`); existing exams are moved into a
+single "General" section automatically:
+
+```bash
+php artisan migrate --force
+npm run build
+```
+
+Coverage: `AdminExamSectionsTest`, `AdminExamQuestionImportTest`, `ExamSectionResultsTest`
+and `AdminExamManagementTest` in `tests/Feature/`.
+
 ---
 
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
