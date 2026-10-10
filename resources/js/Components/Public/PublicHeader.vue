@@ -15,6 +15,7 @@ const currentPath = computed(() => (page.url || '/').split(/[?#]/)[0]);
 const navLinks = [
     { id: 'subjects', label: 'Subjects' },
     { id: 'exams', label: 'Exams', to: '/exams' },
+    { id: 'exam-dates', label: 'Exam Dates', to: '/exam-dates' },
     { id: 'syllabus', label: 'Syllabus', to: '/syllabus' },
     { id: 'rewards', label: 'Rewards' },
     { id: 'faq', label: 'FAQ' },
@@ -133,6 +134,17 @@ onUnmounted(() => onScroll && window.removeEventListener('scroll', onScroll));
 .mobile-menu a.btn-ghost{ border-color:rgba(10,16,36,.32); }
 .mobile-menu .btn{ width:100%; margin-top:18px; }
 .mobile-menu .btn + .btn{ margin-top:10px; }
+
+/* seven links + the CTAs: tighten the row before it collapses into the burger */
+@media (max-width:1180px){
+    .nav__links{ gap:0; }
+    .nav__links a{ padding:10px 10px; font-size:14px; }
+    .nav__links a::after{ left:10px; right:10px; }
+    .nav__cta .btn{ padding:10px 16px; }
+}
+@media (max-width:1020px){
+    .nav-login{ display:none; }
+}
 
 @media (max-width:860px){
     .nav__links, .nav-login{ display:none; }

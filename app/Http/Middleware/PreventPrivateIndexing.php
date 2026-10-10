@@ -17,6 +17,7 @@ class PreventPrivateIndexing
         '/',
         '/marketing',
         '/syllabus',
+        '/exam-dates',
     ];
 
     public function handle(Request $request, Closure $next): Response

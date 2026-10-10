@@ -57,6 +57,145 @@ class ExamCatalogueService
     }
 
     /**
+     * The public /exam-dates calendar: one entry per SUBJECT SESSION.
+     *
+     * Exams are stored one row per class, so a session is every published exam of a
+     * subject that shares the same start, end and duration — "Mathematics, Class 1–5,
+     * 15 Nov 10:00 AM" is one card even though it is five exam rows. A subject that
+     * runs different classes on different days yields one card per day.
+     *
+     * Times are formatted here, not in the browser. The admin form posts a
+     * datetime-local wall time that is stored unconverted, so formatting the stored
+     * value shows exactly what the admin typed; serialising it as an ISO instant would
+     * let the viewer's timezone shift it.
+     *
+     * Only sessions that have not finished are listed: anything starting today or
+     * later, plus earlier-starting windows that are still open.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function upcomingSchedule(): array
+    {
+        $now = now();
+
+        $exams = Exam::query()
+            ->where('status', 'published')
+            ->whereNotNull('starts_at')
+            ->whereHas('subject', fn ($q) => $q->where('is_active', true))
+            ->where(fn ($q) => $q
+                ->where('starts_at', '>=', $now->copy()->startOfDay())
+                ->orWhere('ends_at', '>', $now))
+            ->with([
+                'subject:id,name,icon,color,sort_order',
+                'classLevel:id,level,label',
+            ])
+            ->orderBy('starts_at')
+            ->get(['id', 'subject_id', 'class_level_id', 'starts_at', 'ends_at', 'duration_minutes']);
+
+        return $exams
+            // Defensive: a window that already closed (e.g. ends before it starts) never shows.
+            ->reject(fn (Exam $e) => $e->availabilityState() === 'closed')
+            ->groupBy(fn (Exam $e) => implode('|', [
+                $e->subject_id,
+                $e->starts_at->format('Y-m-d H:i'),
+                $e->ends_at?->format('Y-m-d H:i'),
+                $e->duration_minutes,
+            ]))
+            ->map(fn (Collection $session) => $this->session($session))
+            ->sortBy([
+                fn (array $a, array $b) => $a['_starts'] <=> $b['_starts'],
+                fn (array $a, array $b) => $a['_order'] <=> $b['_order'],
+                fn (array $a, array $b) => $a['subject']['name'] <=> $b['subject']['name'],
+            ])
+            ->map(function (array $session) {
+                unset($session['_starts'], $session['_order']);
+
+                return $session;
+            })
+            // groupBy keys by the session key — values() keeps the Inertia prop a list.
+            ->values()
+            ->all();
+    }
+
+    /**
+     * One subject session for the exam calendar.
+     *
+     * @param  Collection<int, Exam>  $exams  same subject, start, end and duration
+     * @return array<string, mixed>
+     */
+    private function session(Collection $exams): array
+    {
+        /** @var Exam $first */
+        $first = $exams->first();
+        $subject = $first->subject;
+        $start = $first->starts_at;
+        $end = $first->ends_at;
+        $sameDayEnd = $end && $end->isSameDay($start);
+
+        return [
+            'key' => $subject->id.'-'.$start->format('YmdHi').'-'.$exams->pluck('id')->min(),
+            'subject' => [
+                'name' => $subject->name,
+                'icon' => $subject->icon,
+                'color' => $subject->color,
+            ],
+            'class_range' => $this->classRuns($exams),
+            'date' => $start->format('Y-m-d'),
+            'day' => $start->format('j'),
+            'month' => $start->format('M'),
+            'weekday' => $start->format('l'),
+            'date_label' => $start->format('l, j F Y'),
+            'month_key' => $start->format('Y-m'),
+            'month_label' => $start->format('F Y'),
+            'start_time' => $start->format('g:i A'),
+            'end_time' => $sameDayEnd ? $end->format('g:i A') : null,
+            'closes_label' => $end && ! $sameDayEnd ? $end->format('D, j M · g:i A') : null,
+            'duration_minutes' => $first->duration_minutes,
+            'status' => $exams->contains(fn (Exam $e) => $e->availabilityState() === 'live') ? 'live' : 'upcoming',
+            '_starts' => $start->getTimestamp(),
+            '_order' => (int) ($subject->sort_order ?? PHP_INT_MAX),
+        ];
+    }
+
+    /**
+     * "Class 7", "Class 1–5", or "Class 1–3, 6–8" when the covered classes have gaps.
+     *
+     * Unlike classRange() the calendar spells gaps out: a student checking whether
+     * their own class sits this paper must not be told "Class 1–8" when Class 4 isn't in it.
+     *
+     * @param  Collection<int, Exam>  $exams
+     */
+    private function classRuns(Collection $exams): string
+    {
+        $levels = $exams
+            ->map(fn (Exam $e) => $e->classLevel?->level)
+            ->reject(fn ($level) => $level === null)
+            ->map(fn ($level) => (int) $level)
+            ->unique()
+            ->sort()
+            ->values();
+
+        if ($levels->isEmpty()) {
+            // No numeric level recorded: fall back to the class labels themselves.
+            return $exams->map(fn (Exam $e) => $e->classLevel?->label)->filter()->unique()->implode(', ') ?: 'All classes';
+        }
+
+        $runs = [];
+        $runStart = $previous = $levels->first();
+
+        foreach ($levels->slice(1) as $level) {
+            if ($level !== $previous + 1) {
+                $runs[] = $runStart === $previous ? "{$runStart}" : "{$runStart}–{$previous}";
+                $runStart = $level;
+            }
+            $previous = $level;
+        }
+        $runs[] = $runStart === $previous ? "{$runStart}" : "{$runStart}–{$previous}";
+
+        return 'Class '.implode(', ', $runs);
+    }
+
+    /**
      * Roll one subject's published exams into a single card, or null when the
      * subject has nothing left to offer.
      *

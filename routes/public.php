@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Public\ExamController;
+use App\Http\Controllers\Public\ExamDateController;
 use App\Http\Controllers\Public\HomeController;
 use App\Http\Controllers\Public\MarketingController;
 use App\Http\Controllers\Public\SchoolController;
@@ -23,6 +24,12 @@ Route::get('/sitemap.xml', function () {
             'priority' => '0.9',
         ],
         [
+            'loc' => $siteUrl.'/exam-dates',
+            'lastmod' => now()->toDateString(),
+            'changefreq' => 'daily',
+            'priority' => '0.8',
+        ],
+        [
             'loc' => $siteUrl.'/syllabus',
             'lastmod' => now()->toDateString(),
             'changefreq' => 'monthly',
@@ -38,6 +45,7 @@ Route::get('/sitemap.xml', function () {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/exams', [ExamController::class, 'index'])->name('exams');
+Route::get('/exam-dates', [ExamDateController::class, 'index'])->name('exam-dates');
 Route::get('/syllabus', [SyllabusController::class, 'index'])->name('syllabus');
 Route::post('/exams/enroll', [ExamController::class, 'enroll'])->name('exams.enroll');
 Route::get('/results', [HomeController::class, 'results'])->name('results');
