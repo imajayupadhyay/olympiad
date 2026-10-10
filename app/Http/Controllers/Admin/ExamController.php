@@ -8,8 +8,8 @@ use App\Models\Exam;
 use App\Models\Question;
 use App\Models\QuestionCategory;
 use App\Models\Subject;
+use App\Services\ExamSectionService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -19,6 +19,10 @@ use Inertia\Inertia;
 
 class ExamController extends Controller
 {
+    public function __construct(private ExamSectionService $sections)
+    {
+    }
+
     private function meta(): array
     {
         return [
@@ -28,6 +32,7 @@ class ExamController extends Controller
             'statuses' => Exam::statuses(),
             'scoringModes' => Exam::scoringModes(),
             'difficulties' => Question::difficulties(),
+            'types' => Question::types(),
         ];
     }
 
@@ -80,27 +85,22 @@ class ExamController extends Controller
         ]);
     }
 
-    public function create(Request $request)
+    public function create()
     {
-        return Inertia::render('Admin/Exams/Create', [
-            ...$this->meta(),
-            'availableQuestions' => $this->questionOptions($request),
-            'questionFilters' => $this->questionFilters($request),
-            'assignedQuestions' => [],
-        ]);
+        return Inertia::render('Admin/Exams/Create', $this->meta());
     }
 
     public function store(Request $request)
     {
         $data = $this->validatedExamData($request);
         $this->ensureCategoryMatchesSubject($data['subject_id'], $data['question_category_id'] ?? null);
-        $questionIds = $this->validQuestionIds($request, $data['subject_id'], $data['class_level_id'], $data['question_category_id'] ?? null);
+        $sections = $this->sections->fromRequest($request, $data);
 
         if ($data['status'] === 'published') {
-            $this->ensurePublishReady($data, $questionIds);
+            $this->ensurePublishReady($request, $data, $sections);
         }
 
-        DB::transaction(function () use ($data, $questionIds) {
+        $exam = DB::transaction(function () use ($data, $sections) {
             $data['slug'] = $this->uniqueSlug($data['name']);
             $data['exam_code'] = $this->generateExamCode();
             $data['created_by'] = Auth::id();
@@ -108,11 +108,13 @@ class ExamController extends Controller
             $data['published_at'] = $data['status'] === 'published' ? now() : null;
 
             $exam = Exam::create($data);
-            $this->syncQuestions($exam, $questionIds);
+            $this->sections->sync($exam, $sections);
+
+            return $exam;
         });
 
-        return redirect()->route('admin.exams.index')
-            ->with('success', 'Exam created successfully.');
+        return redirect()->route('admin.exams.edit', ['exam' => $exam, 'step' => 'questions'])
+            ->with('success', 'Exam created. Now add its sections and questions.');
     }
 
     public function show(Exam $exam)
@@ -120,23 +122,13 @@ class ExamController extends Controller
         return redirect()->route('admin.exams.edit', $exam);
     }
 
-    public function edit(Request $request, Exam $exam)
+    public function edit(Exam $exam)
     {
-        $exam->load([
-            'subject:id,name,slug,icon,color',
-            'classLevel:id,level,label',
-            'questionCategory:id,subject_id,parent_id,name,slug',
-            'questions.subject:id,name,slug,icon,color',
-            'questions.classLevels:id,level,label',
-            'questions.questionCategory:id,subject_id,parent_id,name,slug',
-        ]);
+        $exam->load('questionCategory:id,subject_id,parent_id,name,slug')->loadCount('attempts');
 
         return Inertia::render('Admin/Exams/Edit', [
             ...$this->meta(),
             'exam' => $this->examPayload($exam),
-            'availableQuestions' => $this->questionOptions($request, $exam),
-            'questionFilters' => $this->questionFilters($request),
-            'assignedQuestions' => $exam->questions->map(fn (Question $question) => $this->questionPayload($question))->values(),
         ]);
     }
 
@@ -144,13 +136,13 @@ class ExamController extends Controller
     {
         $data = $this->validatedExamData($request);
         $this->ensureCategoryMatchesSubject($data['subject_id'], $data['question_category_id'] ?? null);
-        $questionIds = $this->validQuestionIds($request, $data['subject_id'], $data['class_level_id'], $data['question_category_id'] ?? null);
+        $sections = $this->sections->fromRequest($request, $data, $exam);
 
         if ($data['status'] === 'published') {
-            $this->ensurePublishReady($data, $questionIds);
+            $this->ensurePublishReady($request, $data, $sections);
         }
 
-        DB::transaction(function () use ($exam, $data, $questionIds) {
+        DB::transaction(function () use ($exam, $data, $sections) {
             if ($exam->name !== $data['name']) {
                 $data['slug'] = $this->uniqueSlug($data['name'], $exam->id);
             }
@@ -161,11 +153,10 @@ class ExamController extends Controller
                 : null;
 
             $exam->update($data);
-            $this->syncQuestions($exam->fresh(), $questionIds);
+            $this->sections->sync($exam->fresh(), $sections);
         });
 
-        return redirect()->route('admin.exams.index')
-            ->with('success', 'Exam updated.');
+        return back()->with('success', $data['status'] === 'published' ? 'Exam saved and published.' : 'Exam saved.');
     }
 
     public function destroy(Exam $exam)
@@ -181,8 +172,6 @@ class ExamController extends Controller
 
     public function duplicate(Exam $exam)
     {
-        $exam->load('questions');
-
         $newExam = DB::transaction(function () use ($exam) {
             $data = [
                 'subject_id' => $exam->subject_id,
@@ -215,20 +204,7 @@ class ExamController extends Controller
             $data['updated_by'] = Auth::id();
 
             $newExam = Exam::create($data);
-
-            $pivotRows = $exam->questions->map(fn (Question $question) => [
-                'exam_id' => $newExam->id,
-                'question_id' => $question->id,
-                'sort_order' => $question->pivot->sort_order,
-                'marks' => $question->pivot->marks,
-                'negative_marks' => $question->pivot->negative_marks,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ])->all();
-
-            if ($pivotRows !== []) {
-                DB::table('exam_questions')->insert($pivotRows);
-            }
+            $this->sections->duplicate($exam, $newExam);
 
             return $newExam;
         });
@@ -243,6 +219,10 @@ class ExamController extends Controller
 
         if ($exam->questions_count === 0 || ! $exam->starts_at || ! $exam->duration_minutes) {
             return back()->with('error', 'Add questions, schedule, and duration before publishing this exam.');
+        }
+
+        if ($exam->sections()->doesntHave('questions')->exists()) {
+            return back()->with('error', 'Every section needs at least one question before publishing. Open the exam to fill or remove empty sections.');
         }
 
         $exam->update([
@@ -300,11 +280,7 @@ class ExamController extends Controller
             'show_result_immediately' => ['boolean'],
             'result_release_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
             'status' => ['required', Rule::in(array_keys(Exam::statuses()))],
-            'question_ids' => ['nullable', 'array'],
-            'question_ids.*' => ['integer', 'distinct', 'exists:questions,id'],
         ]);
-
-        unset($data['question_ids']);
 
         $data['fee_currency'] = strtoupper($data['fee_currency']);
         $data['negative_marking_enabled'] = $request->boolean('negative_marking_enabled');
@@ -318,46 +294,9 @@ class ExamController extends Controller
         return $data;
     }
 
-    private function validQuestionIds(Request $request, int $subjectId, int $classLevelId, ?int $categoryId = null): Collection
+    private function ensurePublishReady(Request $request, array $data, array $sections): void
     {
-        $ids = collect($request->input('question_ids', []))
-            ->filter(fn ($id) => $id !== null && $id !== '')
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values();
-
-        if ($ids->isEmpty()) {
-            return $ids;
-        }
-
-        $validQuestions = Question::whereIn('id', $ids)
-            ->where('is_active', true)
-            ->where('subject_id', $subjectId)
-            ->whereHas('classLevels', fn ($q) => $q->where('class_levels.id', $classLevelId));
-
-        if ($categoryId) {
-            $category = QuestionCategory::find($categoryId);
-            $validQuestions->whereIn('question_category_id', $category ? $category->idsWithDescendants() : []);
-        }
-
-        $validCount = $validQuestions->count();
-
-        if ($validCount !== $ids->count()) {
-            throw ValidationException::withMessages([
-                'question_ids' => 'Only active questions from this exam subject, class, and category can be assigned.',
-            ]);
-        }
-
-        return $ids;
-    }
-
-    private function ensurePublishReady(array $data, Collection $questionIds): void
-    {
-        $errors = [];
-
-        if ($questionIds->isEmpty()) {
-            $errors['question_ids'] = 'Assign at least one question before publishing.';
-        }
+        $errors = $this->sections->publishErrors($sections, ! $request->has('sections'));
 
         if (blank($data['starts_at'] ?? null)) {
             $errors['starts_at'] = 'Set the exam start date and time before publishing.';
@@ -370,86 +309,6 @@ class ExamController extends Controller
         if ($errors !== []) {
             throw ValidationException::withMessages($errors);
         }
-    }
-
-    private function syncQuestions(Exam $exam, Collection $questionIds): void
-    {
-        if ($questionIds->isEmpty()) {
-            $exam->questions()->sync([]);
-
-            return;
-        }
-
-        $questions = Question::whereIn('id', $questionIds)->get()->keyBy('id');
-
-        $sync = [];
-        foreach ($questionIds as $index => $questionId) {
-            $question = $questions->get($questionId);
-            $marks = $exam->scoring_mode === 'uniform'
-                ? $exam->marks_per_question
-                : $question->marks;
-            $negativeMarks = $exam->negative_marking_enabled
-                ? ($exam->scoring_mode === 'uniform' ? $exam->negative_marks_per_question : $question->negative_marks)
-                : 0;
-
-            $sync[$questionId] = [
-                'sort_order' => $index + 1,
-                'marks' => $marks,
-                'negative_marks' => $negativeMarks,
-            ];
-        }
-
-        $exam->questions()->sync($sync);
-    }
-
-    private function questionOptions(Request $request, ?Exam $exam = null)
-    {
-        $subjectId = $request->input('question_subject_id') ?: $exam?->subject_id;
-        $classLevelId = $request->input('question_class_level_id') ?: $exam?->class_level_id;
-        $categoryId = $request->input('question_category_id') ?: $exam?->question_category_id;
-
-        $query = Question::with([
-            'subject:id,name,slug,icon,color',
-            'classLevels:id,level,label',
-            'questionCategory:id,subject_id,parent_id,name,slug',
-        ])
-            ->where('is_active', true)
-            ->latest();
-
-        if (! $subjectId || ! $classLevelId) {
-            $query->whereRaw('0 = 1');
-        } else {
-            $query->where('subject_id', $subjectId)
-                ->whereHas('classLevels', fn ($q) => $q->where('class_levels.id', $classLevelId));
-        }
-
-        if ($request->filled('question_difficulty')) {
-            $query->where('difficulty', $request->input('question_difficulty'));
-        }
-
-        if ($categoryId) {
-            $category = QuestionCategory::find($categoryId);
-            $query->whereIn('question_category_id', $category ? $category->idsWithDescendants() : []);
-        }
-
-        if ($request->filled('question_search')) {
-            $search = $request->string('question_search');
-            $query->where(function ($q) use ($search) {
-                $q->where('question_text', 'like', "%{$search}%")
-                    ->orWhere('topic', 'like', "%{$search}%");
-            });
-        }
-
-        return $query->paginate(8, ['*'], 'questions_page')->withQueryString();
-    }
-
-    private function questionFilters(Request $request): array
-    {
-        return [
-            'search' => $request->input('question_search', ''),
-            'difficulty' => $request->input('question_difficulty', ''),
-            'category_id' => $request->input('question_category_id', ''),
-        ];
     }
 
     private function examPayload(Exam $exam): array
@@ -479,25 +338,9 @@ class ExamController extends Controller
             'show_result_immediately' => $exam->show_result_immediately,
             'result_release_at' => $this->dateForInput($exam->result_release_at),
             'status' => $exam->status,
-            'question_ids' => $exam->questions->pluck('id')->values(),
             'question_category' => $exam->questionCategory,
-        ];
-    }
-
-    private function questionPayload(Question $question): array
-    {
-        return [
-            'id' => $question->id,
-            'question_text' => $question->question_text,
-            'question_image_url' => $question->question_image_url,
-            'topic' => $question->topic,
-            'difficulty' => $question->difficulty,
-            'question_type' => $question->question_type,
-            'marks' => $question->pivot->marks ?? $question->marks,
-            'negative_marks' => $question->pivot->negative_marks ?? $question->negative_marks,
-            'subject' => $question->subject,
-            'class_levels' => $question->classLevels,
-            'question_category' => $question->questionCategory,
+            'attempts_count' => $exam->attempts_count ?? 0,
+            'sections' => $this->sections->builderPayload($exam),
         ];
     }
 

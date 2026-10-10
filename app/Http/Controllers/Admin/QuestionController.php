@@ -8,6 +8,7 @@ use App\Models\Question;
 use App\Models\QuestionCategory;
 use App\Models\QuestionTag;
 use App\Models\Subject;
+use App\Services\ExamSectionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -134,6 +135,13 @@ class QuestionController extends Controller
         $question = Question::create($data);
         $question->classLevels()->sync($classLevelIds);
         $question->tags()->sync($tagIds);
+
+        // The exam builder writes questions inline and adds them straight to a section.
+        if ($request->wantsJson()) {
+            $question->load(['subject:id,name', 'classLevels:id,label', 'questionCategory:id,name']);
+
+            return response()->json(['question' => app(ExamSectionService::class)->questionPayload($question)], 201);
+        }
 
         return redirect()->route('admin.questions.index')
             ->with('success', 'Question added successfully.');

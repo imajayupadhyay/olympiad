@@ -1,5 +1,5 @@
 <template>
-  <AdminLayout :title="`Edit ${exam.name}`" :subtitle="exam.exam_code">
+  <AdminLayout :title="exam.name" :subtitle="`${exam.exam_code} · Exam builder`">
     <ExamForm
       mode="edit"
       :exam="exam"
@@ -9,9 +9,7 @@
       :statuses="statuses"
       :scoring-modes="scoringModes"
       :difficulties="difficulties"
-      :available-questions="availableQuestions"
-      :question-filters="questionFilters"
-      :assigned-questions="assignedQuestions"
+      :types="types"
     />
   </AdminLayout>
 </template>
@@ -28,8 +26,6 @@ defineProps({
   statuses: Object,
   scoringModes: Object,
   difficulties: Object,
-  availableQuestions: Object,
-  questionFilters: Object,
-  assignedQuestions: Array,
+  types: Object,
 });
 </script>

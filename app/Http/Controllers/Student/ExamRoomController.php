@@ -64,7 +64,7 @@ class ExamRoomController extends Controller
             return redirect()->route('student.exam-room.submitted', $attempt);
         }
 
-        $exam = $attempt->exam()->with('questions')->first();
+        $exam = $attempt->exam()->with(['questions', 'sections:id,exam_id,name,instructions,sort_order'])->first();
 
         $remaining = $this->remainingSeconds($attempt, $exam);
         if ($remaining <= 0) {
@@ -81,6 +81,7 @@ class ExamRoomController extends Controller
 
             return [
                 'id'             => $q->id,
+                'section_id'     => $q->pivot->exam_section_id,
                 'question_text'  => $q->question_text,
                 'question_image_url' => $q->question_image_url,
                 'question_type'  => $q->question_type,                 // single | multiple
@@ -103,6 +104,11 @@ class ExamRoomController extends Controller
                 'negative_marking_enabled'    => (bool) $exam->negative_marking_enabled,
                 'total_questions'   => $payload->count(),
             ],
+            'sections'          => $exam->sections->map(fn ($section) => [
+                'id'           => $section->id,
+                'name'         => $section->name,
+                'instructions' => $section->instructions,
+            ])->values(),
             'questions'         => $payload,
             'remaining_seconds' => $remaining,
         ]);
@@ -206,13 +212,17 @@ class ExamRoomController extends Controller
 
     /**
      * Questions in pivot order, deterministically shuffled per-attempt when randomized.
+     * Shuffling stays inside each section so the paper keeps its section order.
      */
     protected function orderedQuestions(ExamAttempt $attempt, Exam $exam)
     {
         $questions = $exam->questions;
 
         if ($exam->randomize_questions) {
-            $questions = $questions->sortBy(fn ($q) => md5($attempt->id.'-'.$q->id))->values();
+            $questions = $questions
+                ->groupBy(fn ($q) => $q->pivot->exam_section_id ?? 0)
+                ->flatMap(fn ($group) => $group->sortBy(fn ($q) => md5($attempt->id.'-'.$q->id)))
+                ->values();
         }
 
         return $questions;

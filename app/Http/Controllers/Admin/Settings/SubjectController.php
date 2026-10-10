@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Models\ExamSection;
 use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -60,7 +61,7 @@ class SubjectController extends Controller
             return back()->with('error', "Cannot delete \"{$subject->name}\" — it has questions linked to it.");
         }
 
-        if ($subject->exams()->count() > 0) {
+        if ($subject->exams()->count() > 0 || ExamSection::where('subject_id', $subject->id)->exists()) {
             return back()->with('error', "Cannot delete \"{$subject->name}\" — it has exams linked to it.");
         }
 

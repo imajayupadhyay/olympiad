@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DataEntryController;
 use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\ExamController;
+use App\Http\Controllers\Admin\ExamQuestionBankController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
@@ -111,6 +112,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         ->middlewareFor(['index', 'show'], 'admin.permission:questions,read')
         ->middlewareFor(['create', 'edit', 'store', 'update'], 'admin.permission:questions,write')
         ->middlewareFor(['destroy'], 'admin.permission:questions,delete');
+    Route::get('/exams/question-bank', [ExamQuestionBankController::class, 'index'])
+        ->middleware('admin.permission:exams,write')
+        ->name('exams.question-bank');
     Route::resource('exams', ExamController::class)
         ->middlewareFor(['index', 'show'], 'admin.permission:exams,read')
         ->middlewareFor(['create', 'edit', 'store', 'update'], 'admin.permission:exams,write')

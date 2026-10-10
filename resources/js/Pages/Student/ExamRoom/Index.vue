@@ -8,6 +8,7 @@ const props = defineProps({
     attempt: { type: Object, required: true },
     exam: { type: Object, required: true },
     questions: { type: Array, default: () => [] },
+    sections: { type: Array, default: () => [] },
     remaining_seconds: { type: Number, default: 0 },
 });
 
@@ -41,6 +42,19 @@ props.questions.forEach((q) => {
 /* ── computed ── */
 const q = computed(() => props.questions[current.value] ?? null);
 const total = computed(() => props.questions.length);
+
+// Single-section (legacy) papers keep the original flat look.
+const showSections = computed(() => props.sections.length > 1);
+const sectionGroups = computed(() => {
+    const groups = props.sections.map((section) => ({ ...section, items: [] }));
+    const byId = new Map(groups.map((group) => [group.id, group]));
+    props.questions.forEach((question, index) => {
+        (byId.get(question.section_id) ?? groups[groups.length - 1])?.items.push({ question, index });
+    });
+    return groups.filter((group) => group.items.length);
+});
+const currentSection = computed(() => props.sections.find((section) => section.id === q.value?.section_id) ?? null);
+const currentSectionNumber = computed(() => props.sections.indexOf(currentSection.value) + 1);
 
 const counts = computed(() => {
     let answered = 0, marked = 0, notVisited = 0, notAnswered = 0;
@@ -198,6 +212,11 @@ function doSubmit(reason = 'manual') {
                     <li><strong>{{ exam.duration_minutes }}m</strong><span>Duration</span></li>
                     <li><strong>{{ Math.floor(remaining / 60) }}m</strong><span>Time left</span></li>
                 </ul>
+                <ol v-if="showSections" class="gate-sections">
+                    <li v-for="group in sectionGroups" :key="group.id">
+                        <span>{{ group.name }}</span><strong>{{ group.items.length }} Q</strong>
+                    </li>
+                </ol>
                 <ul class="gate-rules">
                     <li>You have <strong>one attempt</strong>. The timer is already running.</li>
                     <li>Stay in full-screen. Leaving the tab <strong>{{ MAX_STRIKES }} times auto-submits</strong> your test.</li>
@@ -228,6 +247,10 @@ function doSubmit(reason = 'manual') {
             <div class="body">
                 <!-- question -->
                 <main class="q-area" v-if="q">
+                    <div v-if="showSections && currentSection" class="q-section">
+                        <span>Section {{ currentSectionNumber }} · {{ currentSection.name }}</span>
+                        <p v-if="currentSection.instructions">{{ currentSection.instructions }}</p>
+                    </div>
                     <div class="q-head">
                         <span class="q-no">Question {{ current + 1 }} <i>/ {{ total }}</i></span>
                         <span class="q-type">{{ q.question_type === 'multiple' ? 'Multiple correct' : 'Single correct' }}</span>
@@ -274,7 +297,21 @@ function doSubmit(reason = 'manual') {
                         <span class="leg not-visited"><i></i>{{ counts.notVisited }} Not visited</span>
                     </div>
 
-                    <div class="pal-grid">
+                    <div v-if="showSections" class="pal-sections">
+                        <section v-for="group in sectionGroups" :key="group.id">
+                            <h4>{{ group.name }}</h4>
+                            <div class="pal-grid">
+                                <button
+                                    v-for="item in group.items"
+                                    :key="item.question.id"
+                                    class="pal-cell"
+                                    :class="[paletteState(item.question), { current: item.index === current }]"
+                                    @click="goTo(item.index)"
+                                >{{ item.index + 1 }}</button>
+                            </div>
+                        </section>
+                    </div>
+                    <div v-else class="pal-grid">
                         <button
                             v-for="(qq, i) in questions"
                             :key="qq.id"
@@ -328,6 +365,10 @@ function doSubmit(reason = 'manual') {
 .gate-facts li { flex: 1; background: #F3E9D6; border-radius: 13px; padding: .8rem; text-align: center; }
 .gate-facts strong { display: block; font-family: "Space Grotesk", monospace; font-size: 1.3rem; color: #0A1024; }
 .gate-facts span { font-size: .74rem; color: #5B6373; }
+.gate-sections { list-style: none; margin: 0 0 1.2rem; padding: 0; display: grid; gap: .35rem; counter-reset: sec; }
+.gate-sections li { display: flex; justify-content: space-between; align-items: center; padding: .5rem .75rem; border: 1px solid #E7D9BE; border-radius: 10px; font-size: .86rem; color: #0A1024; counter-increment: sec; }
+.gate-sections li span::before { content: counter(sec) ". "; color: #9aa0ad; font-family: "Space Grotesk", monospace; }
+.gate-sections strong { font-family: "Space Grotesk", monospace; color: #5B6373; font-size: .8rem; }
 .gate-rules { margin: 0 0 1.5rem; padding-left: 1.1rem; display: grid; gap: .5rem; }
 .gate-rules li { font-size: .88rem; color: #41485a; line-height: 1.5; }
 .begin { width: 100%; border: 0; cursor: pointer; font-weight: 700; font-size: 1rem; color: #fff; background: linear-gradient(135deg, #F2854E, #EE6A2C); padding: .9rem; border-radius: 14px; box-shadow: 0 14px 30px -12px rgba(238,106,44,.7); }
@@ -349,6 +390,9 @@ function doSubmit(reason = 'manual') {
 /* ── body ── */
 .body { flex: 1; display: flex; min-height: 0; }
 .q-area { flex: 1; padding: 1.6rem 2rem; overflow: auto; }
+.q-section { margin-bottom: .9rem; padding-bottom: .8rem; border-bottom: 1px dashed #E7D9BE; }
+.q-section span { font-family: "Space Grotesk", monospace; font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; color: #EE6A2C; }
+.q-section p { margin: .3rem 0 0; font-size: .85rem; color: #5B6373; line-height: 1.5; }
 .q-head { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.1rem; }
 .q-no { font-weight: 700; color: #0A1024; }
 .q-no i { color: #9aa0ad; font-style: normal; font-weight: 500; }
@@ -399,6 +443,9 @@ function doSubmit(reason = 'manual') {
 .leg.not-visited i { background: #e4dcc9; }
 
 .pal-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .5rem; overflow: auto; flex: 1; align-content: start; padding: .2rem; }
+.pal-sections { flex: 1; overflow: auto; display: grid; gap: .9rem; align-content: start; }
+.pal-sections .pal-grid { overflow: visible; flex: none; }
+.pal-sections h4 { margin: 0 0 .35rem; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: #5B6373; font-weight: 700; }
 .pal-cell { aspect-ratio: 1; border: 0; border-radius: 9px; font-family: "Space Grotesk", monospace; font-weight: 600; font-size: .85rem; cursor: pointer; background: #e4dcc9; color: #5B6373; position: relative; }
 .pal-cell.not-answered { background: #DC2626; color: #fff; }
 .pal-cell.answered { background: #168A66; color: #fff; }

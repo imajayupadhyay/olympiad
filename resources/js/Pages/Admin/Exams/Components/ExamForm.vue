@@ -9,8 +9,28 @@
       {{ $page.props.flash.error }}
     </div>
 
-    <form @submit.prevent="submit">
-      <div class="grid grid-cols-1 xl:grid-cols-5 gap-6 items-start">
+    <!-- ── Stepper ── -->
+    <nav class="mb-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-2 flex flex-wrap gap-1" aria-label="Exam builder steps">
+      <button v-for="(item, index) in steps" :key="item.key" type="button"
+              :disabled="item.locked"
+              :aria-current="step === item.key ? 'step' : undefined"
+              @click="goTo(item.key)"
+              class="flex-1 min-w-[150px] flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors disabled:cursor-not-allowed"
+              :class="step === item.key ? 'bg-primary text-white' : (item.locked ? 'text-text-muted/60' : 'text-text-main hover:bg-gray-50')">
+        <span class="w-7 h-7 shrink-0 rounded-lg grid place-items-center font-number text-sm font-bold"
+              :class="step === item.key ? 'bg-white/15' : (stepHasErrors(item.key) ? 'bg-danger/10 text-danger' : 'bg-primary/10 text-primary')">
+          {{ stepHasErrors(item.key) ? '!' : index + 1 }}
+        </span>
+        <span class="min-w-0">
+          <span class="block text-sm font-semibold truncate">{{ item.label }}</span>
+          <span class="block text-[11px] truncate" :class="step === item.key ? 'text-white/70' : 'text-text-muted'">{{ item.hint }}</span>
+        </span>
+      </button>
+    </nav>
+
+    <form @submit.prevent="save()">
+      <!-- ── 1. Details ── -->
+      <div v-show="step === 'details'" class="grid grid-cols-1 xl:grid-cols-5 gap-6 items-start">
         <div class="xl:col-span-3 space-y-5">
           <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <div class="flex items-start justify-between gap-4 mb-5">
@@ -25,136 +45,55 @@
 
             <div class="space-y-4">
               <div>
-                <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Exam Name *</label>
+                <label class="label">Exam Name *</label>
                 <input v-model="form.name" type="text" placeholder="e.g. National Science Olympiad - Class 6"
-                       class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white"
-                       :class="form.errors.name ? 'border-danger' : 'border-gray-200'" />
-                <p v-if="form.errors.name" class="text-danger text-xs mt-1">{{ form.errors.name }}</p>
+                       class="field" :class="form.errors.name ? 'border-danger' : 'border-gray-200'" />
+                <p v-if="form.errors.name" class="error">{{ form.errors.name }}</p>
               </div>
 
               <div>
-                <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Short Description</label>
+                <label class="label">Short Description</label>
                 <textarea v-model="form.description" rows="3" placeholder="Brief exam overview shown to students."
-                          class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary resize-none"></textarea>
-                <p v-if="form.errors.description" class="text-danger text-xs mt-1">{{ form.errors.description }}</p>
+                          class="field border-gray-200 resize-none"></textarea>
+                <p v-if="form.errors.description" class="error">{{ form.errors.description }}</p>
               </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Subject *</label>
-                  <select v-model="form.subject_id"
-                          class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white"
-                          :class="form.errors.subject_id ? 'border-danger' : 'border-gray-200'">
+                  <label class="label">Olympiad Subject *</label>
+                  <select v-model="form.subject_id" class="field" :class="form.errors.subject_id ? 'border-danger' : 'border-gray-200'">
                     <option value="">Choose subject</option>
-                    <option v-for="subject in subjects" :key="subject.id" :value="subject.id">
-                      {{ subject.icon }} {{ subject.name }}
-                    </option>
+                    <option v-for="subject in subjects" :key="subject.id" :value="subject.id">{{ subject.icon }} {{ subject.name }}</option>
                   </select>
-                  <p v-if="form.errors.subject_id" class="text-danger text-xs mt-1">{{ form.errors.subject_id }}</p>
+                  <p v-if="form.errors.subject_id" class="error">{{ form.errors.subject_id }}</p>
                 </div>
 
                 <div>
-                  <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Category Scope</label>
-                  <select v-model="form.question_category_id"
-                          :disabled="!form.subject_id"
-                          class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white disabled:bg-gray-50 disabled:text-text-muted"
+                  <label class="label">Category Scope</label>
+                  <select v-model="form.question_category_id" :disabled="!form.subject_id"
+                          class="field disabled:bg-gray-50 disabled:text-text-muted"
                           :class="form.errors.question_category_id ? 'border-danger' : 'border-gray-200'">
                     <option value="">Whole subject</option>
                     <option v-for="category in categoryOptions" :key="category.id" :value="category.id">
-                      {{ optionPrefix(category.depth) }} {{ category.path }}{{ category.is_active ? '' : ' (inactive)' }}
+                      {{ ''.padStart(category.depth * 2, '-') }} {{ category.path }}{{ category.is_active ? '' : ' (inactive)' }}
                     </option>
                   </select>
-                  <p v-if="form.errors.question_category_id" class="text-danger text-xs mt-1">{{ form.errors.question_category_id }}</p>
+                  <p v-if="form.errors.question_category_id" class="error">{{ form.errors.question_category_id }}</p>
                 </div>
 
                 <div>
-                  <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Class *</label>
-                  <select v-model="form.class_level_id"
-                          class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white"
-                          :class="form.errors.class_level_id ? 'border-danger' : 'border-gray-200'">
+                  <label class="label">Class *</label>
+                  <select v-model="form.class_level_id" class="field" :class="form.errors.class_level_id ? 'border-danger' : 'border-gray-200'">
                     <option value="">Choose class</option>
-                    <option v-for="classLevel in classLevels" :key="classLevel.id" :value="classLevel.id">
-                      {{ classLevel.label }}
-                    </option>
+                    <option v-for="classLevel in classLevels" :key="classLevel.id" :value="classLevel.id">{{ classLevel.label }}</option>
                   </select>
-                  <p v-if="form.errors.class_level_id" class="text-danger text-xs mt-1">{{ form.errors.class_level_id }}</p>
-                </div>
-
-                <div>
-                  <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Status *</label>
-                  <select v-model="form.status"
-                          class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white"
-                          :class="form.errors.status ? 'border-danger' : 'border-gray-200'">
-                    <option v-for="(label, key) in statuses" :key="key" :value="key">{{ label }}</option>
-                  </select>
-                  <p v-if="form.errors.status" class="text-danger text-xs mt-1">{{ form.errors.status }}</p>
+                  <p v-if="form.errors.class_level_id" class="error">{{ form.errors.class_level_id }}</p>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h2 class="font-heading font-bold text-text-main text-sm uppercase tracking-wider mb-4">Schedule & Fees</h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Starts At *</label>
-                <input v-model="form.starts_at" type="datetime-local"
-                       class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white"
-                       :class="form.errors.starts_at ? 'border-danger' : 'border-gray-200'" />
-                <p v-if="form.errors.starts_at" class="text-danger text-xs mt-1">{{ form.errors.starts_at }}</p>
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Closes At</label>
-                <input v-model="form.ends_at" type="datetime-local"
-                       class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white"
-                       :class="form.errors.ends_at ? 'border-danger' : 'border-gray-200'" />
-                <p v-if="form.errors.ends_at" class="text-danger text-xs mt-1">{{ form.errors.ends_at }}</p>
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Duration *</label>
-                <div class="relative">
-                  <input v-model.number="form.duration_minutes" type="number" min="5" max="360"
-                         class="w-full pl-3 pr-16 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary font-number"
-                         :class="form.errors.duration_minutes ? 'border-danger' : 'border-gray-200'" />
-                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xs">mins</span>
-                </div>
-                <p v-if="form.errors.duration_minutes" class="text-danger text-xs mt-1">{{ form.errors.duration_minutes }}</p>
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Exam Fee *</label>
-                <div class="grid grid-cols-5 gap-2">
-                  <input v-model.number="form.fee_amount" type="number" min="0" step="0.01"
-                         class="col-span-3 px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary font-number"
-                         :class="form.errors.fee_amount ? 'border-danger' : 'border-gray-200'" />
-                  <input v-model="form.fee_currency" type="text" maxlength="3"
-                         class="col-span-2 px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary uppercase font-semibold"
-                         :class="form.errors.fee_currency ? 'border-danger' : 'border-gray-200'" />
-                </div>
-                <p v-if="form.errors.fee_amount" class="text-danger text-xs mt-1">{{ form.errors.fee_amount }}</p>
-                <p v-if="form.errors.fee_currency" class="text-danger text-xs mt-1">{{ form.errors.fee_currency }}</p>
-              </div>
-
-              <div class="md:col-span-2">
-                <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Result Release</label>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <label class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50">
-                    <span class="text-sm text-text-main">Show result immediately</span>
-                    <span class="relative w-10 h-5 shrink-0">
-                      <span class="absolute inset-0 rounded-full transition-colors" :class="form.show_result_immediately ? 'bg-success' : 'bg-gray-300'"></span>
-                      <span class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform" :class="form.show_result_immediately ? 'translate-x-5' : ''"></span>
-                      <input v-model="form.show_result_immediately" type="checkbox" class="sr-only" />
-                    </span>
-                  </label>
-                  <input v-model="form.result_release_at" type="datetime-local"
-                         class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white"
-                         :class="form.errors.result_release_at ? 'border-danger' : 'border-gray-200'" />
-                </div>
-                <p v-if="form.errors.result_release_at" class="text-danger text-xs mt-1">{{ form.errors.result_release_at }}</p>
-              </div>
+              <p class="text-xs text-text-muted -mt-1">
+                The olympiad subject decides where this exam is listed for students. Each section can draw questions from any subject.
+                Category scope limits sections that use the olympiad subject.
+              </p>
             </div>
           </div>
 
@@ -162,259 +101,199 @@
             <h2 class="font-heading font-bold text-text-main text-sm uppercase tracking-wider mb-4">Student-Facing Content</h2>
             <div class="space-y-4">
               <div>
-                <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Syllabus</label>
-                <textarea v-model="form.syllabus" rows="4" placeholder="Topics, chapters, and coverage."
-                          class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary resize-y"></textarea>
+                <label class="label">Syllabus</label>
+                <textarea v-model="form.syllabus" rows="4" placeholder="Topics, chapters, and coverage." class="field border-gray-200 resize-y"></textarea>
               </div>
               <div>
-                <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Eligibility</label>
-                <textarea v-model="form.eligibility" rows="3" placeholder="Eligibility criteria for this exam."
-                          class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary resize-y"></textarea>
+                <label class="label">Eligibility</label>
+                <textarea v-model="form.eligibility" rows="3" placeholder="Eligibility criteria for this exam." class="field border-gray-200 resize-y"></textarea>
               </div>
               <div>
-                <label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Instructions</label>
-                <textarea v-model="form.instructions" rows="5" placeholder="Exam rules, allowed items, and submission instructions."
-                          class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary resize-y"></textarea>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div class="px-5 py-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div>
-                <h2 class="font-heading font-bold text-text-main text-sm uppercase tracking-wider">Question Assignment</h2>
-                <p class="text-text-muted text-xs mt-1">
-                  {{ selectedCount }} selected, {{ totalMarks }} total marks
-                </p>
-              </div>
-              <span v-if="form.errors.question_ids" class="text-danger text-xs font-semibold">{{ form.errors.question_ids }}</span>
-            </div>
-
-            <div class="p-5 border-b border-gray-100">
-              <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
-                <div class="md:col-span-2 relative">
-                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                  </svg>
-                  <input v-model="questionFilter.search" type="text" placeholder="Search question text or topic"
-                         class="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-gray-50"
-                         @keydown.enter.prevent="loadQuestions" />
-                </div>
-                <select v-model="questionFilter.difficulty"
-                        class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-gray-50">
-                  <option value="">All Difficulties</option>
-                  <option v-for="(label, key) in difficulties" :key="key" :value="key">{{ label }}</option>
-                </select>
-                <select v-model="questionFilter.category_id"
-                        :disabled="!form.subject_id"
-                        class="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary bg-gray-50 disabled:text-text-muted">
-                  <option value="">All Categories</option>
-                  <option v-for="category in categoryOptions" :key="category.id" :value="category.id">
-                    {{ optionPrefix(category.depth) }} {{ category.path }}{{ category.is_active ? '' : ' (inactive)' }}
-                  </option>
-                </select>
-                <button type="button" :disabled="!canLoadQuestions || isLoadingQuestions" @click="loadQuestions"
-                        class="bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary-light transition-colors disabled:opacity-50">
-                  {{ isLoadingQuestions ? 'Loading...' : 'Load Questions' }}
-                </button>
-                <button type="button" @click="clearQuestionFilters"
-                        class="bg-gray-100 text-text-muted px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-colors">
-                  Clear
-                </button>
-              </div>
-            </div>
-
-            <div v-if="!canLoadQuestions" class="py-14 text-center">
-              <div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                <svg class="w-7 h-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                </svg>
-              </div>
-              <p class="font-heading font-bold text-text-main text-base mb-1">Choose subject and class</p>
-              <p class="text-text-muted text-sm">Matching active questions will appear here.</p>
-            </div>
-
-            <div v-else-if="isLoadingQuestions" class="py-14 text-center">
-              <div class="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin mx-auto mb-3"></div>
-              <p class="font-heading font-bold text-text-main text-base mb-1">Loading questions</p>
-              <p class="text-text-muted text-sm">Fetching active questions for this subject and class.</p>
-            </div>
-
-            <div v-else-if="availableQuestionRows.length === 0" class="py-14 text-center">
-              <p class="font-heading font-bold text-text-main text-base mb-1">No matching questions</p>
-              <p class="text-text-muted text-sm">Add questions to the bank or adjust the filters.</p>
-            </div>
-
-            <div v-else class="divide-y divide-gray-50">
-              <div v-for="question in availableQuestionRows" :key="question.id"
-                   class="p-4 hover:bg-gray-50/50 transition-colors cursor-pointer"
-                   role="button"
-                   tabindex="0"
-                   @click="toggleQuestion(question)"
-                   @keydown.enter.prevent="toggleQuestion(question)"
-                   @keydown.space.prevent="toggleQuestion(question)">
-                <div class="flex items-start gap-3">
-                  <img v-if="question.question_image_url" :src="question.question_image_url" alt=""
-                       class="w-12 h-12 rounded-lg object-cover border border-gray-100 shrink-0" />
-                  <div class="min-w-0 flex-1">
-                    <p class="text-text-main text-sm font-medium leading-snug line-clamp-2">{{ stripHtml(question.question_text) }}</p>
-                    <div class="flex items-center gap-1.5 flex-wrap mt-2">
-                      <span v-if="question.topic" class="text-[10px] text-text-muted bg-gray-100 px-2 py-0.5 rounded">{{ question.topic }}</span>
-                      <span v-if="question.question_category" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-accent/10 text-accent">
-                        {{ question.question_category.name }}
-                      </span>
-                      <span class="text-[10px] font-semibold px-2 py-0.5 rounded" :class="difficultyClass(question.difficulty)">
-                        {{ question.difficulty }}
-                      </span>
-                      <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-primary">
-                        {{ question.question_type === 'multiple' ? 'Multi correct' : 'Single correct' }}
-                      </span>
-                      <span class="text-[10px] font-number text-text-muted">
-                        +{{ question.marks }}<span v-if="question.negative_marks > 0"> / -{{ question.negative_marks }}</span>
-                      </span>
-                    </div>
-                  </div>
-                  <button type="button" @click.stop="toggleQuestion(question)"
-                          class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-                          :class="isSelected(question.id)
-                            ? 'bg-success/10 text-success hover:bg-success/15'
-                            : 'bg-primary text-white hover:bg-primary-light'">
-                    {{ isSelected(question.id) ? 'Selected' : 'Add' }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div v-if="availableQuestions.last_page > 1" class="px-5 py-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
-              <p class="text-text-muted text-xs">
-                Showing {{ availableQuestions.from }}-{{ availableQuestions.to }} of {{ availableQuestions.total }}
-              </p>
-              <div class="flex gap-1">
-                <Link v-for="(link, index) in availableQuestions.links" :key="index"
-                      :href="link.url || '#'"
-                      preserve-scroll
-                      preserve-state
-                      :only="['availableQuestions']"
-                      :class="[
-                        'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
-                        link.active ? 'bg-primary text-white' : 'text-text-muted hover:bg-gray-100',
-                        !link.url ? 'opacity-40 pointer-events-none' : '',
-                      ]"
-                      v-html="link.label" />
+                <label class="label">General Instructions</label>
+                <textarea v-model="form.instructions" rows="5" placeholder="Exam rules, allowed items, and submission instructions." class="field border-gray-200 resize-y"></textarea>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="xl:col-span-2 space-y-4 xl:sticky xl:top-20">
+        <div class="xl:col-span-2 space-y-5">
           <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h2 class="font-heading font-bold text-text-main text-sm uppercase tracking-wider mb-4">Scoring Policy</h2>
-
-            <div class="space-y-4">
-              <div class="grid grid-cols-1 gap-2">
-                <button v-for="(label, key) in scoringModes" :key="key" type="button"
-                        @click="form.scoring_mode = key"
-                        class="text-left px-3 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all"
-                        :class="form.scoring_mode === key
-                          ? 'border-primary bg-primary/5 text-primary'
-                          : 'border-gray-100 text-text-main hover:border-gray-200'">
-                  {{ label }}
-                </button>
+            <h2 class="font-heading font-bold text-text-main text-sm uppercase tracking-wider mb-4">Schedule & Fees</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
+              <div>
+                <label class="label">Opens At *</label>
+                <input v-model="form.starts_at" type="datetime-local" class="field" :class="form.errors.starts_at ? 'border-danger' : 'border-gray-200'" />
+                <p v-if="form.errors.starts_at" class="error">{{ form.errors.starts_at }}</p>
               </div>
-              <p v-if="form.errors.scoring_mode" class="text-danger text-xs">{{ form.errors.scoring_mode }}</p>
-
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-semibold text-success mb-1.5">+ Correct</label>
-                  <input v-model.number="form.marks_per_question" type="number" min="0.25" max="100" step="0.25"
-                         class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-success font-number text-success font-bold"
-                         :class="form.errors.marks_per_question ? 'border-danger' : 'border-gray-200'" />
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-danger mb-1.5">- Incorrect</label>
-                  <input v-model.number="form.negative_marks_per_question" type="number" min="0" :max="form.marks_per_question" step="0.25"
-                         :disabled="!form.negative_marking_enabled"
-                         class="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-danger font-number text-danger font-bold disabled:bg-gray-50 disabled:text-text-muted"
-                         :class="form.errors.negative_marks_per_question ? 'border-danger' : 'border-gray-200'" />
-                </div>
+              <div>
+                <label class="label">Closes At</label>
+                <input v-model="form.ends_at" type="datetime-local" class="field" :class="form.errors.ends_at ? 'border-danger' : 'border-gray-200'" />
+                <p v-if="form.errors.ends_at" class="error">{{ form.errors.ends_at }}</p>
               </div>
-              <p v-if="form.errors.marks_per_question" class="text-danger text-xs">{{ form.errors.marks_per_question }}</p>
-              <p v-if="form.errors.negative_marks_per_question" class="text-danger text-xs">{{ form.errors.negative_marks_per_question }}</p>
-
-              <label class="flex items-center justify-between gap-3 py-1 cursor-pointer">
-                <span class="text-sm text-text-main">Negative marking</span>
-                <span class="relative w-10 h-5 shrink-0">
-                  <span class="absolute inset-0 rounded-full transition-colors" :class="form.negative_marking_enabled ? 'bg-danger' : 'bg-gray-300'"></span>
-                  <span class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform" :class="form.negative_marking_enabled ? 'translate-x-5' : ''"></span>
-                  <input v-model="form.negative_marking_enabled" type="checkbox" class="sr-only" />
-                </span>
-              </label>
-
-              <div class="border-t border-gray-100 pt-4 space-y-3">
-                <label class="flex items-center justify-between gap-3 cursor-pointer">
-                  <span class="text-sm text-text-main">Randomize questions</span>
-                  <input v-model="form.randomize_questions" type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary" />
-                </label>
-                <label class="flex items-center justify-between gap-3 cursor-pointer">
-                  <span class="text-sm text-text-main">Randomize options</span>
-                  <input v-model="form.randomize_options" type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary" />
-                </label>
+              <div>
+                <label class="label">Duration *</label>
+                <div class="relative">
+                  <input v-model.number="form.duration_minutes" type="number" min="5" max="360"
+                         class="w-full pl-3 pr-16 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white font-number" :class="form.errors.duration_minutes ? 'border-danger' : 'border-gray-200'" />
+                  <span class="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xs">mins</span>
+                </div>
+                <p v-if="form.errors.duration_minutes" class="error">{{ form.errors.duration_minutes }}</p>
+              </div>
+              <div>
+                <label class="label">Exam Fee *</label>
+                <div class="grid grid-cols-5 gap-2">
+                  <input v-model.number="form.fee_amount" type="number" min="0" step="0.01"
+                         class="field col-span-3 font-number" :class="form.errors.fee_amount ? 'border-danger' : 'border-gray-200'" />
+                  <input v-model="form.fee_currency" type="text" maxlength="3"
+                         class="field col-span-2 uppercase font-semibold" :class="form.errors.fee_currency ? 'border-danger' : 'border-gray-200'" />
+                </div>
+                <p v-if="form.errors.fee_amount" class="error">{{ form.errors.fee_amount }}</p>
+                <p v-if="form.errors.fee_currency" class="error">{{ form.errors.fee_currency }}</p>
               </div>
             </div>
           </div>
 
-          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h2 class="font-heading font-bold text-text-main text-sm uppercase tracking-wider">Selected Questions</h2>
-              <span class="font-number text-primary font-bold">{{ selectedCount }}</span>
+          <div v-if="mode === 'create'" class="rounded-2xl border border-primary/10 bg-primary/[0.03] p-5 text-sm text-text-muted">
+            <p class="font-heading font-bold text-text-main mb-1">Next: sections & questions</p>
+            Saving creates a draft. You then build the paper section by section — writing new questions or picking from the bank — and publish when it's ready.
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 2. Sections & questions ── -->
+      <SectionBuilder
+        v-if="mode === 'edit'"
+        v-show="step === 'questions'"
+        :sections="form.sections"
+        :question-cache="questionCache"
+        :exam="form"
+        :errors="form.errors"
+        :attempts-count="exam?.attempts_count || 0"
+        :subjects="subjects"
+        :class-levels="classLevels"
+        :categories="categories"
+        :difficulties="difficulties"
+        :types="types"
+      />
+
+      <!-- ── 3. Scoring & rules ── -->
+      <div v-show="step === 'scoring'" class="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+          <h2 class="font-heading font-bold text-text-main text-sm uppercase tracking-wider">Scoring Policy</h2>
+          <div class="grid grid-cols-1 gap-2">
+            <button v-for="(label, key) in scoringModes" :key="key" type="button" @click="form.scoring_mode = key"
+                    class="text-left px-3 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all"
+                    :class="form.scoring_mode === key ? 'border-primary bg-primary/5 text-primary' : 'border-gray-100 text-text-main hover:border-gray-200'">
+              {{ label }}
+            </button>
+          </div>
+          <p v-if="form.errors.scoring_mode" class="error">{{ form.errors.scoring_mode }}</p>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-success mb-1.5">+ Correct</label>
+              <input v-model.number="form.marks_per_question" type="number" min="0.25" max="100" step="0.25"
+                     class="field font-number text-success font-bold" :class="form.errors.marks_per_question ? 'border-danger' : 'border-gray-200'" />
             </div>
-            <div v-if="selectedQuestions.length === 0" class="p-5 text-center">
-              <p class="text-text-muted text-sm">No questions selected.</p>
-            </div>
-            <div v-else class="divide-y divide-gray-50 max-h-[420px] overflow-y-auto">
-              <div v-for="(question, index) in selectedQuestions" :key="question.id" class="p-4 flex items-start gap-3">
-                <span class="w-6 h-6 rounded-lg bg-primary/10 text-primary font-number text-xs font-bold flex items-center justify-center shrink-0">
-                  {{ index + 1 }}
-                </span>
-                <div class="min-w-0 flex-1">
-                  <p class="text-xs text-text-main font-medium leading-snug line-clamp-2">{{ stripHtml(question.question_text) }}</p>
-                  <p class="text-[10px] text-text-muted mt-1">
-                    {{ question.topic || 'Untitled topic' }} | +{{ effectiveMarks(question) }}
-                    <span v-if="effectiveNegativeMarks(question) > 0"> / -{{ effectiveNegativeMarks(question) }}</span>
-                  </p>
-                </div>
-                <button type="button" @click="removeQuestion(question.id)"
-                        class="text-danger hover:bg-danger/5 rounded-lg px-2 py-1 text-xs font-semibold">
-                  Remove
-                </button>
-              </div>
+            <div>
+              <label class="block text-xs font-semibold text-danger mb-1.5">− Incorrect</label>
+              <input v-model.number="form.negative_marks_per_question" type="number" min="0" :max="form.marks_per_question" step="0.25"
+                     :disabled="!form.negative_marking_enabled"
+                     class="field font-number text-danger font-bold disabled:bg-gray-50 disabled:text-text-muted"
+                     :class="form.errors.negative_marks_per_question ? 'border-danger' : 'border-gray-200'" />
             </div>
           </div>
+          <p v-if="form.errors.marks_per_question" class="error">{{ form.errors.marks_per_question }}</p>
+          <p v-if="form.errors.negative_marks_per_question" class="error">{{ form.errors.negative_marks_per_question }}</p>
 
-          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-2.5">
-            <button type="submit" :disabled="form.processing"
-                    class="w-full flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl text-sm font-semibold hover:bg-primary-light transition-colors disabled:opacity-60 shadow-sm">
-              <svg v-if="form.processing" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-              </svg>
-              {{ form.processing ? 'Saving...' : primaryActionLabel }}
-            </button>
+          <label class="flex items-center justify-between gap-3 py-1 cursor-pointer">
+            <span class="text-sm text-text-main">Negative marking</span>
+            <span class="relative w-10 h-5 shrink-0">
+              <span class="absolute inset-0 rounded-full transition-colors" :class="form.negative_marking_enabled ? 'bg-danger' : 'bg-gray-300'"></span>
+              <span class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform" :class="form.negative_marking_enabled ? 'translate-x-5' : ''"></span>
+              <input v-model="form.negative_marking_enabled" type="checkbox" class="sr-only" />
+            </span>
+          </label>
+          <p class="text-xs text-text-muted">A section's own marks override these values for that section only.</p>
+        </div>
 
-            <button v-if="form.status !== 'draft'" type="button" :disabled="form.processing" @click="saveAsDraft"
-                    class="w-full py-2.5 rounded-xl text-sm font-semibold text-text-main bg-gray-100 hover:bg-gray-200 transition-colors">
-              Save as Draft
-            </button>
-            <button v-if="form.status !== 'published'" type="button" :disabled="form.processing" @click="saveAndPublish"
-                    class="w-full py-2.5 rounded-xl text-sm font-semibold text-accent border-2 border-accent/20 hover:bg-accent/5 transition-colors">
-              Save & Publish
-            </button>
-
-            <Link :href="route('admin.exams.index')"
-                  class="w-full flex items-center justify-center py-2.5 rounded-xl text-sm font-semibold text-text-muted hover:bg-gray-100 transition-colors">
-              Cancel
-            </Link>
+        <div class="space-y-5">
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+            <h2 class="font-heading font-bold text-text-main text-sm uppercase tracking-wider mb-1">Paper Rules</h2>
+            <label class="flex items-center justify-between gap-3 cursor-pointer">
+              <span>
+                <span class="block text-sm text-text-main">Shuffle questions</span>
+                <span class="block text-xs text-text-muted">Within each section — sections always stay in order.</span>
+              </span>
+              <input v-model="form.randomize_questions" type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary" />
+            </label>
+            <label class="flex items-center justify-between gap-3 cursor-pointer">
+              <span class="text-sm text-text-main">Shuffle options</span>
+              <input v-model="form.randomize_options" type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary" />
+            </label>
           </div>
+
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+            <h2 class="font-heading font-bold text-text-main text-sm uppercase tracking-wider mb-1">Result Release</h2>
+            <label class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50">
+              <span class="text-sm text-text-main">Show result immediately</span>
+              <span class="relative w-10 h-5 shrink-0">
+                <span class="absolute inset-0 rounded-full transition-colors" :class="form.show_result_immediately ? 'bg-success' : 'bg-gray-300'"></span>
+                <span class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform" :class="form.show_result_immediately ? 'translate-x-5' : ''"></span>
+                <input v-model="form.show_result_immediately" type="checkbox" class="sr-only" />
+              </span>
+            </label>
+            <div>
+              <label class="label">Release results at</label>
+              <input v-model="form.result_release_at" type="datetime-local" class="field" :class="form.errors.result_release_at ? 'border-danger' : 'border-gray-200'" />
+              <p v-if="form.errors.result_release_at" class="error">{{ form.errors.result_release_at }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 4. Review ── -->
+      <ExamReview
+        v-if="mode === 'edit'"
+        v-show="step === 'review'"
+        :exam="form"
+        :sections="form.sections"
+        :question-cache="questionCache"
+        :checks="checks"
+        :subjects="subjects"
+        :class-levels="classLevels"
+        :statuses="statuses"
+        :status="form.status"
+        @go="goTo"
+      />
+
+      <!-- ── Sticky action bar ── -->
+      <div class="sticky bottom-3 z-30 mt-6 rounded-2xl border border-gray-200 bg-white/95 backdrop-blur shadow-lg px-4 py-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <button v-if="previousStep" type="button" @click="goTo(previousStep)" class="btn-ghost">← Back</button>
+          <span class="text-xs" :class="form.isDirty ? 'text-gold-dark font-semibold' : 'text-text-muted'">
+            {{ form.processing ? 'Saving…' : (form.isDirty ? 'Unsaved changes' : (mode === 'edit' ? 'All changes saved' : '')) }}
+          </span>
+          <div class="flex-1"></div>
+          <Link :href="route('admin.exams.index')" class="btn-ghost">{{ mode === 'edit' ? 'Back to exams' : 'Cancel' }}</Link>
+
+          <template v-if="mode === 'create'">
+            <button type="submit" :disabled="form.processing" class="btn-primary">Save &amp; continue to sections →</button>
+          </template>
+          <template v-else-if="step === 'review'">
+            <button v-if="form.status === 'published'" type="button" :disabled="form.processing" @click="save('draft')" class="btn-ghost border border-gray-200">Unpublish</button>
+            <button type="button" :disabled="form.processing" @click="save()" class="btn-ghost border border-gray-200">
+              {{ form.status === 'published' ? 'Save changes' : 'Save draft' }}
+            </button>
+            <button v-if="form.status !== 'published'" type="button" :disabled="form.processing || blockingCount > 0" @click="save('published')"
+                    class="btn-accent" :title="blockingCount ? 'Resolve the checklist items first' : ''">
+              Publish exam
+            </button>
+          </template>
+          <template v-else>
+            <button type="submit" :disabled="form.processing || !form.isDirty" class="btn-ghost border border-gray-200">Save</button>
+            <button type="button" @click="goTo(nextStep)" class="btn-primary">Next: {{ stepLabel(nextStep) }} →</button>
+          </template>
         </div>
       </div>
     </form>
@@ -422,8 +301,12 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
+import SectionBuilder from './SectionBuilder.vue';
+import ExamReview from './ExamReview.vue';
+import { hydrateSections } from './examBuilder';
+import { confirmDialog } from '@/composables/useConfirm';
 
 const props = defineProps({
   mode: { type: String, required: true },
@@ -434,9 +317,7 @@ const props = defineProps({
   statuses: { type: Object, required: true },
   scoringModes: { type: Object, required: true },
   difficulties: { type: Object, required: true },
-  availableQuestions: { type: Object, required: true },
-  questionFilters: { type: Object, default: () => ({ search: '', difficulty: '' }) },
-  assignedQuestions: { type: Array, default: () => [] },
+  types: { type: Object, default: () => ({ single: 'Single Correct', multiple: 'Multiple Correct' }) },
 });
 
 const form = useForm({
@@ -462,215 +343,162 @@ const form = useForm({
   show_result_immediately: props.exam?.show_result_immediately ?? true,
   result_release_at: props.exam?.result_release_at || '',
   status: props.exam?.status || 'draft',
-  question_ids: [...(props.exam?.question_ids || [])],
+  sections: hydrateSections(props.exam?.sections),
 });
 
-const questionFilter = ref({
-  search: props.questionFilters.search || '',
-  difficulty: props.questionFilters.difficulty || '',
-  category_id: props.questionFilters.category_id || '',
+// Question payloads by id, for display only — the form submits ids.
+const questionCache = reactive({});
+const cacheQuestions = (sections = []) => sections.forEach((section) =>
+  (section.questions || []).forEach((question) => { questionCache[question.id] = question; }));
+cacheQuestions(props.exam?.sections);
+
+const totalQuestions = computed(() => form.sections.reduce((sum, section) => sum + section.question_ids.length, 0));
+
+/* ── publish checklist ── */
+const questionIssues = computed(() => form.sections.reduce((count, section) => count + section.question_ids.filter((id) => {
+  const question = questionCache[id];
+  return question && (!question.is_active
+    || Number(question.subject_id) !== Number(section.subject_id)
+    || !(question.class_levels || []).some((level) => Number(level.id) === Number(form.class_level_id)));
+}).length, 0));
+const checks = computed(() => {
+  const emptySections = form.sections.filter((section) => !section.question_ids.length);
+  return [
+    { label: 'Name, subject and class are set', ok: Boolean(form.name && form.subject_id && form.class_level_id), blocking: true, step: 'details' },
+    { label: 'Opening time and duration are set', ok: Boolean(form.starts_at && form.duration_minutes), blocking: true, step: 'details' },
+    { label: totalQuestions.value ? `${totalQuestions.value} questions in ${form.sections.length} section(s)` : 'Add at least one question', ok: totalQuestions.value > 0, blocking: true, step: 'questions' },
+    { label: emptySections.length ? `${emptySections.length} empty section(s): ${emptySections.map((section) => section.name || 'Untitled').join(', ')}` : 'No empty sections', ok: !emptySections.length, blocking: true, step: 'questions' },
+    { label: questionIssues.value ? `${questionIssues.value} question(s) inactive, for another class, or from the wrong subject` : 'Every question fits its section and class', ok: !questionIssues.value, blocking: true, step: 'questions' },
+    { label: form.ends_at ? 'Closing time is set' : 'No closing time — the exam stays open after it starts', ok: Boolean(form.ends_at), blocking: false, step: 'details' },
+  ];
 });
+const blockingCount = computed(() => checks.value.filter((check) => !check.ok && check.blocking).length);
 
-const selectedQuestionCache = ref([...(props.assignedQuestions || [])]);
-const isLoadingQuestions = ref(false);
-let questionLoadTimer = null;
+/* ── steps ── */
+const DETAIL_FIELDS = ['name', 'description', 'subject_id', 'question_category_id', 'class_level_id', 'syllabus', 'eligibility', 'instructions', 'starts_at', 'ends_at', 'duration_minutes', 'fee_amount', 'fee_currency'];
+const SCORING_FIELDS = ['scoring_mode', 'marks_per_question', 'negative_marks_per_question', 'negative_marking_enabled', 'randomize_questions', 'randomize_options', 'show_result_immediately', 'result_release_at'];
 
-const pageRoute = computed(() => props.mode === 'edit'
-  ? route('admin.exams.edit', props.exam.id)
-  : route('admin.exams.create'));
+const steps = computed(() => [
+  { key: 'details', label: 'Details', hint: 'Name, class, schedule', locked: false },
+  { key: 'questions', label: 'Sections & Questions', hint: props.mode === 'edit' ? `${form.sections.length} sections · ${totalQuestions.value} questions` : 'Available after saving details', locked: props.mode !== 'edit' },
+  { key: 'scoring', label: 'Scoring & Rules', hint: 'Marks, shuffle, results', locked: false },
+  { key: 'review', label: 'Review & Publish', hint: props.mode === 'edit' ? (blockingCount.value ? `${blockingCount.value} item(s) to fix` : 'Ready to publish') : 'Available after saving details', locked: props.mode !== 'edit' },
+]);
+const stepKeys = computed(() => steps.value.filter((item) => !item.locked).map((item) => item.key));
+const initialStep = new URLSearchParams(window.location.search).get('step');
+const step = ref(stepKeys.value.includes(initialStep) ? initialStep : 'details');
+const previousStep = computed(() => stepKeys.value[stepKeys.value.indexOf(step.value) - 1] ?? null);
+const nextStep = computed(() => stepKeys.value[stepKeys.value.indexOf(step.value) + 1] ?? null);
+const stepLabel = (key) => steps.value.find((item) => item.key === key)?.label ?? '';
 
-const primaryActionLabel = computed(() => props.mode === 'edit' ? 'Update Exam' : 'Create Exam');
-const selectedIds = computed(() => (form.question_ids || [])
-  .map((id) => Number(id))
-  .filter((id) => Number.isFinite(id)));
-const selectedIdSet = computed(() => new Set(selectedIds.value));
-const selectedCount = computed(() => selectedIds.value.length);
-const canLoadQuestions = computed(() => Boolean(form.subject_id && form.class_level_id));
-const availableQuestionRows = computed(() => props.availableQuestions?.data || []);
-const categoryOptions = computed(() => (props.categories || []).filter((category) =>
-  Number(category.subject_id) === Number(form.subject_id)
-    && (category.is_active
-      || Number(category.id) === Number(form.question_category_id)
-      || Number(category.id) === Number(questionFilter.value.category_id)),
-));
-
-const selectedQuestions = computed(() => selectedIds.value
-  .map((id) => selectedQuestionCache.value.find((question) => Number(question.id) === id))
-  .filter(Boolean));
-
-const totalMarks = computed(() => selectedQuestions.value
-  .reduce((sum, question) => sum + Number(effectiveMarks(question) || 0), 0)
-  .toLocaleString('en-IN'));
-
-function cacheQuestion(question) {
-  if (!question || selectedQuestionCache.value.some((cached) => Number(cached.id) === Number(question.id))) {
-    return;
-  }
-
-  selectedQuestionCache.value.push(question);
+function goTo(key) {
+  if (!key || !stepKeys.value.includes(key)) return;
+  step.value = key;
+  const url = new URL(window.location.href);
+  url.searchParams.set('step', key);
+  window.history.replaceState(window.history.state, '', url);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-watch(
-  () => availableQuestionRows.value,
-  (questions = []) => {
-    questions.forEach(cacheQuestion);
-  },
-  { immediate: true },
-);
+function stepFor(field) {
+  if (field === 'sections' || field === 'question_ids' || field.startsWith('sections.')) return 'questions';
+  if (SCORING_FIELDS.includes(field)) return 'scoring';
+  if (DETAIL_FIELDS.includes(field)) return 'details';
+  return 'review';
+}
+const stepHasErrors = (key) => Object.keys(form.errors).some((field) => stepFor(field) === key);
 
-watch(
-  () => [form.subject_id, form.class_level_id],
-  ([newSubject, newClass], [oldSubject, oldClass]) => {
-    if (newSubject === oldSubject && newClass === oldClass) {
-      return;
-    }
+/* ── saving ── */
+let saving = false;
 
-    form.question_ids = [];
-    selectedQuestionCache.value = [];
-    form.clearErrors('question_ids');
+function save(status = null) {
+  const previousStatus = form.status;
+  if (status) form.status = status;
+  saving = true;
 
-    if (form.question_category_id && !categoryOptions.value.some((category) => Number(category.id) === Number(form.question_category_id))) {
-      form.question_category_id = '';
-    }
-
-    questionFilter.value.category_id = form.question_category_id || '';
-
-    if (newSubject && newClass) {
-      queueQuestionLoad();
-    }
-  },
-);
-
-watch(
-  () => form.question_category_id,
-  (newCategory, oldCategory) => {
-    if (newCategory === oldCategory) {
-      return;
-    }
-
-    form.question_ids = [];
-    selectedQuestionCache.value = [];
-    form.clearErrors('question_category_id', 'question_ids');
-    questionFilter.value.category_id = newCategory || '';
-
-    if (canLoadQuestions.value) {
-      queueQuestionLoad();
-    }
-  },
-);
-
-const submit = () => {
-  if (props.mode === 'edit') {
-    form.put(route('admin.exams.update', props.exam.id), { preserveScroll: true });
-    return;
-  }
-
-  form.post(route('admin.exams.store'), { preserveScroll: true });
-};
-
-const saveAsDraft = () => {
-  form.status = 'draft';
-  submit();
-};
-
-const saveAndPublish = () => {
-  form.status = 'published';
-  submit();
-};
-
-const queueQuestionLoad = () => {
-  if (questionLoadTimer) {
-    clearTimeout(questionLoadTimer);
-  }
-
-  questionLoadTimer = setTimeout(() => {
-    loadQuestions();
-  }, 150);
-};
-
-const loadQuestions = () => {
-  if (!canLoadQuestions.value) return;
-
-  isLoadingQuestions.value = true;
-
-  router.get(pageRoute.value, {
-    question_subject_id: form.subject_id,
-    question_class_level_id: form.class_level_id,
-    question_search: questionFilter.value.search,
-    question_difficulty: questionFilter.value.difficulty,
-    question_category_id: questionFilter.value.category_id,
-  }, {
-    preserveState: true,
+  const options = {
     preserveScroll: true,
-    replace: true,
-    only: ['availableQuestions', 'questionFilters'],
-    onFinish: () => {
-      isLoadingQuestions.value = false;
+    onError: (errors) => {
+      if (status) form.status = previousStatus;
+      const firstStep = steps.value.map((item) => item.key).find((key) => Object.keys(errors).some((field) => stepFor(field) === key));
+      if (firstStep && firstStep !== step.value) goTo(firstStep);
     },
+    onSuccess: (page) => {
+      if (props.mode !== 'edit') return;
+      // Pick up ids of newly created sections, keeping the builder's selection stable.
+      const fresh = hydrateSections(page.props.exam?.sections);
+      fresh.forEach((section, index) => { section.key = form.sections[index]?.key ?? section.key; });
+      cacheQuestions(page.props.exam?.sections);
+      form.sections = fresh;
+      form.status = page.props.exam?.status ?? form.status;
+      form.defaults();
+    },
+    onFinish: () => { saving = false; },
+  };
+
+  if (props.mode === 'edit') {
+    form.put(route('admin.exams.update', props.exam.id), options);
+  } else {
+    form.post(route('admin.exams.store'), options);
+  }
+}
+
+/* ── unsaved-changes guard ── */
+// Closing the tab or reloading can only use the browser's own prompt; in-app navigation
+// is paused, confirmed with our dialog, then replayed.
+const onBeforeUnload = (event) => {
+  if (!form.isDirty) return;
+  event.preventDefault();
+  event.returnValue = '';
+};
+let removeNavigationGuard = null;
+let leaveConfirmed = false;
+
+async function confirmLeave(visit) {
+  const leave = await confirmDialog({
+    title: 'Leave without saving?',
+    message: 'You have unsaved changes to this exam. If you leave now, those changes will be lost.',
+    confirmText: 'Leave without saving',
+    cancelText: 'Keep editing',
+    tone: 'warning',
   });
-};
+  if (!leave) return;
 
-const clearQuestionFilters = () => {
-  questionFilter.value = { search: '', difficulty: '', category_id: '' };
-  loadQuestions();
-};
+  leaveConfirmed = true;
+  router.visit(visit.url.href, {
+    method: visit.method,
+    replace: visit.replace,
+    preserveScroll: visit.preserveScroll,
+    preserveState: visit.preserveState,
+    only: visit.only,
+    onFinish: () => { leaveConfirmed = false; },
+  });
+}
 
-const optionPrefix = (depth) => ''.padStart(depth * 2, '-');
+onMounted(() => {
+  window.addEventListener('beforeunload', onBeforeUnload);
+  removeNavigationGuard = router.on('before', (event) => {
+    const visit = event.detail.visit;
+    if (saving || leaveConfirmed || !form.isDirty || visit.method !== 'get') return;
+    event.preventDefault();
+    confirmLeave(visit);
+  });
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', onBeforeUnload);
+  removeNavigationGuard?.();
+});
 
-const isSelected = (questionId) => selectedIdSet.value.has(Number(questionId));
+/* ── details helpers ── */
+const categoryOptions = computed(() => (props.categories || []).filter((category) =>
+  Number(category.subject_id) === Number(form.subject_id)
+    && (category.is_active || Number(category.id) === Number(form.question_category_id))));
 
-const toggleQuestion = (question) => {
-  const questionId = Number(question?.id);
-
-  if (!Number.isFinite(questionId)) {
-    return;
+watch(() => form.subject_id, () => {
+  if (form.question_category_id && !categoryOptions.value.some((category) => Number(category.id) === Number(form.question_category_id))) {
+    form.question_category_id = '';
   }
-
-  form.clearErrors('question_ids');
-
-  if (isSelected(questionId)) {
-    removeQuestion(questionId);
-    return;
-  }
-
-  cacheQuestion(question);
-  form.question_ids = [...selectedIds.value, questionId];
-};
-
-const removeQuestion = (questionId) => {
-  const idToRemove = Number(questionId);
-
-  form.clearErrors('question_ids');
-  form.question_ids = selectedIds.value.filter((id) => id !== idToRemove);
-};
-
-const effectiveMarks = (question) => Number(
-  form.scoring_mode === 'uniform'
-    ? form.marks_per_question
-    : question.marks,
-);
-
-const effectiveNegativeMarks = (question) => {
-  if (!form.negative_marking_enabled) return 0;
-
-  return Number(
-    form.scoring_mode === 'uniform'
-      ? form.negative_marks_per_question
-      : question.negative_marks,
-  );
-};
-
-const stripHtml = (html) => {
-  const tmp = document.createElement('div');
-  tmp.innerHTML = html || '';
-  return tmp.textContent || tmp.innerText || '';
-};
-
-const difficultyClass = (difficulty) => ({
-  easy: 'bg-green-100 text-green-700',
-  medium: 'bg-amber-100 text-amber-700',
-  hard: 'bg-red-100 text-red-700',
-}[difficulty] || 'bg-gray-100 text-gray-600');
+});
 
 const statusClass = (status) => ({
   draft: 'bg-gray-100 text-text-muted',
@@ -678,3 +506,12 @@ const statusClass = (status) => ({
   archived: 'bg-amber-100 text-amber-700',
 }[status] || 'bg-gray-100 text-text-muted');
 </script>
+
+<style scoped>
+.label { @apply block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5; }
+.field { @apply w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:border-primary bg-white; }
+.error { @apply text-danger text-xs mt-1; }
+.btn-ghost { @apply px-4 py-2.5 rounded-xl text-sm font-semibold text-text-main hover:bg-gray-100 transition-colors disabled:opacity-50; }
+.btn-primary { @apply px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-light transition-colors disabled:opacity-50; }
+.btn-accent { @apply px-5 py-2.5 rounded-xl bg-accent text-white text-sm font-bold hover:bg-accent-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed; }
+</style>

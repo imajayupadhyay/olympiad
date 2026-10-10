@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Exam extends Model
 {
@@ -71,9 +72,14 @@ class Exam extends Model
     public function questions(): BelongsToMany
     {
         return $this->belongsToMany(Question::class, 'exam_questions')
-            ->withPivot(['sort_order', 'marks', 'negative_marks'])
+            ->withPivot(['exam_section_id', 'sort_order', 'marks', 'negative_marks'])
             ->withTimestamps()
             ->orderBy('exam_questions.sort_order');
+    }
+
+    public function sections(): HasMany
+    {
+        return $this->hasMany(ExamSection::class)->orderBy('sort_order');
     }
 
     public function attempts()

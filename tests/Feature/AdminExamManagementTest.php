@@ -10,7 +10,6 @@ use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class AdminExamManagementTest extends TestCase
@@ -45,7 +44,7 @@ class AdminExamManagementTest extends TestCase
             'question_ids' => [$question->id],
         ]);
 
-        $response->assertRedirect(route('admin.exams.index'));
+        $response->assertRedirect(route('admin.exams.edit', ['exam' => Exam::first(), 'step' => 'questions']));
         $response->assertSessionHasNoErrors();
 
         $exam = Exam::first();
@@ -110,7 +109,7 @@ class AdminExamManagementTest extends TestCase
         $this->assertDatabaseCount('exam_questions', 0);
     }
 
-    public function test_create_page_loads_matching_active_questions_for_selected_subject_and_class(): void
+    public function test_question_bank_feed_returns_matching_active_questions_for_subject_and_class(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $science = Subject::create([
@@ -147,23 +146,17 @@ class AdminExamManagementTest extends TestCase
         $this->createQuestion($admin, $science, $classSeven);
         $this->createQuestion($admin, $science, $classSix)->update(['is_active' => false]);
 
-        $response = $this->actingAs($admin)->get(route('admin.exams.create', [
-            'question_subject_id' => $science->id,
-            'question_class_level_id' => $classSix->id,
-        ]));
-
-        $response
+        $this->actingAs($admin)->getJson(route('admin.exams.question-bank', [
+            'subject_id' => $science->id,
+            'class_level_id' => $classSix->id,
+        ]))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('Admin/Exams/Create')
-                ->has('availableQuestions.data', 1)
-                ->where('availableQuestions.data.0.id', $matchingQuestion->id)
-                ->where('questionFilters.search', '')
-                ->where('questionFilters.difficulty', '')
-            );
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $matchingQuestion->id)
+            ->assertJsonPath('meta.total', 1);
     }
 
-    public function test_create_page_can_filter_available_questions_by_parent_category(): void
+    public function test_question_bank_feed_can_filter_by_parent_category(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $science = Subject::create([
@@ -206,20 +199,14 @@ class AdminExamManagementTest extends TestCase
         $matchingQuestion = $this->createQuestion($admin, $science, $classSix, $motion);
         $this->createQuestion($admin, $science, $classSix, $biology);
 
-        $response = $this->actingAs($admin)->get(route('admin.exams.create', [
-            'question_subject_id' => $science->id,
-            'question_class_level_id' => $classSix->id,
+        $this->actingAs($admin)->getJson(route('admin.exams.question-bank', [
+            'subject_id' => $science->id,
+            'class_level_id' => $classSix->id,
             'question_category_id' => $physics->id,
-        ]));
-
-        $response
+        ]))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('Admin/Exams/Create')
-                ->has('availableQuestions.data', 1)
-                ->where('availableQuestions.data.0.id', $matchingQuestion->id)
-                ->where('questionFilters.category_id', (string) $physics->id)
-            );
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $matchingQuestion->id);
     }
 
     public function test_exam_category_must_belong_to_exam_subject(): void
@@ -347,7 +334,7 @@ class AdminExamManagementTest extends TestCase
             'question_ids' => [$question->id],
         ]);
 
-        $response->assertRedirect(route('admin.exams.index'));
+        $response->assertRedirect(route('admin.exams.edit', ['exam' => Exam::first(), 'step' => 'questions']));
         $response->assertSessionHasNoErrors();
         $this->assertDatabaseHas('exams', [
             'subject_id' => $science->id,

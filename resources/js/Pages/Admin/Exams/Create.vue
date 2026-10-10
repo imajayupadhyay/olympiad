@@ -1,5 +1,5 @@
 <template>
-  <AdminLayout title="Create Exam" subtitle="Configure schedule, scoring, and assigned questions">
+  <AdminLayout title="Create Exam" subtitle="Start with the details — sections and questions come next">
     <ExamForm
       mode="create"
       :subjects="subjects"
@@ -8,9 +8,7 @@
       :statuses="statuses"
       :scoring-modes="scoringModes"
       :difficulties="difficulties"
-      :available-questions="availableQuestions"
-      :question-filters="questionFilters"
-      :assigned-questions="assignedQuestions"
+      :types="types"
     />
   </AdminLayout>
 </template>
@@ -26,8 +24,6 @@ defineProps({
   statuses: Object,
   scoringModes: Object,
   difficulties: Object,
-  availableQuestions: Object,
-  questionFilters: Object,
-  assignedQuestions: Array,
+  types: Object,
 });
 </script>
