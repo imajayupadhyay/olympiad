@@ -137,6 +137,7 @@
 import { computed, ref } from 'vue';
 import { router, useForm, usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { confirmDialog } from '@/composables/useConfirm';
 
 const props = defineProps({
   roles: { type: Array, default: () => [] },
@@ -209,10 +210,15 @@ const submit = () => {
   form.post(route('admin.roles.store'), options);
 };
 
-const deleteRole = () => {
+const deleteRole = async () => {
   if (!canDelete.value) return;
   if (!editTarget.value || editTarget.value.users_count > 0) return;
-  if (!window.confirm(`Delete the "${editTarget.value.name}" role?`)) return;
+  if (!(await confirmDialog({
+    title: `Delete the "${editTarget.value.name}" role?`,
+    message: 'Its permission settings will be removed. This cannot be undone.',
+    confirmText: 'Delete role',
+    tone: 'danger',
+  }))) return;
 
   router.delete(route('admin.roles.destroy', editTarget.value.id), {
     preserveScroll: true,

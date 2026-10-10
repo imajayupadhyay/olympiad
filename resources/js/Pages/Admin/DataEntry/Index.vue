@@ -221,6 +221,7 @@
 import { computed, defineComponent, h, reactive, ref } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { confirmDialog } from '@/composables/useConfirm';
 
 const props = defineProps({
   initialRows: { type: Object, required: true },
@@ -377,7 +378,7 @@ function queryParams(page = 1) {
 }
 
 async function reloadRows(page = 1) {
-  if (!confirmIfDirty()) return;
+  if (!(await confirmIfDirty())) return;
 
   loading.value = true;
   message.value = '';
@@ -405,10 +406,16 @@ function clearFilters() {
   reloadRows(1);
 }
 
-function confirmIfDirty() {
+async function confirmIfDirty() {
   if (dirtyRowCount.value === 0) return true;
 
-  return window.confirm('You have unsaved school rows. Discard these changes and continue?');
+  return confirmDialog({
+    title: 'Discard unsaved school rows?',
+    message: `You have ${dirtyRowCount.value} edited row(s) that are not saved yet. Continuing will discard those changes.`,
+    confirmText: 'Discard changes',
+    cancelText: 'Keep editing',
+    tone: 'warning',
+  });
 }
 
 function clearDirty() {

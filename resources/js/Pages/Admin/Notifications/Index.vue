@@ -448,6 +448,7 @@
 import { ref, watch } from 'vue';
 import { Link, useForm, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { confirmDialog } from '@/composables/useConfirm';
 
 const props = defineProps({
   logs:        Object,
@@ -617,12 +618,16 @@ watch(
 
 watch(studentSearch, scheduleStudentSearch, { immediate: true });
 
-const submit = () => {
+const submit = async () => {
   const count = preview.value.count ?? 0;
 
   if (count === 0) return;
 
-  if (! window.confirm(`Send this broadcast to ${count.toLocaleString()} matched student(s)?`)) {
+  if (! (await confirmDialog({
+    title: `Send this broadcast to ${count.toLocaleString()} student(s)?`,
+    message: 'Messages go out immediately on the selected channels and cannot be recalled.',
+    confirmText: 'Send broadcast',
+  }))) {
     return;
   }
 

@@ -119,6 +119,7 @@
 import { computed, ref } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { confirmDialog } from '@/composables/useConfirm';
 
 const props = defineProps({
   designations: Array,
@@ -173,8 +174,13 @@ const toggleActive = (designation) => {
   }, { preserveScroll: true });
 };
 
-const removeDesignation = (designation) => {
-  if (!window.confirm(`Remove "${designation.name}" from available school designations?`)) return;
+const removeDesignation = async (designation) => {
+  if (!(await confirmDialog({
+    title: `Remove "${designation.name}"?`,
+    message: 'It will no longer be available as a school designation.',
+    confirmText: 'Remove designation',
+    tone: 'danger',
+  }))) return;
 
   router.delete(route('admin.school-designations.destroy', designation.id), { preserveScroll: true });
 };

@@ -2,6 +2,7 @@
 import StudentLayout from '@/Layouts/StudentLayout.vue';
 import { Head, useForm, usePage, router } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
+import { confirmDialog } from '@/composables/useConfirm';
 
 const props = defineProps({
     profile: { type: Object, required: true },
@@ -42,9 +43,14 @@ const onFile = (e) => {
     });
 };
 
-const removePhoto = () => {
+const removePhoto = async () => {
     if (!props.profile.photo_url) return;
-    if (!confirm('Remove your profile photo?')) return;
+    if (!(await confirmDialog({
+        title: 'Remove your profile photo?',
+        message: 'Your profile will show your initials until you upload a new photo.',
+        confirmText: 'Remove photo',
+        tone: 'danger',
+    }))) return;
     router.delete(route('student.profile.photo.delete'), { preserveScroll: true });
 };
 

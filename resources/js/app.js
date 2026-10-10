@@ -7,6 +7,7 @@ import { createApp, h } from 'vue';
 import { createPinia } from 'pinia';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import { trackMetaEventOnce } from './Services/metaPixel.service.js';
+import ConfirmDialog from './Components/Shared/ConfirmDialog.vue';
 
 const appName = 'Neoexam.org';
 
@@ -63,7 +64,8 @@ createInertiaApp({
         // navigate listener above covers normal Inertia redirects.
         trackVerifiedPurchase(props.initialPage);
 
-        return createApp({ render: () => h(App, props) })
+        // ConfirmDialog is the single host for confirmDialog() prompts on every page.
+        return createApp({ render: () => [h(App, props), h(ConfirmDialog)] })
             .use(plugin)
             .use(createPinia())
             .use(ZiggyVue)

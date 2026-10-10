@@ -277,6 +277,7 @@
 import { computed, ref } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { confirmDialog } from '@/composables/useConfirm';
 
 const props = defineProps({
   student:     Object,
@@ -322,8 +323,14 @@ const assignExam = () => {
   });
 };
 
-const cancelEnrollment = (enrollment) => {
-  if (!confirm(`Cancel assignment for "${enrollment.exam?.name || 'this olympiad'}"?`)) return;
+const cancelEnrollment = async (enrollment) => {
+  if (!(await confirmDialog({
+    title: `Cancel assignment for "${enrollment.exam?.name || 'this olympiad'}"?`,
+    message: 'The student will no longer be enrolled in this olympiad.',
+    confirmText: 'Cancel assignment',
+    cancelText: 'Keep assignment',
+    tone: 'danger',
+  }))) return;
 
   router.patch(route('admin.users.enrollments.cancel', [props.student.id, enrollment.id]), {}, {
     preserveScroll: true,

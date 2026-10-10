@@ -150,6 +150,7 @@
 import { computed, ref } from 'vue';
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { confirmDialog } from '@/composables/useConfirm';
 
 const props = defineProps({
   staffUsers: { type: Object, required: true },
@@ -226,9 +227,14 @@ const toggleUser = (user) => {
   }, { preserveScroll: true });
 };
 
-const deleteUser = (user) => {
+const deleteUser = async (user) => {
   if (!canDelete.value) return;
-  if (!window.confirm(`Delete admin user "${user.name}"?`)) return;
+  if (!(await confirmDialog({
+    title: `Delete admin user "${user.name}"?`,
+    message: 'They will immediately lose access to the admin panel. This cannot be undone.',
+    confirmText: 'Delete user',
+    tone: 'danger',
+  }))) return;
   router.delete(route('admin.staff-users.destroy', user.id), { preserveScroll: true });
 };
 

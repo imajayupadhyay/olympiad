@@ -142,6 +142,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ContentListField from './Components/ContentListField.vue';
+import { confirmDialog } from '@/composables/useConfirm';
 
 // Icon keys understood by the homepage (mirrors iconMap in Pages/Public/Home/Index.vue).
 // Shown with an emoji preview so the admin picks from a list instead of typing.
@@ -418,8 +419,14 @@ const submit = () => {
   });
 };
 
-const resetSection = () => {
-  if (!selectedSection.value || !confirm(`Restore "${selectedSection.value.title}" to defaults?`)) return;
+const resetSection = async () => {
+  if (!selectedSection.value) return;
+  if (!(await confirmDialog({
+    title: `Restore "${selectedSection.value.title}" to defaults?`,
+    message: 'Your custom content for this homepage section will be replaced with the default content.',
+    confirmText: 'Restore defaults',
+    tone: 'warning',
+  }))) return;
 
   router.post(route('admin.content.homepage.reset', selectedSection.value.id), {}, {
     preserveScroll: true,
