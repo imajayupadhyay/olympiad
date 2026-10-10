@@ -48,7 +48,7 @@ class QuestionController extends Controller
             'correct_options.*' => ['in:a,b,c,d'],
             'explanation'     => ['nullable', 'string'],
             'marks'           => ['required', 'integer', 'min:1', 'max:10'],
-            'negative_marks'  => ['required', 'numeric', 'min:0', 'max:5'],
+            'negative_marks'  => ['nullable', 'numeric', 'min:0', 'max:5'],
             'question_image'  => $isUpdate
                 ? ['nullable', 'image', 'max:2048']
                 : ['nullable', 'image', 'max:2048'],
@@ -116,6 +116,7 @@ class QuestionController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate($this->validationRules());
+        $data['negative_marks'] ??= 0;
         $this->ensureCategoryMatchesSubject($data['subject_id'], $data['question_category_id'] ?? null);
 
         $classLevelIds = $data['class_level_ids'];
@@ -151,6 +152,7 @@ class QuestionController extends Controller
     public function update(Request $request, Question $question)
     {
         $data = $request->validate($this->validationRules(true));
+        $data['negative_marks'] ??= 0;
         $this->ensureCategoryMatchesSubject($data['subject_id'], $data['question_category_id'] ?? null);
 
         $classLevelIds = $data['class_level_ids'];

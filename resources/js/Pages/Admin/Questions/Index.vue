@@ -12,15 +12,25 @@
           Filtered
         </span>
       </div>
-      <Link
-        :href="route('admin.questions.create')"
-        class="inline-flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary-light transition-colors shadow-sm"
-      >
+      <div class="flex flex-wrap gap-2">
+        <a :href="route('admin.questions.import.template')"
+           class="inline-flex items-center gap-2 border border-primary/20 text-primary px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/5 transition-colors">
+          Download Template
+        </a>
+        <label class="inline-flex items-center gap-2 bg-accent text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-accent-dark transition-colors shadow-sm cursor-pointer">
+          <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" @change="uploadImport" />
+          Bulk Import
+        </label>
+        <Link
+          :href="route('admin.questions.create')"
+          class="inline-flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary-light transition-colors shadow-sm"
+        >
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
         </svg>
         Add Question
-      </Link>
+        </Link>
+      </div>
     </div>
 
     <!-- Filters -->
@@ -321,6 +331,13 @@ const stripHtml = (html) => {
 };
 
 const deleteTarget = ref(null);
+const uploadImport = (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  router.post(route('admin.questions.import.upload'), { file }, { forceFormData: true });
+  event.target.value = '';
+};
 const confirmDelete = (q) => deleteTarget.value = q;
 const doDelete = () => {
   router.delete(route('admin.questions.destroy', deleteTarget.value.id), {

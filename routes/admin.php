@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\QuestionController;
+use App\Http\Controllers\Admin\QuestionBulkImportController;
 use App\Http\Controllers\Admin\QuestionTagController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\ReferralController;
@@ -88,6 +89,18 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/questions/editor-images', [QuestionController::class, 'uploadEditorImage'])
         ->middleware('admin.permission:questions,write')
         ->name('questions.editor-images.store');
+    Route::get('/questions/import/template', [QuestionBulkImportController::class, 'template'])
+        ->middleware('admin.permission:questions,read')
+        ->name('questions.import.template');
+    Route::get('/questions/import/preview', [QuestionBulkImportController::class, 'preview'])
+        ->middleware('admin.permission:questions,write')
+        ->name('questions.import.preview');
+    Route::post('/questions/import/preview', [QuestionBulkImportController::class, 'upload'])
+        ->middleware('admin.permission:questions,write')
+        ->name('questions.import.upload');
+    Route::post('/questions/import', [QuestionBulkImportController::class, 'store'])
+        ->middleware('admin.permission:questions,write')
+        ->name('questions.import.store');
     Route::get('/question-tags', [QuestionTagController::class, 'index'])
         ->middleware('admin.permission:questions,read')
         ->name('question-tags.index');
