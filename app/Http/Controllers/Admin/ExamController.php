@@ -113,8 +113,12 @@ class ExamController extends Controller
             return $exam;
         });
 
-        return redirect()->route('admin.exams.edit', ['exam' => $exam, 'step' => 'questions'])
-            ->with('success', 'Exam created. Now add its sections and questions.');
+        $importNext = $request->input('then') === 'import';
+
+        return redirect()->route('admin.exams.edit', array_filter(['exam' => $exam, 'step' => 'questions', 'import' => $importNext ? 1 : null]))
+            ->with('success', $importNext
+                ? 'Exam created. Download the template, fill it and upload it to build the paper.'
+                : 'Exam created. Now add its sections and questions.');
     }
 
     public function show(Exam $exam)

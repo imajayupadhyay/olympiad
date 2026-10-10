@@ -64,7 +64,10 @@
         <div v-if="!activeSection" class="bg-white rounded-2xl border-2 border-dashed border-gray-200 py-16 text-center">
           <p class="font-heading font-bold text-text-main text-lg">Build the paper section by section</p>
           <p class="text-sm text-text-muted mt-1 max-w-md mx-auto">Add a section such as Reasoning, Mathematics or English, then fill it with questions in the order students should see them.</p>
-          <button type="button" @click="addSection" class="mt-5 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-light">+ Add first section</button>
+          <div class="mt-5 flex flex-wrap justify-center gap-2">
+            <button type="button" @click="addSection" class="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-light">+ Add first section</button>
+            <button type="button" @click="importOpen = true" class="px-5 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-bold text-text-main hover:border-primary">⇪ Import whole paper from Excel</button>
+          </div>
         </div>
 
         <template v-else>
@@ -125,6 +128,9 @@
             </button>
             <button type="button" @click="bankOpen = true" class="action bg-white border border-gray-200 text-text-main hover:border-primary">
               <span aria-hidden="true">＋</span> Pick from question bank
+            </button>
+            <button type="button" @click="importOpen = true" class="action bg-white border border-gray-200 text-text-main hover:border-primary">
+              <span aria-hidden="true">⇪</span> Import from Excel
             </button>
             <div class="flex-1"></div>
             <div class="flex items-center bg-gray-100 rounded-xl p-1 text-xs font-semibold">
@@ -228,6 +234,7 @@
       @add="addQuestions"
       @close="bankOpen = false"
     />
+    <ExamImportDialog :open="importOpen" :exam-id="examId" :dirty="dirty" @close="importOpen = false" />
     <QuestionWriterDrawer
       :open="writerOpen"
       :section="activeSection"
@@ -247,6 +254,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import QuestionBankDrawer from './QuestionBankDrawer.vue';
 import QuestionWriterDrawer from './QuestionWriterDrawer.vue';
+import ExamImportDialog from './ExamImportDialog.vue';
 import { blankSection, difficultyClass, formatMarks, marksFor, negativeMarksFor, stripHtml } from './examBuilder';
 
 const props = defineProps({
@@ -255,6 +263,8 @@ const props = defineProps({
   exam: { type: Object, required: true },
   errors: { type: Object, default: () => ({}) },
   attemptsCount: { type: Number, default: 0 },
+  examId: { type: Number, required: true },
+  dirty: { type: Boolean, default: false },
   subjects: { type: Array, default: () => [] },
   classLevels: { type: Array, default: () => [] },
   categories: { type: Array, default: () => [] },
@@ -270,6 +280,13 @@ const showSettings = ref(false);
 const deleteArmed = ref(false);
 const bankOpen = ref(false);
 const writerOpen = ref(false);
+// Arriving from "Import" (exams list) or "Save & import from Excel" opens the dialog straight away.
+const importOpen = ref(new URLSearchParams(window.location.search).get('import') === '1');
+if (importOpen.value) {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('import');
+  window.history.replaceState(window.history.state, '', url);
+}
 const dragging = ref(null);
 const dragOverSection = ref(null);
 const dragOverQuestion = ref(null);

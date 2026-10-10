@@ -153,9 +153,17 @@
             </div>
           </div>
 
-          <div v-if="mode === 'create'" class="rounded-2xl border border-primary/10 bg-primary/[0.03] p-5 text-sm text-text-muted">
+          <div v-if="mode === 'create'" class="rounded-2xl border p-5 text-sm text-text-muted"
+               :class="importIntent ? 'border-accent/30 bg-accent/5' : 'border-primary/10 bg-primary/[0.03]'">
             <p class="font-heading font-bold text-text-main mb-1">Next: sections & questions</p>
-            Saving creates a draft. You then build the paper section by section — writing new questions or picking from the bank — and publish when it's ready.
+            <template v-if="importIntent">
+              Fill in these details and click <strong class="text-text-main">Save &amp; import from Excel</strong>. You'll then download this exam's template,
+              fill one row per question (with its section) and upload it to review before anything is saved.
+            </template>
+            <template v-else>
+              Saving creates a draft. Build the paper section by section — write new questions, pick from the bank,
+              or <strong class="text-text-main">import the whole paper from Excel</strong> — and publish when it's ready.
+            </template>
           </div>
         </div>
       </div>
@@ -169,6 +177,8 @@
         :exam="form"
         :errors="form.errors"
         :attempts-count="exam?.attempts_count || 0"
+        :exam-id="exam?.id"
+        :dirty="form.isDirty"
         :subjects="subjects"
         :class-levels="classLevels"
         :categories="categories"
@@ -278,7 +288,13 @@
           <Link :href="route('admin.exams.index')" class="btn-ghost">{{ mode === 'edit' ? 'Back to exams' : 'Cancel' }}</Link>
 
           <template v-if="mode === 'create'">
-            <button type="submit" :disabled="form.processing" class="btn-primary">Save &amp; continue to sections →</button>
+            <button type="button" :disabled="form.processing" @click="save(null, 'import')"
+                    :class="importIntent ? 'btn-primary' : 'btn-ghost border border-gray-200'">
+              ⇪ Save &amp; import from Excel
+            </button>
+            <button type="submit" :disabled="form.processing" :class="importIntent ? 'btn-ghost border border-gray-200' : 'btn-primary'">
+              Save &amp; build manually →
+            </button>
           </template>
           <template v-else-if="step === 'review'">
             <button v-if="form.status === 'published'" type="button" :disabled="form.processing" @click="save('draft')" class="btn-ghost border border-gray-200">Unpublish</button>
@@ -410,8 +426,9 @@ const stepHasErrors = (key) => Object.keys(form.errors).some((field) => stepFor(
 
 /* ── saving ── */
 let saving = false;
+const importIntent = new URLSearchParams(window.location.search).get('import') === '1';
 
-function save(status = null) {
+function save(status = null, then = null) {
   const previousStatus = form.status;
   if (status) form.status = status;
   saving = true;
@@ -439,7 +456,7 @@ function save(status = null) {
   if (props.mode === 'edit') {
     form.put(route('admin.exams.update', props.exam.id), options);
   } else {
-    form.post(route('admin.exams.store'), options);
+    form.transform((data) => (then ? { ...data, then } : data)).post(route('admin.exams.store'), options);
   }
 }
 

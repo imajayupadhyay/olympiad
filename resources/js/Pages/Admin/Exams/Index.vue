@@ -36,6 +36,14 @@
       <div class="flex items-center gap-2">
         <span v-if="hasFilters" class="bg-accent/10 text-accent text-xs font-semibold px-2.5 py-1.5 rounded-lg">Filtered</span>
       </div>
+      <div class="flex flex-wrap gap-2">
+      <Link
+        :href="route('admin.exams.create', { import: 1 })"
+        class="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-text-main px-4 py-2.5 rounded-xl text-sm font-semibold hover:border-primary hover:text-primary transition-colors shadow-sm"
+      >
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        Import from Excel
+      </Link>
       <Link
         :href="route('admin.exams.create')"
         class="inline-flex items-center justify-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary-light transition-colors shadow-sm"
@@ -45,6 +53,7 @@
         </svg>
         Create Exam
       </Link>
+      </div>
     </div>
 
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-5">
@@ -161,6 +170,10 @@
                 <Link :href="route('admin.exams.edit', exam.id)"
                       class="text-primary hover:text-primary-light text-xs font-semibold px-2.5 py-1.5 rounded-lg hover:bg-primary/5 transition-colors">
                   Edit
+                </Link>
+                <Link :href="route('admin.exams.edit', { exam: exam.id, step: 'questions', import: 1 })"
+                      class="text-royal text-xs font-semibold px-2.5 py-1.5 rounded-lg hover:bg-royal/5 transition-colors">
+                  Import
                 </Link>
                 <button @click="duplicateExam(exam)"
                         class="text-accent text-xs font-semibold px-2.5 py-1.5 rounded-lg hover:bg-accent/5 transition-colors">

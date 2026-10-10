@@ -22,7 +22,7 @@ class QuestionBulkImportService
 {
     public const MAX_ROWS = 500;
 
-    private const DEMO_TEXT = '[DEMO] Replace this with your question before importing.';
+    public const DEMO_TEXT = '[DEMO] Replace this with your question before importing.';
 
     private const HEADERS = [
         'Subject *', 'Class Levels *', 'Category', 'Difficulty *', 'Question Type *',
@@ -56,6 +56,20 @@ class QuestionBulkImportService
             $sheet->getColumnDimensionByColumn($index + 1)->setWidth($width);
         }
 
+        $this->writeListsSheet($spreadsheet);
+
+        foreach (['A' => 'Subjects', 'B' => 'ClassLevels', 'C' => 'Categories', 'D' => 'Difficulties', 'E' => 'QuestionTypes', 'K' => 'CorrectOptions', 'O' => 'ActiveValues'] as $column => $list) {
+            $this->addListValidation($sheet, $column, $list);
+        }
+
+        return $this->download($spreadsheet, 'question-import-template.xlsx');
+    }
+
+    /**
+     * Hidden "Lists" sheet whose named ranges back every template dropdown.
+     */
+    public function writeListsSheet(Spreadsheet $spreadsheet): void
+    {
         $lists = $spreadsheet->createSheet();
         $lists->setTitle('Lists');
         $lists->fromArray([
@@ -69,62 +83,85 @@ class QuestionBulkImportService
             $spreadsheet->addNamedRange(new NamedRange($name, $lists, '$'.$column.'$2:$'.$column.'$'.$lastRow));
         }
         $lists->setSheetState(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet::SHEETSTATE_HIDDEN);
+    }
 
-        $this->addValidation($sheet, 'A5:A'.(self::MAX_ROWS + 5), 'Subjects');
-        $this->addValidation($sheet, 'B5:B'.(self::MAX_ROWS + 5), 'ClassLevels');
-        $this->addValidation($sheet, 'C5:C'.(self::MAX_ROWS + 5), 'Categories');
-        $this->addValidation($sheet, 'D5:D'.(self::MAX_ROWS + 5), 'Difficulties');
-        $this->addValidation($sheet, 'E5:E'.(self::MAX_ROWS + 5), 'QuestionTypes');
-        $this->addValidation($sheet, 'K5:K'.(self::MAX_ROWS + 5), 'CorrectOptions');
-        $this->addValidation($sheet, 'O5:O'.(self::MAX_ROWS + 5), 'ActiveValues');
+    /**
+     * Dropdown for one template column across every importable row.
+     */
+    public function addListValidation($sheet, string $column, string $list): void
+    {
+        $validation = new DataValidation;
+        $validation->setType(DataValidation::TYPE_LIST);
+        $validation->setErrorStyle(DataValidation::STYLE_STOP);
+        $validation->setAllowBlank(true);
+        $validation->setFormula1($list);
+        $sheet->setDataValidation("{$column}5:{$column}".(self::MAX_ROWS + 5), $validation);
+    }
+
+    public function download(Spreadsheet $spreadsheet, string $filename): StreamedResponse
+    {
         $spreadsheet->setActiveSheetIndex(0);
 
         return response()->streamDownload(function () use ($spreadsheet): void {
             (new Xlsx($spreadsheet))->save('php://output');
             $spreadsheet->disconnectWorksheets();
-        }, 'question-import-template.xlsx', [
+        }, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Cache-Control' => 'no-store, no-cache, must-revalidate',
         ]);
     }
 
-    public function parse(UploadedFile $file): array
+    /**
+     * Non-empty data rows (keyed by 0-based sheet row index) of a template whose row 4 holds $headers,
+     * or a file-level error message.
+     *
+     * @return array{rows: \Illuminate\Support\Collection, error: ?string}
+     */
+    public function readRows(UploadedFile $file, array $headers): array
     {
         $reader = IOFactory::createReaderForFile($file->getRealPath());
         $reader->setReadDataOnly(true);
-        $sheet = $reader->load($file->getRealPath())->getActiveSheet();
-        $rows = $sheet->toArray('', true, true, false);
-        $headers = array_map(fn ($value) => trim((string) $value), array_slice($rows[3] ?? [], 0, count(self::HEADERS)));
+        $rows = $reader->load($file->getRealPath())->getActiveSheet()->toArray('', true, true, false);
+        $found = array_map(fn ($value) => trim((string) $value), array_slice($rows[3] ?? [], 0, count($headers)));
 
-        if ($headers !== self::HEADERS) {
-            return ['questions' => [], 'fileErrors' => ['Use the current Question Import Template. Its required columns were not found.']];
+        if ($found !== $headers) {
+            return ['rows' => collect(), 'error' => 'Use the current import template. Its required columns were not found.'];
         }
 
-        $filledRows = collect(array_slice($rows, 4, null, true))
-            ->map(fn (array $row) => array_slice($row, 0, count(self::HEADERS)))
+        $filled = collect(array_slice($rows, 4, null, true))
+            ->map(fn (array $row) => array_slice($row, 0, count($headers)))
             ->filter(fn (array $row) => collect($row)->contains(fn ($value) => trim((string) $value) !== ''))
-            ->reject(fn (array $row) => trim((string) ($row[5] ?? '')) === self::DEMO_TEXT);
+            ->reject(fn (array $row) => collect($row)->contains(fn ($value) => trim((string) $value) === self::DEMO_TEXT));
 
-        if ($filledRows->count() > self::MAX_ROWS) {
-            return ['questions' => [], 'fileErrors' => ['A workbook can contain at most '.self::MAX_ROWS.' question rows. Split the remaining questions into another upload.']];
+        if ($filled->count() > self::MAX_ROWS) {
+            return ['rows' => collect(), 'error' => 'A workbook can contain at most '.self::MAX_ROWS.' question rows. Split the remaining questions into another upload.'];
         }
 
-        $questions = [];
-        foreach ($filledRows as $index => $row) {
-            $questions[] = $this->parseRow($row, $index + 1);
+        if ($filled->isEmpty()) {
+            return ['rows' => collect(), 'error' => 'The workbook does not contain any question rows.'];
         }
 
-        if (count($questions) === 0) {
-            return ['questions' => [], 'fileErrors' => ['The workbook does not contain any question rows.']];
+        return ['rows' => $filled, 'error' => null];
+    }
+
+    public function parse(UploadedFile $file): array
+    {
+        ['rows' => $rows, 'error' => $error] = $this->readRows($file, self::HEADERS);
+
+        if ($error) {
+            return ['questions' => [], 'fileErrors' => [$error]];
         }
 
-        return ['questions' => $questions, 'fileErrors' => []];
+        return [
+            'questions' => $rows->map(fn (array $row, int $index) => $this->parseRow($row, $index + 1))->values()->all(),
+            'fileErrors' => [],
+        ];
     }
 
     public function validateRows(array $questions): array
     {
         return collect($questions)->map(function (array $question, int $index): array {
-            $question['errors'] = $this->rowErrors($question);
+            $question['errors'] = $this->questionErrors($question);
             $question['source_row'] = $question['source_row'] ?? $index + 1;
 
             return $question;
@@ -149,7 +186,7 @@ class QuestionBulkImportService
 
         return DB::transaction(function () use ($questions, $createdBy): int {
             foreach ($questions as $question) {
-                $data = $this->attributes($question);
+                $data = $this->questionAttributes($question);
                 $classLevelIds = $data['class_level_ids'];
                 unset($data['class_level_ids']);
                 $data['created_by'] = $createdBy;
@@ -190,7 +227,7 @@ class QuestionBulkImportService
         ];
     }
 
-    private function rowErrors(array $question): array
+    public function questionErrors(array $question): array
     {
         $validator = Validator::make($question, [
             'subject_id' => ['required', 'exists:subjects,id'],
@@ -223,7 +260,7 @@ class QuestionBulkImportService
         return collect($errors)->map(fn (array $messages) => $messages[0])->all();
     }
 
-    private function attributes(array $question): array
+    public function questionAttributes(array $question): array
     {
         return [
             'subject_id' => $question['subject_id'],
@@ -283,17 +320,7 @@ class QuestionBulkImportService
         ];
     }
 
-    private function addValidation($sheet, string $range, string $formula): void
-    {
-        $validation = new DataValidation;
-        $validation->setType(DataValidation::TYPE_LIST);
-        $validation->setErrorStyle(DataValidation::STYLE_STOP);
-        $validation->setAllowBlank(true);
-        $validation->setFormula1($formula);
-        $sheet->setDataValidation($range, $validation);
-    }
-
-    private function classLevelIds(string $classes): array
+    public function classLevelIds(string $classes): array
     {
         $labels = collect(preg_split('/[|,]/', $classes))->map(fn ($value) => Str::lower(trim($value)))->filter();
 
@@ -301,7 +328,7 @@ class QuestionBulkImportService
             ->pluck('id')->values()->all();
     }
 
-    private function categoryId(string $category, ?int $subjectId): ?int
+    public function categoryId(string $category, ?int $subjectId): ?int
     {
         if (! filled(trim($category)) || ! $subjectId) {
             return null;
@@ -313,7 +340,7 @@ class QuestionBulkImportService
             ->whereRaw('LOWER(name) = ?', [Str::lower($name)])->value('id');
     }
 
-    private function correctOptions(string $correct): array
+    public function correctOptions(string $correct): array
     {
         return collect(preg_split('/[|,]/', Str::lower($correct)))
             ->map(fn ($value) => trim($value))
@@ -323,7 +350,7 @@ class QuestionBulkImportService
             ->all();
     }
 
-    private function html(string $value): string
+    public function html(string $value): string
     {
         return '<p>'.nl2br(e($value)).'</p>';
     }

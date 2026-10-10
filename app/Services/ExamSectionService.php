@@ -40,6 +40,33 @@ class ExamSectionService
         return $sections;
     }
 
+    /**
+     * The exam's saved structure in the same normalized shape fromRequest() returns.
+     */
+    public function currentSections(Exam $exam): array
+    {
+        $exam->load('sections', 'questions');
+        $bySection = $exam->questions->groupBy(fn (Question $question) => $question->pivot->exam_section_id ?? 0);
+
+        return $exam->sections->map(fn (ExamSection $section) => [
+            'id' => $section->id,
+            'name' => $section->name,
+            'subject_id' => $section->subject_id,
+            'instructions' => $section->instructions,
+            'marks_per_question' => $section->marks_per_question !== null ? (float) $section->marks_per_question : null,
+            'negative_marks_per_question' => $section->negative_marks_per_question !== null ? (float) $section->negative_marks_per_question : null,
+            'question_ids' => $bySection->get($section->id, collect())->pluck('id')->all(),
+        ])->all();
+    }
+
+    /**
+     * Validate a proposed structure for an existing exam (used by imports).
+     */
+    public function assertFits(Exam $exam, array $sections): void
+    {
+        $this->ensureQuestionsFit($sections, $exam->only(['subject_id', 'class_level_id', 'question_category_id']), false);
+    }
+
     public function sync(Exam $exam, array $sections): void
     {
         $keptIds = [];

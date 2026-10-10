@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\DataEntryController;
 use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\ExamController;
 use App\Http\Controllers\Admin\ExamQuestionBankController;
+use App\Http\Controllers\Admin\ExamQuestionImportController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
@@ -115,6 +116,18 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/exams/question-bank', [ExamQuestionBankController::class, 'index'])
         ->middleware('admin.permission:exams,write')
         ->name('exams.question-bank');
+    Route::get('/exams/{exam}/import/template', [ExamQuestionImportController::class, 'template'])
+        ->middleware('admin.permission:exams,write')
+        ->name('exams.import.template');
+    Route::get('/exams/{exam}/import/preview', [ExamQuestionImportController::class, 'preview'])
+        ->middleware(['admin.permission:exams,write', 'admin.permission:questions,write'])
+        ->name('exams.import.preview');
+    Route::post('/exams/{exam}/import/preview', [ExamQuestionImportController::class, 'upload'])
+        ->middleware(['admin.permission:exams,write', 'admin.permission:questions,write'])
+        ->name('exams.import.upload');
+    Route::post('/exams/{exam}/import', [ExamQuestionImportController::class, 'store'])
+        ->middleware(['admin.permission:exams,write', 'admin.permission:questions,write'])
+        ->name('exams.import.store');
     Route::resource('exams', ExamController::class)
         ->middlewareFor(['index', 'show'], 'admin.permission:exams,read')
         ->middlewareFor(['create', 'edit', 'store', 'update'], 'admin.permission:exams,write')

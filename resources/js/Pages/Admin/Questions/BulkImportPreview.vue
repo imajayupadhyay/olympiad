@@ -33,83 +33,8 @@
           <span class="font-bold">Needs correction:</span> {{ rowErrors(question).join(' · ') }}
         </div>
 
-        <div class="p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <div class="lg:col-span-4">
-            <label class="label">Subject *</label>
-            <select v-model.number="question.subject_id" class="field">
-              <option value="">Choose subject</option>
-              <option v-for="subject in subjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
-            </select>
-          </div>
-          <div class="lg:col-span-4">
-            <label class="label">Category</label>
-            <select v-model.number="question.question_category_id" class="field">
-              <option value="">Uncategorized</option>
-              <option v-for="category in categoriesFor(question)" :key="category.id" :value="category.id">{{ category.name }}</option>
-            </select>
-          </div>
-          <div class="lg:col-span-4">
-            <label class="label">Class levels *</label>
-            <div class="flex flex-wrap gap-2 pt-1">
-              <button v-for="level in classLevels" :key="level.id" type="button" @click="toggleClass(question, level.id)"
-                      class="px-2.5 py-1.5 text-xs rounded-lg border font-semibold"
-                      :class="question.class_level_ids.includes(level.id) ? 'border-primary bg-primary/10 text-primary' : 'border-gray-200 text-text-muted'">
-                {{ level.label }}
-              </button>
-            </div>
-          </div>
-
-          <div class="lg:col-span-12">
-            <label class="label">Question *</label>
-            <textarea v-model="question.question_text" rows="3" class="field resize-y" />
-          </div>
-          <div v-for="option in ['a', 'b', 'c', 'd']" :key="option" class="lg:col-span-3">
-            <label class="label">Option {{ option.toUpperCase() }} *</label>
-            <textarea v-model="question[`option_${option}`]" rows="3" class="field resize-y" />
-          </div>
-
-          <div class="lg:col-span-3">
-            <label class="label">Difficulty *</label>
-            <select v-model="question.difficulty" class="field">
-              <option v-for="(label, value) in difficulties" :key="value" :value="value">{{ label }}</option>
-            </select>
-          </div>
-          <div class="lg:col-span-3">
-            <label class="label">Question type *</label>
-            <select v-model="question.question_type" class="field" @change="normalizeCorrect(question)">
-              <option v-for="(label, value) in types" :key="value" :value="value">{{ label }}</option>
-            </select>
-          </div>
-          <div class="lg:col-span-3">
-            <label class="label">Correct option(s) *</label>
-            <div class="flex gap-1.5 pt-1">
-              <button v-for="option in ['a', 'b', 'c', 'd']" :key="option" type="button" @click="toggleCorrect(question, option)"
-                      class="w-8 h-8 rounded-lg border text-xs font-bold uppercase"
-                      :class="question.correct_options.includes(option) ? 'border-success bg-success text-white' : 'border-gray-200 text-text-muted'">
-                {{ option }}
-              </button>
-            </div>
-          </div>
-          <div class="lg:col-span-1">
-            <label class="label">Marks *</label>
-            <input v-model.number="question.marks" type="number" min="1" max="10" class="field" />
-          </div>
-          <div class="lg:col-span-2">
-            <label class="label">Negative</label>
-            <input v-model.number="question.negative_marks" type="number" min="0" max="5" step="0.25" class="field" />
-          </div>
-          <div class="lg:col-span-12">
-            <label class="label">Explanation</label>
-            <textarea v-model="question.explanation" rows="2" class="field resize-y" />
-          </div>
-          <div class="lg:col-span-3">
-            <label class="label">Status</label>
-            <select v-model="question.is_active" class="field">
-              <option :value="true">Active</option>
-              <option :value="false">Inactive</option>
-            </select>
-          </div>
-        </div>
+        <ImportQuestionFields :question="question" :subjects="subjects" :categories="categories" :class-levels="classLevels"
+                              :difficulties="difficulties" :types="types" class="p-5" />
       </section>
 
       <div class="sticky bottom-4 rounded-2xl bg-primary p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -124,9 +49,11 @@
 </template>
 
 <script setup>
-import { computed, shallowRef, toRaw } from 'vue';
+import { computed } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import ImportQuestionFields from './Components/ImportQuestionFields.vue';
+import { normalizeImportRow, questionRowErrors, useServerRowErrors } from './Components/importRows';
 
 const props = defineProps({
   questions: Array,
@@ -138,64 +65,14 @@ const props = defineProps({
 });
 
 const form = useForm({
-  questions: props.questions.map((question) => ({
-    ...question,
-    subject_id: question.subject_id ? Number(question.subject_id) : '',
-    question_category_id: question.question_category_id ? Number(question.question_category_id) : '',
-    class_level_ids: (question.class_level_ids || []).map(Number),
-    correct_options: question.correct_options || [],
-    is_active: Boolean(question.is_active),
-  })),
+  questions: props.questions.map(normalizeImportRow),
 });
 
-// Server errors are pinned to the row object plus a snapshot of it, so they survive row removal
-// and disappear as soon as that row is edited (otherwise they would block re-submission forever).
-const serverErrors = shallowRef(new WeakMap());
-const snapshot = (question) => JSON.stringify(question);
-const serverErrorsFor = (question) => {
-  const entry = serverErrors.value.get(toRaw(question));
-
-  return entry && entry.snapshot === snapshot(question) ? entry.messages : [];
-};
-
-const categoriesFor = (question) => (props.categories || []).filter((category) => Number(category.subject_id) === Number(question.subject_id));
-const required = (value) => String(value ?? '').trim() !== '';
-const rowErrors = (question) => {
-  const errors = [];
-  if (!question.subject_id) errors.push('Choose a subject');
-  if (!question.class_level_ids.length) errors.push('Choose at least one class level');
-  if (question.question_category_id && !categoriesFor(question).some((category) => Number(category.id) === Number(question.question_category_id))) errors.push('Category must belong to the subject');
-  if (!['easy', 'medium', 'hard'].includes(question.difficulty)) errors.push('Choose a valid difficulty');
-  if (!['single', 'multiple'].includes(question.question_type)) errors.push('Choose a valid question type');
-  if (!required(question.question_text)) errors.push('Question text is required');
-  for (const option of ['a', 'b', 'c', 'd']) if (!required(question[`option_${option}`])) errors.push(`Option ${option.toUpperCase()} is required`);
-  if (!question.correct_options.length) errors.push('Choose the correct option');
-  if (question.question_type === 'single' && question.correct_options.length !== 1) errors.push('Single-correct questions need one answer');
-  if (!Number.isInteger(Number(question.marks)) || Number(question.marks) < 1 || Number(question.marks) > 10) errors.push('Marks must be between 1 and 10');
-  if (required(question.negative_marks) && (Number.isNaN(Number(question.negative_marks)) || Number(question.negative_marks) < 0 || Number(question.negative_marks) > 5)) errors.push('Negative marks must be between 0 and 5');
-
-  return [...new Set([...errors, ...serverErrorsFor(question)])];
-};
+const serverErrors = useServerRowErrors();
+const rowErrors = (question) => [...new Set([...questionRowErrors(question, props.categories), ...serverErrors.errorsFor(question)])];
 const invalidCount = computed(() => form.questions.filter((question) => rowErrors(question).length).length);
 const hasErrors = computed(() => invalidCount.value > 0);
 
-const toggleClass = (question, id) => {
-  question.class_level_ids = question.class_level_ids.includes(id)
-    ? question.class_level_ids.filter((current) => current !== id)
-    : [...question.class_level_ids, id];
-};
-const toggleCorrect = (question, option) => {
-  if (question.question_type === 'single') {
-    question.correct_options = [option];
-  } else {
-    question.correct_options = question.correct_options.includes(option)
-      ? question.correct_options.filter((current) => current !== option)
-      : [...question.correct_options, option];
-  }
-};
-const normalizeCorrect = (question) => {
-  if (question.question_type === 'single' && question.correct_options.length > 1) question.correct_options = [question.correct_options[0]];
-};
 const remove = (index) => form.questions.splice(index, 1);
 const submit = () => {
   if (!hasErrors.value && form.questions.length) {
@@ -203,22 +80,10 @@ const submit = () => {
     form.post(route('admin.questions.import.store'), {
       preserveScroll: true,
       onError: (errors) => {
-        const pinned = new WeakMap();
-        form.questions.forEach((question, index) => {
-          const messages = Object.entries(errors)
-            .filter(([key]) => key.startsWith(`questions.${index}.`))
-            .map(([, message]) => message);
-          if (messages.length) pinned.set(toRaw(question), { snapshot: snapshot(question), messages });
-        });
-        serverErrors.value = pinned;
+        serverErrors.pin(errors, form.questions);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
     });
   }
 };
 </script>
-
-<style scoped>
-.label { @apply block mb-1.5 text-xs font-semibold text-text-muted; }
-.field { @apply w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-text-main focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20; }
-</style>
