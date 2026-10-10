@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Certificate;
 use App\Models\ExamAttempt;
 use App\Models\Result;
+use App\Services\ExamSectionScoreService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -55,7 +56,7 @@ class ResultController extends Controller
     /**
      * Detailed scorecard + answer review — only when the admin has released the result.
      */
-    public function show(Request $request, Result $result): Response
+    public function show(Request $request, Result $result, ExamSectionScoreService $sectionScores): Response
     {
         abort_unless($result->user_id === $request->user()->id, 403);
 
@@ -75,15 +76,17 @@ class ResultController extends Controller
         $attempt = $result->attempt;
 
         // Answer review (allowed now that the result is public).
-        $exam = $result->exam()->with('questions')->first();
+        $exam = $result->exam()->with('questions', 'sections:id,exam_id,name')->first();
+        $sectionNames = $exam->sections->pluck('name', 'id');
         $answers = $attempt->answers()->get()->keyBy('question_id');
 
-        $review = $exam->questions->map(function ($q) use ($answers) {
+        $review = $exam->questions->map(function ($q) use ($answers, $sectionNames) {
             $a = $answers->get($q->id);
             $selected = $a?->selected_options ?? [];
 
             return [
                 'id'             => $q->id,
+                'section'        => $sectionNames->get($q->pivot->exam_section_id),
                 'question_text'  => $q->question_text,
                 'question_image_url' => $q->question_image_url,
                 'options'        => collect(['a', 'b', 'c', 'd'])
@@ -115,6 +118,7 @@ class ResultController extends Controller
                 'released_at'=> $result->released_at,
             ],
             'certificate_id' => $certificate?->id,
+            'sections' => $sectionScores->forResult($result),
             'attempt' => [
                 'total_correct' => $attempt->total_correct,
                 'total_wrong'   => $attempt->total_wrong,

@@ -8,7 +8,14 @@ const props = defineProps({
     attempt: { type: Object, required: true },
     review: { type: Array, default: () => [] },
     certificate_id: { type: Number, default: null },
+    sections: { type: Array, default: () => [] },
 });
+
+// Single-section (legacy) papers keep the original flat scorecard.
+const showSections = computed(() => props.sections.length > 1);
+const fmt = (value) => Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+const strongest = computed(() => [...props.sections].sort((a, b) => b.percentage - a.percentage)[0]?.section_id);
+const sectionStarts = (i) => showSections.value && props.review[i]?.section && props.review[i].section !== props.review[i - 1]?.section;
 
 const timeText = computed(() => {
     const s = props.attempt.time_taken_seconds ?? 0;
@@ -65,10 +72,36 @@ const optClass = (opt, q) => {
             </a>
         </section>
 
+        <!-- section-wise performance -->
+        <section v-if="showSections" class="sections">
+            <h3 class="rev-title">Section-wise Performance</h3>
+            <div class="sec-grid">
+                <article v-for="(section, i) in sections" :key="section.section_id ?? i" class="sec-card">
+                    <div class="sec-head">
+                        <span class="sec-no">{{ i + 1 }}</span>
+                        <h4>{{ section.name }}</h4>
+                        <span v-if="section.section_id === strongest && sections.length > 1" class="sec-best">Strongest</span>
+                    </div>
+                    <div class="sec-score"><strong>{{ fmt(section.score) }}</strong><span>/ {{ fmt(section.max_score) }}</span></div>
+                    <div class="sec-bar" role="img" :aria-label="`${section.percentage}% in ${section.name}`">
+                        <i :style="{ width: Math.max(0, Math.min(100, section.percentage)) + '%' }"></i>
+                    </div>
+                    <p class="sec-meta">
+                        <span class="ok">{{ section.correct }} correct</span> ·
+                        <span class="bad">{{ section.wrong }} wrong</span> ·
+                        <span>{{ section.skipped }} skipped</span>
+                        <b>{{ fmt(section.percentage) }}%</b>
+                    </p>
+                </article>
+            </div>
+        </section>
+
         <!-- answer review -->
         <h3 class="rev-title">Answer Review</h3>
         <div class="review">
-            <div v-for="(q, i) in review" :key="q.id" class="q-card" :class="q.is_correct ? 'ok' : (q.selected.length ? 'bad' : 'skip')">
+            <template v-for="(q, i) in review" :key="q.id">
+            <h4 v-if="sectionStarts(i)" class="rev-section">{{ q.section }}</h4>
+            <div class="q-card" :class="q.is_correct ? 'ok' : (q.selected.length ? 'bad' : 'skip')">
                 <div class="q-top">
                     <span class="q-no">Q{{ i + 1 }}</span>
                     <span class="q-verdict" :class="q.is_correct ? 'v-ok' : (q.selected.length ? 'v-bad' : 'v-skip')">
@@ -93,6 +126,7 @@ const optClass = (opt, q) => {
                     <div class="rich-content" v-html="q.explanation"></div>
                 </div>
             </div>
+            </template>
         </div>
     </StudentLayout>
 </template>
@@ -131,6 +165,23 @@ const optClass = (opt, q) => {
 .cert-btn:hover { transform: translateY(-2px); }
 .cert-btn svg { width: 17px; height: 17px; }
 
+.sections { margin-bottom: 1.8rem; }
+.sec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .9rem; }
+.sec-card { background: #fff; border: 1px solid #E7D9BE; border-radius: 16px; padding: 1.1rem; }
+.sec-head { display: flex; align-items: center; gap: .55rem; margin-bottom: .7rem; }
+.sec-head h4 { flex: 1; min-width: 0; margin: 0; font-size: .95rem; font-weight: 700; color: #0A1024; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sec-no { width: 24px; height: 24px; flex-shrink: 0; display: grid; place-items: center; border-radius: 7px; background: #F3E9D6; font-family: "Space Grotesk", monospace; font-weight: 700; font-size: .78rem; color: #5B6373; }
+.sec-best { font-size: .66rem; font-weight: 700; color: #B45309; background: rgba(214,153,31,.15); padding: .2rem .5rem; border-radius: 999px; }
+.sec-score { display: flex; align-items: baseline; gap: .3rem; }
+.sec-score strong { font-family: "Space Grotesk", monospace; font-size: 1.7rem; color: #0A1024; line-height: 1; }
+.sec-score span { font-size: .85rem; color: #9aa0ad; }
+.sec-bar { height: 8px; border-radius: 999px; background: #F3E9D6; overflow: hidden; margin: .75rem 0 .6rem; }
+.sec-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #F2854E, #EE6A2C); }
+.sec-meta { margin: 0; display: flex; flex-wrap: wrap; gap: .3rem; align-items: baseline; font-size: .76rem; color: #5B6373; }
+.sec-meta .ok { color: #168A66; font-weight: 600; }
+.sec-meta .bad { color: #DC2626; font-weight: 600; }
+.sec-meta b { margin-left: auto; font-family: "Space Grotesk", monospace; color: #0A1024; }
+.rev-section { margin: .6rem 0 -.2rem; font-family: "Space Grotesk", monospace; font-size: .76rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; color: #EE6A2C; }
 .rev-title { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.25rem; color: #0A1024; margin: 0 0 1rem; }
 .review { display: grid; gap: 1rem; }
 .q-card { background: #fff; border: 1px solid #E7D9BE; border-left-width: 4px; border-radius: 14px; padding: 1.2rem; }

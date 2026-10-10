@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Models\Result;
+use App\Services\ExamSectionScoreService;
 use App\Services\ManagedEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,9 +32,9 @@ class ResultController extends Controller
         ]);
     }
 
-    public function show(Exam $exam): Response
+    public function show(Exam $exam, ExamSectionScoreService $sectionScores): Response
     {
-        $exam->load(['subject', 'classLevel']);
+        $exam->load(['subject', 'classLevel', 'sections:id,exam_id,name,sort_order']);
 
         $results = Result::where('exam_id', $exam->id)
             ->with([
@@ -44,6 +45,11 @@ class ResultController extends Controller
             ])
             ->orderBy('rank_national')
             ->paginate(50);
+        $results->getCollection()->transform(function (Result $result) use ($sectionScores) {
+            $result->section_scores = $sectionScores->forResult($result);
+
+            return $result;
+        });
 
         $stats = [
             'total_attempts' => ExamAttempt::where('exam_id', $exam->id)->whereIn('status', ['submitted', 'timed_out', 'auto_submitted'])->count(),
@@ -53,14 +59,21 @@ class ResultController extends Controller
             'highest_score'  => Result::where('exam_id', $exam->id)->max('total_score') ?? 0,
         ];
 
+        // Cohort section stats only matter when the paper has more than one section.
+        $sectionStats = $exam->sections->count() > 1
+            ? $sectionScores->summary(Result::where('exam_id', $exam->id)->with('attempt', 'exam')->get()
+                ->map(fn (Result $result) => $sectionScores->forResult($result)))
+            : [];
+
         return Inertia::render('Admin/Results/Show', [
             'exam'    => $exam,
             'results' => $results,
             'stats'   => $stats,
+            'sectionStats' => $sectionStats,
         ]);
     }
 
-    public function process(Request $request, Exam $exam)
+    public function process(Request $request, Exam $exam, ExamSectionScoreService $sectionScores)
     {
         $attempts = ExamAttempt::where('exam_id', $exam->id)
             ->whereIn('status', ['submitted', 'timed_out', 'auto_submitted'])
@@ -72,7 +85,9 @@ class ResultController extends Controller
 
         $maxScore = $exam->questions()->sum(DB::raw('COALESCE(exam_questions.marks, questions.marks)'));
 
-        DB::transaction(function () use ($exam, $attempts, $maxScore) {
+        $exam->load('sections', 'questions');
+
+        DB::transaction(function () use ($exam, $attempts, $maxScore, $sectionScores) {
             $ranked = $attempts->sortByDesc('total_score')->values();
 
             foreach ($ranked as $rank => $attempt) {
@@ -86,6 +101,7 @@ class ResultController extends Controller
                         'total_score'     => $score,
                         'max_score'       => $maxScore,
                         'percentage'      => $percentage,
+                        'section_scores'  => $sectionScores->breakdown($attempt, $exam),
                         'rank_national'   => $rank + 1,
                         'grade'           => $this->grade($percentage),
                         'is_released'     => false,

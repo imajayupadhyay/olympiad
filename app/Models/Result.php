@@ -8,7 +8,7 @@ class Result extends Model
 {
     protected $fillable = [
         'user_id', 'exam_id', 'exam_attempt_id',
-        'total_score', 'max_score', 'percentage', 'percentile',
+        'total_score', 'max_score', 'percentage', 'section_scores', 'percentile',
         'rank_national', 'rank_state', 'rank_city', 'rank_school',
         'grade', 'is_released', 'released_at',
         'score_override', 'override_reason', 'override_by',
@@ -22,6 +22,7 @@ class Result extends Model
         'percentage'   => 'float',
         'percentile'   => 'float',
         'score_override' => 'float',
+        'section_scores' => 'array',
     ];
 
     public function user()    { return $this->belongsTo(User::class); }

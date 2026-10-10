@@ -72,6 +72,26 @@
       </div>
     </div>
 
+    <!-- Section-wise cohort stats (multi-section papers only) -->
+    <div v-if="sectionStats.length" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
+      <h2 class="font-heading font-bold text-text-main text-sm uppercase tracking-wider mb-4">Section-wise Performance</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+        <div v-for="(section, i) in sectionStats" :key="section.section_id ?? i" class="rounded-xl border border-gray-100 p-4">
+          <p class="text-xs font-semibold text-text-muted truncate"><span class="font-number text-primary mr-1">{{ i + 1 }}.</span>{{ section.name }}</p>
+          <p class="mt-2 font-number text-xl font-bold text-text-main">
+            {{ fmt(section.average) }} <span class="text-xs font-semibold text-text-muted">avg / {{ fmt(section.max_score) }}</span>
+          </p>
+          <div class="mt-2 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+            <div class="h-full rounded-full bg-accent" :style="{ width: barWidth(section.average, section.max_score) }"></div>
+          </div>
+          <p class="mt-2 text-[11px] text-text-muted">
+            Top <span class="font-number font-semibold text-gold">{{ fmt(section.highest) }}</span> ·
+            Accuracy <span class="font-number font-semibold text-success">{{ section.accuracy }}%</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Results table -->
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
 
@@ -89,7 +109,8 @@
         </p>
       </div>
 
-      <table v-else class="w-full text-sm">
+      <div v-else class="overflow-x-auto">
+      <table class="w-full text-sm">
         <thead class="bg-gray-50 border-b border-gray-100">
           <tr>
             <th class="text-left px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider w-16">Rank</th>
@@ -98,6 +119,7 @@
             <th class="text-center px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">Score</th>
             <th class="text-center px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">%</th>
             <th class="text-center px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">Grade</th>
+            <th v-if="sectionStats.length" class="text-left px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">Sections</th>
             <th class="text-center px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">C/W/S</th>
             <th class="text-center px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">Status</th>
             <th class="text-right px-4 py-3 text-text-muted text-xs font-semibold uppercase tracking-wider">Actions</th>
@@ -149,6 +171,16 @@
               <span class="font-bold text-sm px-2 py-0.5 rounded" :class="gradeStyle(r.grade)">{{ r.grade }}</span>
             </td>
 
+            <!-- Section scores -->
+            <td v-if="sectionStats.length" class="px-4 py-3.5">
+              <div class="space-y-0.5 min-w-[150px]">
+                <p v-for="(section, i) in r.section_scores || []" :key="section.section_id ?? i" class="flex justify-between gap-3 text-[11px]">
+                  <span class="text-text-muted truncate max-w-[110px]" :title="section.name">{{ section.name }}</span>
+                  <span class="font-number font-semibold text-text-main whitespace-nowrap">{{ fmt(section.score) }}<span class="text-text-muted font-normal">/{{ fmt(section.max_score) }}</span></span>
+                </p>
+              </div>
+            </td>
+
             <!-- Correct / Wrong / Skipped -->
             <td class="px-4 py-3.5 text-center font-number text-xs">
               <span class="text-success font-semibold">{{ r.attempt?.total_correct ?? '—' }}</span>
@@ -177,6 +209,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
 
       <!-- Pagination -->
       <div v-if="results.last_page > 1" class="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
@@ -277,7 +310,10 @@ const props = defineProps({
   exam:    Object,
   results: Object,
   stats:   Object,
+  sectionStats: { type: Array, default: () => [] },
 });
+
+const barWidth = (value, max) => `${max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0}%`;
 
 const fmt = (v) => (v != null ? parseFloat(v).toFixed(1) : '—');
 
