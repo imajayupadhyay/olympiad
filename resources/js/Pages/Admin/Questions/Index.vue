@@ -17,9 +17,10 @@
            class="inline-flex items-center gap-2 border border-primary/20 text-primary px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-primary/5 transition-colors">
           Download Template
         </a>
-        <label class="inline-flex items-center gap-2 bg-accent text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-accent-dark transition-colors shadow-sm cursor-pointer">
-          <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" @change="uploadImport" />
-          Bulk Import
+        <label class="inline-flex items-center gap-2 bg-accent text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-accent-dark transition-colors shadow-sm"
+               :class="importing ? 'opacity-60 cursor-wait' : 'cursor-pointer'">
+          <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" :disabled="importing" @change="uploadImport" />
+          {{ importing ? 'Reading workbook…' : 'Bulk Import' }}
         </label>
         <Link
           :href="route('admin.questions.create')"
@@ -31,6 +32,22 @@
         Add Question
         </Link>
       </div>
+    </div>
+
+    <!-- Bulk import rejected the workbook (wrong template, unreadable file, too many rows…) -->
+    <div v-if="importError" role="alert"
+         class="mb-5 flex items-start gap-3 rounded-2xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm">
+      <div class="flex-1 min-w-0">
+        <p class="font-semibold text-danger">Bulk import failed. Nothing was saved.</p>
+        <p class="text-text-main mt-0.5">{{ importError }}</p>
+        <p class="text-text-muted text-xs mt-1">
+          Use the Question Bank template from <a :href="route('admin.questions.import.template')" class="font-semibold text-primary underline">Download Template</a>.
+          Exam paper workbooks (with a Section column) are imported from the exam builder instead.
+        </p>
+      </div>
+      <button type="button" class="p-1 rounded-lg text-text-muted hover:bg-danger/10" aria-label="Dismiss" @click="importError = ''">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
 
     <!-- Filters -->
@@ -279,7 +296,13 @@ const props = defineProps({
   difficulties: Object,
   filters:      Object,
   total:        Number,
+  errors:       { type: Object, default: () => ({}) },
 });
+
+// The upload redirects back with errors.file when the workbook is rejected; show it instead of failing silently.
+const importing = ref(false);
+const importError = ref(props.errors?.file || '');
+watch(() => props.errors?.file, (message) => { importError.value = message || ''; });
 
 const form = ref({
   search:         props.filters.search          || '',
@@ -333,10 +356,16 @@ const stripHtml = (html) => {
 const deleteTarget = ref(null);
 const uploadImport = (event) => {
   const file = event.target.files?.[0];
-  if (!file) return;
-
-  router.post(route('admin.questions.import.upload'), { file }, { forceFormData: true });
   event.target.value = '';
+  if (!file || importing.value) return;
+
+  importError.value = '';
+  router.post(route('admin.questions.import.upload'), { file }, {
+    forceFormData: true,
+    preserveScroll: true,
+    onStart: () => { importing.value = true; },
+    onFinish: () => { importing.value = false; },
+  });
 };
 const confirmDelete = (q) => deleteTarget.value = q;
 const doDelete = () => {
