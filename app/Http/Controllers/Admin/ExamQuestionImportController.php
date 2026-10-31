@@ -97,7 +97,7 @@ class ExamQuestionImportController extends Controller
             $result['created'] + $result['reused'], $result['created'] + $result['reused'] === 1 ? '' : 's',
             $result['sections'], $result['sections'] === 1 ? '' : 's',
             $result['created'], $result['reused'],
-        ));
+        ).QuestionBulkImportService::createdCategoriesNote($result['categories']));
     }
 
     private function sessionKey(Exam $exam): string

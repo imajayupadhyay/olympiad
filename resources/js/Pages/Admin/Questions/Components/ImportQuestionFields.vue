@@ -9,10 +9,17 @@
     </div>
     <div class="lg:col-span-4">
       <label class="label">Category</label>
-      <select v-model.number="question.question_category_id" class="field">
+      <select :value="categoryValue" class="field" @change="setCategory($event.target.value)">
         <option value="">Uncategorized</option>
+        <option v-if="question.suggested_category" :value="NEW_CATEGORY">New: {{ question.suggested_category }}</option>
         <option v-for="category in categoriesForRow(categories, question)" :key="category.id" :value="category.id">{{ category.name }}</option>
       </select>
+      <p v-if="categoryValue === NEW_CATEGORY" class="mt-1 text-[11px] font-semibold text-royal">
+        New category — created for this subject when you confirm the import.
+      </p>
+      <p v-else-if="question.category_name && !question.question_category_id" class="mt-1 text-[11px] text-text-muted">
+        Excel said “{{ question.category_name }}”.
+      </p>
     </div>
     <div class="lg:col-span-4">
       <label class="label">Class levels *</label>
@@ -81,7 +88,10 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { categoriesForRow } from './importRows';
+
+const NEW_CATEGORY = '__new__';
 
 // Edits the row in place: rows are reactive objects owned by the parent's import form.
 const props = defineProps({
@@ -94,6 +104,22 @@ const props = defineProps({
   showStatus: { type: Boolean, default: true },
   lockedClassId: { type: [Number, String], default: null },
 });
+
+// Category is either an existing id, a not-yet-existing name to create on confirm, or nothing.
+const categoryValue = computed(() => {
+  if (props.question.question_category_id) return String(props.question.question_category_id);
+  return props.question.new_category ? NEW_CATEGORY : '';
+});
+
+const setCategory = (value) => {
+  if (value === NEW_CATEGORY) {
+    props.question.question_category_id = '';
+    props.question.new_category = props.question.suggested_category;
+  } else {
+    props.question.question_category_id = value ? Number(value) : '';
+    props.question.new_category = '';
+  }
+};
 
 const toggleClass = (id) => {
   if (Number(id) === Number(props.lockedClassId)) return;

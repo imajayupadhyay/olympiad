@@ -30,6 +30,16 @@ class QuestionBulkImportService
         'Correct Options *', 'Marks *', 'Negative Marks', 'Explanation', 'Active *',
     ];
 
+    /**
+     * " New categories created: A, B." suffix for the import success flash (empty when none).
+     */
+    public static function createdCategoriesNote(array $names): string
+    {
+        $count = count($names);
+
+        return $count === 0 ? '' : sprintf(' %d new categor%s created: %s.', $count, $count === 1 ? 'y' : 'ies', implode(', ', $names));
+    }
+
     public function template(): StreamedResponse
     {
         $spreadsheet = new Spreadsheet;
@@ -37,7 +47,7 @@ class QuestionBulkImportService
         $sheet->setTitle('Questions');
         $sheet->setCellValue('A1', 'National Olympiad Hunt - Bulk Question Import');
         $sheet->mergeCells('A1:O1');
-        $sheet->setCellValue('A2', 'Fields marked * are required. Row 5 is a live demo based on your current setup and is ignored unless you replace its demo question text. Class Levels accepts one dropdown value or multiple values separated by | (example: Class 5|Class 6). Correct Options uses A, B, C or D; use | for multiple-correct questions.');
+        $sheet->setCellValue('A2', 'Fields marked * are required. Row 5 is a live demo based on your current setup and is ignored unless you replace its demo question text. Class Levels accepts one dropdown value or multiple values separated by | (example: Class 5|Class 6). Correct Options uses A, B, C or D; use | for multiple-correct questions. Category: pick one from the list or type a new name - it is created for that row\'s subject when you confirm the import.');
         $sheet->mergeCells('A2:O2');
         $sheet->getStyle('A2')->getAlignment()->setWrapText(true);
         $sheet->fromArray(self::HEADERS, null, 'A4');
@@ -121,7 +131,10 @@ class QuestionBulkImportService
     {
         $reader = IOFactory::createReaderForFile($file->getRealPath());
         $reader->setReadDataOnly(true);
-        $rows = $reader->load($file->getRealPath())->getActiveSheet()->toArray('', true, true, false);
+        // The template's data sheet is "Questions"; fall back to the active sheet for workbooks
+        // that were renamed. (Saving the file while another sheet was open must not break it.)
+        $book = $reader->load($file->getRealPath());
+        $rows = ($book->getSheetByName('Questions') ?? $book->getActiveSheet())->toArray('', true, true, false);
         $found = array_map(fn ($value) => trim((string) $value), array_slice($rows[3] ?? [], 0, count($headers)));
 
         if ($found !== $headers) {
@@ -168,7 +181,10 @@ class QuestionBulkImportService
         })->all();
     }
 
-    public function commit(array $questions, int $createdBy): int
+    /**
+     * @return array{questions: int, categories: list<string>}
+     */
+    public function commit(array $questions, int $createdBy): array
     {
         $questions = $this->validateRows($questions);
         $hasErrors = collect($questions)->contains(fn (array $question) => $question['errors'] !== []);
@@ -184,7 +200,9 @@ class QuestionBulkImportService
             throw \Illuminate\Validation\ValidationException::withMessages($messages);
         }
 
-        return DB::transaction(function () use ($questions, $createdBy): int {
+        return DB::transaction(function () use ($questions, $createdBy): array {
+            ['questions' => $questions, 'created' => $createdCategories] = $this->createMissingCategories($questions);
+
             foreach ($questions as $question) {
                 $data = $this->questionAttributes($question);
                 $classLevelIds = $data['class_level_ids'];
@@ -195,8 +213,55 @@ class QuestionBulkImportService
                 $record->classLevels()->sync($classLevelIds);
             }
 
-            return count($questions);
+            return ['questions' => count($questions), 'categories' => $createdCategories];
         });
+    }
+
+    /**
+     * Gives every row that names a category not yet in the bank a real category id, creating each
+     * missing (subject, name) pair once as a top-level active category. Call inside the commit
+     * transaction, after validation. Rows that already point at a category are left untouched.
+     *
+     * @return array{questions: array, created: list<string>}
+     */
+    public function createMissingCategories(array $questions): array
+    {
+        $resolved = [];
+        $created = [];
+
+        foreach ($questions as $index => $question) {
+            $name = $this->normalizeCategoryName((string) ($question['new_category'] ?? ''));
+            $subjectId = (int) ($question['subject_id'] ?? 0);
+
+            if (filled($question['question_category_id'] ?? null) || $name === '' || ! $subjectId) {
+                continue;
+            }
+
+            $key = $subjectId.'|'.Str::lower($name);
+            if (! isset($resolved[$key])) {
+                $existing = $this->categoryNamed($name, $subjectId);
+
+                if ($existing?->is_active) {
+                    $resolved[$key] = $existing->id;
+                } else {
+                    $category = QuestionCategory::create([
+                        'subject_id' => $subjectId,
+                        'parent_id' => null,
+                        'name' => $name,
+                        'slug' => QuestionCategory::uniqueSlug($name, $subjectId),
+                        'is_active' => true,
+                        'sort_order' => (int) QuestionCategory::where('subject_id', $subjectId)->whereNull('parent_id')->max('sort_order') + 1,
+                    ]);
+                    $resolved[$key] = $category->id;
+                    $created[] = $name.' ('.Subject::whereKey($subjectId)->value('name').')';
+                }
+            }
+
+            $questions[$index]['question_category_id'] = $resolved[$key];
+            $questions[$index]['new_category'] = '';
+        }
+
+        return ['questions' => $questions, 'created' => $created];
     }
 
     private function parseRow(array $row, int $sourceRow): array
@@ -204,13 +269,12 @@ class QuestionBulkImportService
         [$subject, $classes, $category, $difficulty, $type, $text, $a, $b, $c, $d, $correct, $marks, $negative, $explanation, $active] = array_pad($row, 15, '');
         $subjectId = Subject::where('is_active', true)->whereRaw('LOWER(name) = ?', [Str::lower(trim((string) $subject))])->value('id');
         $classLevelIds = $this->classLevelIds((string) $classes);
-        $categoryId = $this->categoryId((string) $category, $subjectId);
 
         return [
             'source_row' => $sourceRow,
             'subject_id' => $subjectId ?: '',
             'class_level_ids' => $classLevelIds,
-            'question_category_id' => $categoryId ?: '',
+            ...$this->categoryFields((string) $category, $subjectId),
             'difficulty' => Str::lower(trim((string) $difficulty)),
             'question_type' => Str::lower(trim((string) $type)),
             'question_text' => trim((string) $text),
@@ -219,7 +283,7 @@ class QuestionBulkImportService
             'option_c' => trim((string) $c),
             'option_d' => trim((string) $d),
             'correct_options' => $this->correctOptions((string) $correct),
-            'marks' => is_numeric($marks) ? (int) $marks : $marks,
+            'marks' => $this->parseMarks($marks),
             'negative_marks' => is_numeric($negative) ? (float) $negative : (trim((string) $negative) === '' ? null : $negative),
             'explanation' => trim((string) $explanation),
             'is_active' => in_array(Str::lower(trim((string) $active)), ['yes', '1', 'true'], true),
@@ -252,6 +316,8 @@ class QuestionBulkImportService
         if (filled($question['question_category_id'] ?? null) && ! QuestionCategory::whereKey($question['question_category_id'])
             ->where('subject_id', $question['subject_id'] ?? null)->exists()) {
             $errors['question_category_id'][] = 'Category must belong to the selected subject.';
+        } elseif (! filled($question['question_category_id'] ?? null) && ($message = $this->newCategoryError($question))) {
+            $errors['question_category_id'][] = $message;
         }
         if (($question['question_type'] ?? null) === 'single' && count($question['correct_options'] ?? []) !== 1) {
             $errors['correct_options'][] = 'Single-correct questions need exactly one correct option.';
@@ -328,16 +394,97 @@ class QuestionBulkImportService
             ->pluck('id')->values()->all();
     }
 
-    public function categoryId(string $category, ?int $subjectId): ?int
+    /**
+     * Maps the workbook's Category cell to row fields. Accepts a plain name ("Verbs") or the
+     * template's "Subject: Name" form. An existing active category of the row's subject is linked
+     * by id; any other name is kept in new_category so the review page can show it and commit()
+     * can create it. Nothing typed in the cell is ever dropped silently.
+     *
+     * @return array{category_name: string, question_category_id: int|string, new_category: string}
+     */
+    public function categoryFields(string $category, ?int $subjectId): array
     {
-        if (! filled(trim($category)) || ! $subjectId) {
-            return null;
+        $raw = $this->normalizeCategoryName($category);
+        $fields = ['category_name' => $raw, 'question_category_id' => '', 'new_category' => ''];
+
+        if ($raw === '') {
+            return $fields;
         }
 
-        $name = trim(Str::after($category, ':'));
+        $name = $raw;
+        if ($subjectId && ! $this->categoryNamed($raw, $subjectId) && str_contains($raw, ':')) {
+            $prefix = trim(Str::before($raw, ':'));
+            if (Subject::whereKey($subjectId)->whereRaw('LOWER(name) = ?', [Str::lower($prefix)])->exists()) {
+                $name = $this->normalizeCategoryName(Str::after($raw, ':'));
+            }
+        }
 
-        return QuestionCategory::active()->where('subject_id', $subjectId)
-            ->whereRaw('LOWER(name) = ?', [Str::lower($name)])->value('id');
+        $existing = $subjectId ? $this->categoryNamed($name, $subjectId) : null;
+        if ($existing?->is_active) {
+            $fields['question_category_id'] = $existing->id;
+        } else {
+            $fields['new_category'] = $name;
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Why a row's not-yet-existing category cannot be created, or null when it can.
+     */
+    private function newCategoryError(array $question): ?string
+    {
+        $name = $this->normalizeCategoryName((string) ($question['new_category'] ?? ''));
+        $subjectId = (int) ($question['subject_id'] ?? 0);
+
+        if ($name === '' || ! $subjectId) {
+            return null;
+        }
+        if (Str::length($name) > 120) {
+            return 'Category names can be at most 120 characters.';
+        }
+
+        $existing = $this->categoryNamed($name, $subjectId);
+        if ($existing && ! $existing->is_active) {
+            return "Category \"{$name}\" exists for this subject but is inactive. Re-activate it in Settings → Categories or choose another category.";
+        }
+
+        if (! $existing && str_contains($name, ':')) {
+            $owner = Subject::whereKeyNot($subjectId)
+                ->whereRaw('LOWER(name) = ?', [Str::lower(trim(Str::before($name, ':')))])
+                ->value('name');
+            if ($owner) {
+                return "\"{$name}\" is a {$owner} category. Choose a category of this row's subject.";
+            }
+        }
+
+        return null;
+    }
+
+    private function categoryNamed(string $name, int $subjectId): ?QuestionCategory
+    {
+        return QuestionCategory::where('subject_id', $subjectId)
+            ->whereRaw('LOWER(name) = ?', [Str::lower($name)])
+            ->orderByDesc('is_active')->orderBy('id')
+            ->first();
+    }
+
+    private function normalizeCategoryName(string $name): string
+    {
+        return (string) Str::of($name)->squish();
+    }
+
+    /**
+     * Whole numbers become ints; anything else (e.g. "1.5", "two") is kept as typed so validation
+     * reports it instead of the value being silently truncated.
+     */
+    public function parseMarks(mixed $marks): mixed
+    {
+        if (is_numeric($marks) && (float) $marks === (float) (int) $marks) {
+            return (int) $marks;
+        }
+
+        return is_string($marks) ? trim($marks) : $marks;
     }
 
     public function correctOptions(string $correct): array

@@ -10,6 +10,10 @@
           {{ newCount }} new to the Question Bank · {{ form.questions.length - newCount }} reused from the bank.
           Nothing is saved until you confirm.
         </p>
+        <p v-if="newCategories.length" class="text-xs text-royal mt-1">
+          <span class="font-bold">{{ newCategories.length }} new categor{{ newCategories.length === 1 ? 'y' : 'ies' }} will be created:</span>
+          {{ newCategories.join(', ') }}
+        </p>
       </div>
       <div class="flex items-center gap-3">
         <span :class="hasErrors ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success'" class="rounded-lg px-3 py-1.5 text-xs font-bold">
@@ -144,7 +148,7 @@ import { computed } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ImportQuestionFields from '@/Pages/Admin/Questions/Components/ImportQuestionFields.vue';
-import { normalizeImportRow, questionRowErrors, useServerRowErrors } from '@/Pages/Admin/Questions/Components/importRows';
+import { normalizeImportRow, pendingNewCategories, questionRowErrors, useServerRowErrors } from '@/Pages/Admin/Questions/Components/importRows';
 import { confirmDialog } from '@/composables/useConfirm';
 
 const props = defineProps({
@@ -218,6 +222,7 @@ function rowErrors(question) {
 const invalidCount = computed(() => form.questions.filter((question) => rowErrors(question).length).length);
 const hasErrors = computed(() => invalidCount.value > 0);
 const newCount = computed(() => form.questions.filter((question) => !question.bank_question).length);
+const newCategories = computed(() => pendingNewCategories(form.questions, props.subjects));
 const generalError = computed(() => Object.entries(form.errors).find(([key]) => !key.startsWith('questions.'))?.[1]);
 
 function renameGroup(group, value) {

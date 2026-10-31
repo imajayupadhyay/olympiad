@@ -7,7 +7,6 @@ use App\Models\QuestionCategory;
 use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -118,19 +117,7 @@ class QuestionCategoryController extends Controller
 
     private function uniqueSlug(string $name, int $subjectId, ?int $ignoreId = null): string
     {
-        $base = Str::slug($name) ?: 'category';
-        $slug = $base;
-        $suffix = 2;
-
-        while (QuestionCategory::where('subject_id', $subjectId)
-            ->where('slug', $slug)
-            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
-            ->exists()) {
-            $slug = "{$base}-{$suffix}";
-            $suffix++;
-        }
-
-        return $slug;
+        return QuestionCategory::uniqueSlug($name, $subjectId, $ignoreId);
     }
 
     private function categoryPayloads(Collection $categories): array

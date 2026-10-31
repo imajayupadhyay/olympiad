@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ClassLevel;
 use App\Models\Exam;
 use App\Models\Question;
+use App\Models\QuestionCategory;
 use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,11 +20,17 @@ class AdminExamQuestionImportTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private Subject $math;
+
     private Subject $reasoning;
+
     private ClassLevel $classSix;
+
     private ClassLevel $classSeven;
+
     private Exam $exam;
+
     private Question $existingMath;
 
     protected function setUp(): void
@@ -205,6 +212,60 @@ class AdminExamQuestionImportTest extends TestCase
 
         $this->assertSame(1, Question::count());
         $this->assertSame(1, $this->exam->sections()->count());
+    }
+
+    public function test_categories_in_the_workbook_are_created_per_subject_and_reused_on_the_next_import(): void
+    {
+        $verbs = $this->row('Reasoning', 'Logical Reasoning', 'Which word is an action?');
+        $verbs[3] = 'Verbs';
+        $again = $this->row('Reasoning', 'Logical Reasoning', 'Pick the action word.');
+        $again[3] = 'VERBS';
+        $math = $this->row('Mathematics', 'Mathematics', 'What is 9 + 9?');
+        $math[3] = 'Verbs';
+
+        $staged = $this->stage($verbs, $again, $math);
+        $this->assertSame(['Verbs', 'VERBS', 'Verbs'], array_column($staged, 'new_category'));
+        $this->assertSame([[], [], []], array_column($staged, 'errors'));
+
+        $this->actingAs($this->admin)->post(route('admin.exams.import.store', $this->exam), ['mode' => 'append', 'questions' => $staged])
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('success', fn (string $message) => str_contains($message, '2 new categories created: Verbs (Logical Reasoning), Verbs (Mathematics).'));
+
+        // One category per subject, shared by every row that named it.
+        $reasoningVerbs = QuestionCategory::where('subject_id', $this->reasoning->id)->sole();
+        $mathVerbs = QuestionCategory::where('subject_id', $this->math->id)->sole();
+        $this->assertSame(2, Question::where('question_category_id', $reasoningVerbs->id)->count());
+        $this->assertSame(1, Question::where('question_category_id', $mathVerbs->id)->count());
+
+        // A later workbook naming the same category links to it instead of creating another.
+        $next = $this->row('Reasoning', 'Logical Reasoning', 'Which word shows doing?');
+        $next[3] = 'verbs';
+        $staged = $this->stage($next);
+        $this->assertSame($reasoningVerbs->id, $staged[0]['question_category_id']);
+        $this->assertSame('', $staged[0]['new_category']);
+    }
+
+    public function test_a_new_category_cannot_land_outside_the_exams_category_scope(): void
+    {
+        $scope = QuestionCategory::create(['subject_id' => $this->math->id, 'name' => 'Arithmetic', 'slug' => 'arithmetic', 'is_active' => true, 'sort_order' => 1]);
+        $this->exam->update(['question_category_id' => $scope->id]);
+        $row = $this->row('Mathematics', 'Mathematics', 'What is 3 x 3?');
+        $row[3] = 'Geometry';
+
+        $staged = $this->stage($row);
+
+        $this->assertStringContainsString('New category "Geometry" would be outside this exam\'s category scope', $staged[0]['errors']['question_category_id']);
+        $this->actingAs($this->admin)->post(route('admin.exams.import.store', $this->exam), ['mode' => 'append', 'questions' => $staged])
+            ->assertSessionHasErrors('questions.0.question_category_id');
+        $this->assertSame(1, QuestionCategory::count());
+    }
+
+    private function stage(array ...$rows): array
+    {
+        $this->actingAs($this->admin)->post(route('admin.exams.import.upload', $this->exam), ['file' => $this->workbook(...$rows)])
+            ->assertRedirect(route('admin.exams.import.preview', $this->exam));
+
+        return $this->actingAs($this->admin)->get(route('admin.exams.import.preview', $this->exam))->viewData('page')['props']['questions'];
     }
 
     private function bankQuestion(Subject $subject, string $text, ?ClassLevel $classLevel = null): Question

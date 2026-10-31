@@ -61,13 +61,14 @@ class QuestionBulkImportController extends Controller
             'questions' => ['required', 'array', 'min:1', 'max:'.QuestionBulkImportService::MAX_ROWS],
             'questions.*' => ['array'],
         ]);
-        $count = $imports->commit($data['questions'], $request->user()->id);
+        $result = $imports->commit($data['questions'], $request->user()->id);
         $token = $request->session()->pull('question_bulk_import_token');
         if ($token) {
             Cache::forget($this->cacheKey($request, $token));
         }
 
-        return redirect()->route('admin.questions.index')->with('success', "{$count} questions imported successfully.");
+        return redirect()->route('admin.questions.index')->with('success', "{$result['questions']} questions imported successfully."
+            .QuestionBulkImportService::createdCategoriesNote($result['categories']));
     }
 
     private function metadata(): array

@@ -11,6 +11,7 @@ use App\Services\QuestionBulkImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Inertia\Testing\AssertableInertia as Assert;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
@@ -20,8 +21,11 @@ class AdminQuestionBulkImportTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private Subject $science;
+
     private ClassLevel $classFive;
+
     private QuestionCategory $category;
 
     protected function setUp(): void
@@ -141,6 +145,106 @@ class AdminQuestionBulkImportTest extends TestCase
                 ->has('questions', 1)
                 ->where('questions.0.source_row', 6)
                 ->where('questions.0.errors', []));
+    }
+
+    public function test_a_category_that_does_not_exist_yet_is_previewed_and_created_once_on_confirm(): void
+    {
+        $first = $this->sheetRow();
+        $first[2] = 'Magnetism';
+        $second = $this->sheetRow();
+        $second[2] = '  magnetism ';
+        $second[5] = 'What does a compass point to?';
+
+        $this->actingAs($this->admin)->post(route('admin.questions.import.upload'), ['file' => $this->workbook($first, $second)]);
+        $page = $this->actingAs($this->admin)->get(route('admin.questions.import.preview'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('questions.0.category_name', 'Magnetism')
+                ->where('questions.0.question_category_id', '')
+                ->where('questions.0.new_category', 'Magnetism')
+                ->where('questions.0.errors', [])
+                ->where('questions.1.new_category', 'magnetism'))
+            ->viewData('page');
+
+        $this->assertSame(1, QuestionCategory::count(), 'Nothing is created before confirming');
+
+        $this->actingAs($this->admin)->post(route('admin.questions.import.store'), ['questions' => $page['props']['questions']])
+            ->assertRedirect(route('admin.questions.index'))
+            ->assertSessionHas('success', '2 questions imported successfully. 1 new category created: Magnetism (Science).');
+
+        $created = QuestionCategory::where('subject_id', $this->science->id)->where('name', 'Magnetism')->sole();
+        $this->assertTrue($created->is_active);
+        $this->assertNull($created->parent_id);
+        $this->assertSame([$created->id, $created->id], Question::orderBy('id')->pluck('question_category_id')->all());
+    }
+
+    public function test_existing_categories_match_by_plain_or_prefixed_name_case_insensitively(): void
+    {
+        foreach (['physics', 'Science: PHYSICS', 'Physics'] as $index => $cell) {
+            $row = $this->sheetRow();
+            $row[2] = $cell;
+            $row[5] = "Question {$index}";
+            $rows[] = $row;
+        }
+
+        $this->actingAs($this->admin)->post(route('admin.questions.import.upload'), ['file' => $this->workbook(...$rows)]);
+        $this->actingAs($this->admin)->get(route('admin.questions.import.preview'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('questions.0.question_category_id', $this->category->id)
+                ->where('questions.1.question_category_id', $this->category->id)
+                ->where('questions.2.question_category_id', $this->category->id)
+                ->where('questions.2.new_category', ''));
+    }
+
+    public function test_inactive_or_other_subject_categories_are_reported_instead_of_dropped(): void
+    {
+        QuestionCategory::create(['subject_id' => $this->science->id, 'name' => 'Optics', 'slug' => 'optics', 'is_active' => false, 'sort_order' => 2]);
+        $math = Subject::create(['name' => 'Mathematics', 'slug' => 'mathematics', 'is_active' => true, 'sort_order' => 2]);
+        QuestionCategory::create(['subject_id' => $math->id, 'name' => 'Algebra', 'slug' => 'algebra', 'is_active' => true, 'sort_order' => 1]);
+
+        $inactive = $this->sheetRow();
+        $inactive[2] = 'Optics';
+        $otherSubject = $this->sheetRow();
+        $otherSubject[2] = 'Mathematics: Algebra';
+        $otherSubject[5] = 'Another question';
+
+        $this->actingAs($this->admin)->post(route('admin.questions.import.upload'), ['file' => $this->workbook($inactive, $otherSubject)]);
+        $page = $this->actingAs($this->admin)->get(route('admin.questions.import.preview'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('questions.0.errors.question_category_id', 'Category "Optics" exists for this subject but is inactive. Re-activate it in Settings → Categories or choose another category.')
+                ->where('questions.1.errors.question_category_id', '"Mathematics: Algebra" is a Mathematics category. Choose a category of this row\'s subject.'))
+            ->viewData('page');
+
+        $this->actingAs($this->admin)->post(route('admin.questions.import.store'), ['questions' => $page['props']['questions']])
+            ->assertSessionHasErrors(['questions.0.question_category_id', 'questions.1.question_category_id']);
+        $this->assertSame(0, Question::count());
+        $this->assertSame(3, QuestionCategory::count());
+    }
+
+    public function test_fractional_marks_are_reported_instead_of_truncated(): void
+    {
+        $row = $this->sheetRow();
+        $row[11] = 1.5;
+
+        $this->actingAs($this->admin)->post(route('admin.questions.import.upload'), ['file' => $this->workbook($row)]);
+        $this->actingAs($this->admin)->get(route('admin.questions.import.preview'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('questions.0.marks', '1.5')
+                ->has('questions.0.errors.marks'));
+    }
+
+    public function test_questions_sheet_is_read_even_when_another_sheet_was_active_on_save(): void
+    {
+        $file = $this->workbook($this->sheetRow());
+        $book = IOFactory::load($file->getRealPath());
+        $book->getActiveSheet()->setTitle('Questions');
+        $book->createSheet()->setTitle('Notes')->setCellValue('A1', 'scratch');
+        $book->setActiveSheetIndexByName('Notes');
+        $path = tempnam(sys_get_temp_dir(), 'question-import-');
+        (new Xlsx($book))->save($path);
+
+        $this->actingAs($this->admin)->post(route('admin.questions.import.upload'), [
+            'file' => UploadedFile::fake()->createWithContent('questions.xlsx', file_get_contents($path)),
+        ])->assertRedirect(route('admin.questions.import.preview'));
     }
 
     private function sheetRow(): array

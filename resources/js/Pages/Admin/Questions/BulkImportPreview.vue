@@ -4,6 +4,10 @@
       <div>
         <p class="font-heading font-bold text-text-main">{{ form.questions.length }} questions ready for review</p>
         <p class="text-sm text-text-muted mt-0.5">{{ form.processing ? 'Saving the reviewed questions to the question bank…' : 'Changes stay in this review until you confirm the import.' }}</p>
+        <p v-if="newCategories.length" class="text-xs text-royal mt-1">
+          <span class="font-bold">{{ newCategories.length }} new categor{{ newCategories.length === 1 ? 'y' : 'ies' }} will be created:</span>
+          {{ newCategories.join(', ') }}
+        </p>
       </div>
       <div class="flex items-center gap-2">
         <span :class="hasErrors ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success'" class="rounded-lg px-3 py-1.5 text-xs font-bold">
@@ -53,7 +57,7 @@ import { computed } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ImportQuestionFields from './Components/ImportQuestionFields.vue';
-import { normalizeImportRow, questionRowErrors, useServerRowErrors } from './Components/importRows';
+import { normalizeImportRow, pendingNewCategories, questionRowErrors, useServerRowErrors } from './Components/importRows';
 
 const props = defineProps({
   questions: Array,
@@ -69,6 +73,12 @@ const form = useForm({
 });
 
 const serverErrors = useServerRowErrors();
+// Category problems only the server can see (inactive category, another subject's category) are
+// carried over from the upload; they clear as soon as that row is edited.
+serverErrors.pin(Object.fromEntries(form.questions.flatMap((question, index) => Object.entries(question.errors || {})
+  .filter(([field]) => field === 'question_category_id')
+  .map(([field, message]) => [`questions.${index}.${field}`, message]))), form.questions);
+const newCategories = computed(() => pendingNewCategories(form.questions, props.subjects));
 const rowErrors = (question) => [...new Set([...questionRowErrors(question, props.categories), ...serverErrors.errorsFor(question)])];
 const invalidCount = computed(() => form.questions.filter((question) => rowErrors(question).length).length);
 const hasErrors = computed(() => invalidCount.value > 0);

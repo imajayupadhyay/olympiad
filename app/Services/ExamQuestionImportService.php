@@ -48,7 +48,9 @@ class ExamQuestionImportService
             'One row per question, in the order students should see them. Section groups rows into sections (in order of first appearance); every row of a section must use the same Subject.',
             "Class Levels may be left blank - {$exam->classLevel?->label} is always added.",
             'To reuse an existing bank question, fill only Section and Question Bank ID.',
-            'Correct Options uses A-D; separate multiple answers with |. Row 5 is a demo and is ignored unless you replace its question text.',
+            'Correct Options uses A-D; separate multiple answers with |.',
+            'Category: pick one from the list or type a new name - it is created for that row\'s subject when you confirm the import.',
+            'Row 5 is a demo and is ignored unless you replace its question text.',
         ]));
         $sheet->mergeCells('A2:P2');
         $sheet->getStyle('A2')->getAlignment()->setWrapText(true);
@@ -148,7 +150,9 @@ class ExamQuestionImportService
 
                 if ($categoryScope && $subjectId === (int) $exam->subject_id && ! isset($errors['question_category_id'])
                     && ! $categoryScope->contains((int) ($row['question_category_id'] ?: 0))) {
-                    $errors['question_category_id'] = 'Choose a category inside this exam\'s category scope.';
+                    $errors['question_category_id'] = filled($row['new_category'] ?? null) && ! filled($row['question_category_id'] ?? null)
+                        ? "New category \"{$row['new_category']}\" would be outside this exam's category scope. Choose an existing category inside the scope."
+                        : 'Choose a category inside this exam\'s category scope.';
                 }
                 if (! in_array((int) $exam->class_level_id, array_map('intval', $row['class_level_ids'] ?? []), true)) {
                     $errors['class_level_ids'] = "Include {$classLabel}, the class this exam is for.";
@@ -182,7 +186,7 @@ class ExamQuestionImportService
     }
 
     /**
-     * @return array{created: int, reused: int, sections: int}
+     * @return array{created: int, reused: int, sections: int, categories: list<string>}
      */
     public function commit(Exam $exam, array $rows, string $mode, int $createdBy): array
     {
@@ -200,6 +204,9 @@ class ExamQuestionImportService
         return DB::transaction(function () use ($exam, $rows, $mode, $createdBy) {
             $groups = [];
             $created = 0;
+            ['questions' => $rows, 'created' => $createdCategories] = $this->bank->createMissingCategories(
+                array_map(fn (array $row) => $row['bank_question'] ? [...$row, 'new_category' => ''] : $row, $rows)
+            );
 
             foreach ($rows as $row) {
                 if ($row['bank_question']) {
@@ -245,7 +252,7 @@ class ExamQuestionImportService
             $this->sections->sync($exam, $structure);
             $exam->update(['updated_by' => $createdBy]);
 
-            return ['created' => $created, 'reused' => count($rows) - $created, 'sections' => count($groups)];
+            return ['created' => $created, 'reused' => count($rows) - $created, 'sections' => count($groups), 'categories' => $createdCategories];
         });
     }
 
@@ -262,7 +269,7 @@ class ExamQuestionImportService
             'question_bank_id' => $bankId === '' ? null : (ctype_digit($bankId) ? (int) $bankId : $bankId),
             'subject_id' => $subjectId ?: '',
             'class_level_ids' => $classLevelIds,
-            'question_category_id' => $this->bank->categoryId((string) $category, $subjectId) ?: '',
+            ...$this->bank->categoryFields((string) $category, $subjectId),
             'difficulty' => Str::lower(trim((string) $difficulty)),
             'question_type' => Str::lower(trim((string) $type)),
             'question_text' => trim((string) $text),
@@ -271,7 +278,7 @@ class ExamQuestionImportService
             'option_c' => trim((string) $c),
             'option_d' => trim((string) $d),
             'correct_options' => $this->bank->correctOptions((string) $correct),
-            'marks' => is_numeric($marks) ? (int) $marks : $marks,
+            'marks' => $this->bank->parseMarks($marks),
             'negative_marks' => is_numeric($negative) ? (float) $negative : (trim((string) $negative) === '' ? null : $negative),
             'explanation' => trim((string) $explanation),
             'errors' => [],

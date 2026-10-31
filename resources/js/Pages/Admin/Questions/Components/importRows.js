@@ -7,6 +7,11 @@ export const normalizeImportRow = (question) => ({
   ...question,
   subject_id: question.subject_id ? Number(question.subject_id) : '',
   question_category_id: question.question_category_id ? Number(question.question_category_id) : '',
+  // category_name = what the Excel cell said; new_category = a name to create on confirm ('' = none).
+  category_name: question.category_name || '',
+  new_category: question.question_category_id ? '' : (question.new_category || ''),
+  // Kept on the row (not in the component) so "New: …" can be re-selected after switching away.
+  suggested_category: question.suggested_category ?? (question.new_category || ''),
   class_level_ids: (question.class_level_ids || []).map(Number),
   correct_options: question.correct_options || [],
   is_active: question.is_active === undefined ? true : Boolean(question.is_active),
@@ -18,6 +23,17 @@ export const categoriesForRow = (categories, question) => (categories || [])
   .filter((category) => Number(category.subject_id) === Number(question.subject_id));
 
 /**
+ * Distinct "Subject · Category" labels that confirming will create (rows naming a category that
+ * does not exist yet and are not linked to an existing one).
+ */
+export const pendingNewCategories = (questions, subjects) => [...new Map(questions
+  .filter((question) => !question.bank_question && !question.question_category_id && required(question.new_category) && question.subject_id)
+  .map((question) => {
+    const subject = (subjects || []).find((item) => Number(item.id) === Number(question.subject_id))?.name || 'Subject';
+    return [`${question.subject_id}|${question.new_category.trim().toLowerCase()}`, `${subject} · ${question.new_category.trim()}`];
+  })).values()];
+
+/**
  * Client-side mirror of QuestionBulkImportService::questionErrors().
  */
 export function questionRowErrors(question, categories) {
@@ -25,6 +41,7 @@ export function questionRowErrors(question, categories) {
   if (!question.subject_id) errors.push('Choose a subject');
   if (!question.class_level_ids.length) errors.push('Choose at least one class level');
   if (question.question_category_id && !categoriesForRow(categories, question).some((category) => Number(category.id) === Number(question.question_category_id))) errors.push('Category must belong to the subject');
+  if (!question.question_category_id && String(question.new_category ?? '').trim().length > 120) errors.push('Category names can be at most 120 characters');
   if (!['easy', 'medium', 'hard'].includes(question.difficulty)) errors.push('Choose a valid difficulty');
   if (!['single', 'multiple'].includes(question.question_type)) errors.push('Choose a valid question type');
   if (!required(question.question_text)) errors.push('Question text is required');
