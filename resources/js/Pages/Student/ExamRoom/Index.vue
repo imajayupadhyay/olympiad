@@ -3,6 +3,7 @@ import ExamRoomLayout from '@/Layouts/ExamRoomLayout.vue';
 import AppLogo from '@/Components/Shared/AppLogo.vue';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { confirmDialog } from '@/composables/useConfirm';
 
 const props = defineProps({
     attempt: { type: Object, required: true },
@@ -10,7 +11,12 @@ const props = defineProps({
     questions: { type: Array, default: () => [] },
     sections: { type: Array, default: () => [] },
     remaining_seconds: { type: Number, default: 0 },
+    // Admin simulator (Admin/Exams/Preview): same room, but nothing is sent to the student
+    // endpoints. Answers stay in memory and submit emits `finish` instead of posting.
+    preview: { type: Boolean, default: false },
 });
+
+const emit = defineEmits(['finish', 'exit']);
 
 const MAX_STRIKES = 3;
 
@@ -28,6 +34,7 @@ const isFullscreen = ref(false);
 let timer = null;
 let saveTimer = null;
 let warnedAt = { 300: false, 60: false };
+let startedAt = null;
 
 // answers: qid -> { selected:[], flagged:bool, visited:bool }
 const answers = reactive({});
@@ -118,6 +125,7 @@ function onFsChange() { isFullscreen.value = !!document.fullscreenElement; }
 
 async function begin() {
     begun.value = true;
+    startedAt = Date.now();
     answers[q.value.id].visited = true;
     try { await document.documentElement.requestFullscreen(); } catch (_) { /* ignore */ }
     document.addEventListener('visibilitychange', onVisibility);
@@ -166,6 +174,11 @@ function queueSave(qid) {
 }
 async function save(qid) {
     const a = answers[qid];
+    if (props.preview) {          // simulator: keep the indicator, skip the network
+        clearTimeout(saveTimer);
+        saveState.value = 'saved';
+        return;
+    }
     try {
         await window.axios.post(route('student.exam-room.answer', props.attempt.id), {
             question_id: qid,
@@ -192,9 +205,37 @@ function doSubmit(reason = 'manual') {
     submitting.value = true;
     clearInterval(timer);
     window.removeEventListener('beforeunload', onBeforeUnload);
+    if (props.preview) {
+        stopEverything();
+        leaveFullscreen();
+        emit('finish', {
+            reason,
+            time_taken_seconds: startedAt ? Math.round((Date.now() - startedAt) / 1000) : 0,
+            answers: props.questions.map((qq) => ({ question_id: qq.id, selected_options: [...answers[qq.id].selected] })),
+        });
+        return;
+    }
     router.post(route('student.exam-room.submit', props.attempt.id), { reason }, {
-        onFinish: () => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); },
+        onFinish: () => leaveFullscreen(),
     });
+}
+function leaveFullscreen() { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); }
+
+/* ── preview only ── */
+async function exitPreview() {
+    if (begun.value) {
+        const leave = await confirmDialog({
+            title: 'Exit the preview?',
+            message: 'Your answers in this preview will be discarded. Nothing is saved either way.',
+            confirmText: 'Exit preview',
+            cancelText: 'Keep going',
+            tone: 'warning',
+        });
+        if (!leave) return;
+    }
+    stopEverything();
+    leaveFullscreen();
+    emit('exit');
 }
 </script>
 
@@ -205,6 +246,10 @@ function doSubmit(reason = 'manual') {
         <!-- ── instructions / start gate ── -->
         <div v-if="!begun" class="gate">
             <div class="gate-card">
+                <div v-if="preview" class="preview-note">
+                    <strong>Admin preview</strong>
+                    This is exactly what students see. Nothing you do here is recorded: no attempt, score, rank or result.
+                </div>
                 <span class="gate-eyebrow">Test Portal</span>
                 <h1>{{ exam.name }}</h1>
                 <ul class="gate-facts">
@@ -224,6 +269,7 @@ function doSubmit(reason = 'manual') {
                     <li>Your answers save automatically. The test submits on its own when time runs out.</li>
                 </ul>
                 <button class="begin" @click="begin">Enter full-screen &amp; start →</button>
+                <button v-if="preview" type="button" class="preview-exit-link" @click="exitPreview">← Exit preview</button>
             </div>
         </div>
 
@@ -236,6 +282,10 @@ function doSubmit(reason = 'manual') {
                     <h2>{{ exam.name }}</h2>
                 </div>
                 <div class="bar-r">
+                    <template v-if="preview">
+                        <span class="preview-pill" title="Admin preview: nothing is recorded">Preview</span>
+                        <button type="button" class="preview-exit" @click="exitPreview">Exit</button>
+                    </template>
                     <span class="save" :class="saveState">{{ saveState === 'saving' ? 'Saving…' : (saveState === 'saved' ? 'Saved' : '') }}</span>
                     <div class="clock" :class="{ low: timeLow }">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
@@ -475,6 +525,16 @@ function doSubmit(reason = 'manual') {
 .modal-actions { display: flex; gap: .7rem; justify-content: flex-end; }
 .modal-enter-active, .modal-leave-active { transition: opacity .25s; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
+
+/* ── admin preview only ── */
+.preview-note { margin: 0 0 1.1rem; padding: .7rem .85rem; border-radius: 12px; background: rgba(214,153,31,.12); border: 1px solid rgba(214,153,31,.35); font-size: .82rem; line-height: 1.5; color: #41485a; }
+.preview-note strong { display: block; color: #B45309; font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; margin-bottom: .15rem; }
+.preview-exit-link { display: block; margin: .8rem auto 0; border: 0; background: none; color: #5B6373; font-weight: 600; font-size: .86rem; cursor: pointer; }
+.preview-exit-link:hover { color: #0A1024; text-decoration: underline; }
+.preview-pill { font-family: "Space Grotesk", monospace; font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #B45309; background: rgba(214,153,31,.15); border: 1px solid rgba(214,153,31,.4); padding: .25rem .55rem; border-radius: 999px; }
+.preview-exit { border: 1px solid #E7D9BE; background: #fff; color: #41485a; font-weight: 600; font-size: .8rem; padding: .4rem .75rem; border-radius: 10px; cursor: pointer; }
+.preview-exit:hover { border-color: #c9bda0; }
+@media (max-width: 560px) { .preview-pill { display: none; } }
 
 @media (max-width: 820px) {
     .body { flex-direction: column; }

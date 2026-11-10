@@ -20,8 +20,18 @@ class ExamSectionScoreService
     public function breakdown(ExamAttempt $attempt, ?Exam $exam = null): array
     {
         $exam ??= $attempt->exam;
+
+        return $this->rollUp($exam, $attempt->answers()->get()->keyBy('question_id'));
+    }
+
+    /**
+     * Section rows from marked answers keyed by question_id. Each answer is an Answer model
+     * or an array with selected_options / is_correct / marks_awarded (the admin preview
+     * passes ExamScoringService::preview() rows, which are never stored).
+     */
+    public function rollUp(Exam $exam, Collection $answers): array
+    {
         $exam->loadMissing('sections', 'questions');
-        $answers = $attempt->answers()->get()->keyBy('question_id');
         $bySection = $exam->questions->groupBy(fn (Question $question) => $question->pivot->exam_section_id ?? 0);
 
         $sections = $exam->sections->map(fn ($section) => ['id' => $section->id, 'name' => $section->name]);
@@ -47,14 +57,14 @@ class ExamSectionScoreService
                 $answer = $answers->get($question->id);
                 $row['max_score'] += (float) ($question->pivot->marks ?? $question->marks);
 
-                if (! $answer || empty($answer->selected_options)) {
+                if (! $answer || empty(data_get($answer, 'selected_options'))) {
                     $row['skipped']++;
-                } elseif ($answer->is_correct) {
+                } elseif (data_get($answer, 'is_correct')) {
                     $row['correct']++;
                 } else {
                     $row['wrong']++;
                 }
-                $row['score'] += (float) ($answer?->marks_awarded ?? 0);
+                $row['score'] += (float) (data_get($answer, 'marks_awarded') ?? 0);
             }
 
             $row['score'] = round($row['score'], 2);

@@ -8,13 +8,14 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DataEntryController;
 use App\Http\Controllers\Admin\EmailTemplateController;
 use App\Http\Controllers\Admin\ExamController;
+use App\Http\Controllers\Admin\ExamPreviewController;
 use App\Http\Controllers\Admin\ExamQuestionBankController;
 use App\Http\Controllers\Admin\ExamQuestionImportController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
-use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\QuestionBulkImportController;
+use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\QuestionTagController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\ReferralController;
@@ -128,6 +129,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/exams/{exam}/import', [ExamQuestionImportController::class, 'store'])
         ->middleware(['admin.permission:exams,write', 'admin.permission:questions,write'])
         ->name('exams.import.store');
+    Route::get('/exams/{exam}/preview', [ExamPreviewController::class, 'show'])
+        ->middleware('admin.permission:exams,read')
+        ->name('exams.preview');
+    Route::post('/exams/{exam}/preview/score', [ExamPreviewController::class, 'score'])
+        ->middleware('admin.permission:exams,read')
+        ->name('exams.preview.score');
     Route::resource('exams', ExamController::class)
         ->middlewareFor(['index', 'show'], 'admin.permission:exams,read')
         ->middlewareFor(['create', 'edit', 'store', 'update'], 'admin.permission:exams,write')

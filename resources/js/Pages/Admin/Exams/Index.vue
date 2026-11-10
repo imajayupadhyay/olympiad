@@ -167,6 +167,15 @@
             </td>
             <td class="px-5 py-4">
               <div class="flex items-center justify-end gap-1.5">
+                <Link v-if="exam.questions_count > 0" :href="route('admin.exams.preview', { exam: exam.id, from: 'list' })"
+                      class="text-gold-dark text-xs font-semibold px-2.5 py-1.5 rounded-lg hover:bg-amber-50 transition-colors"
+                      title="Attempt this exam exactly as a student sees it. Nothing is recorded.">
+                  View Exam
+                </Link>
+                <span v-else class="text-text-muted/50 text-xs font-semibold px-2.5 py-1.5 cursor-not-allowed"
+                      title="Add questions before viewing this exam">
+                  View Exam
+                </span>
                 <Link :href="route('admin.exams.edit', exam.id)"
                       class="text-primary hover:text-primary-light text-xs font-semibold px-2.5 py-1.5 rounded-lg hover:bg-primary/5 transition-colors">
                   Edit

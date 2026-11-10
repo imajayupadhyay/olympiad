@@ -286,6 +286,12 @@
           </span>
           <div class="flex-1"></div>
           <Link :href="route('admin.exams.index')" class="btn-ghost">{{ mode === 'edit' ? 'Back to exams' : 'Cancel' }}</Link>
+          <button v-if="mode === 'edit'" type="button" @click="viewExam"
+                  :disabled="!savedQuestionCount"
+                  class="btn-ghost border border-gold/40 text-gold-dark disabled:cursor-not-allowed"
+                  :title="savedQuestionCount ? 'Attempt the saved paper exactly as a student sees it. Nothing is recorded.' : 'Save at least one question to view the exam'">
+            ▶ View Exam
+          </button>
 
           <template v-if="mode === 'create'">
             <button type="button" :disabled="form.processing" @click="save(null, 'import')"
@@ -458,6 +464,14 @@ function save(status = null, then = null) {
   } else {
     form.transform((data) => (then ? { ...data, then } : data)).post(route('admin.exams.store'), options);
   }
+}
+
+/* ── view exam (admin simulator) ── */
+// The preview renders the SAVED paper, so it counts saved questions, not unsaved edits.
+const savedQuestionCount = computed(() => (props.exam?.sections || []).reduce((sum, section) => sum + (section.questions || []).length, 0));
+function viewExam() {
+  // With unsaved edits the navigation guard below asks first; the preview shows the saved paper.
+  router.visit(route('admin.exams.preview', props.exam.id));
 }
 
 /* ── unsaved-changes guard ── */

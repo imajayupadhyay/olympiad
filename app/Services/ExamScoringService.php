@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\Answer;
+use App\Models\Exam;
 use App\Models\ExamAttempt;
+use App\Models\Question;
 use Illuminate\Support\Carbon;
 
 class ExamScoringService
@@ -36,49 +38,108 @@ class ExamScoringService
         $attempted = 0;
 
         foreach ($exam->questions as $question) {
-            $marks = (float) ($question->pivot->marks ?? $question->marks);
-            $negative = (float) ($question->pivot->negative_marks ?? $question->negative_marks ?? 0);
-
             /** @var Answer|null $answer */
             $answer = $answers->get($question->id);
-            $selected = $this->normalize($answer?->selected_options ?? []);
+            $verdict = $this->evaluate($question, $answer?->selected_options ?? [], $negativeEnabled);
 
             // Unanswered → skipped, no marks.
-            if (empty($selected)) {
+            if ($verdict['state'] === 'skipped') {
                 $skipped++;
                 if ($answer) {
                     $answer->update(['is_correct' => false, 'marks_awarded' => 0]);
                 }
+
                 continue;
             }
 
             $attempted++;
-            $isCorrect = $selected === $this->normalize($question->correct_options ?? []);
-
-            if ($isCorrect) {
+            if ($verdict['is_correct']) {
                 $correct++;
-                $awarded = $marks;
             } else {
                 $wrong++;
-                $awarded = $negativeEnabled ? -abs($negative) : 0;
             }
 
-            $totalScore += $awarded;
-            $answer->update(['is_correct' => $isCorrect, 'marks_awarded' => $awarded]);
+            $totalScore += $verdict['marks_awarded'];
+            $answer->update(['is_correct' => $verdict['is_correct'], 'marks_awarded' => $verdict['marks_awarded']]);
         }
 
         $attempt->update([
-            'status'             => $finalStatus,
-            'submitted_at'       => now(),
+            'status' => $finalStatus,
+            'submitted_at' => now(),
             'time_taken_seconds' => $this->elapsedSeconds($attempt),
-            'total_score'        => round($totalScore, 2),
-            'total_attempted'    => $attempted,
-            'total_correct'      => $correct,
-            'total_wrong'        => $wrong,
-            'total_skipped'      => $skipped,
+            'total_score' => round($totalScore, 2),
+            'total_attempted' => $attempted,
+            'total_correct' => $correct,
+            'total_wrong' => $wrong,
+            'total_skipped' => $skipped,
         ]);
 
         return $attempt->refresh();
+    }
+
+    /**
+     * The single correctness + marks rule for one question (pivot marks, then bank marks;
+     * negative marks only when the exam enables negative marking). Pure — writes nothing.
+     *
+     * @return array{state: 'correct'|'wrong'|'skipped', is_correct: bool, marks_awarded: float, max_marks: float}
+     */
+    public function evaluate(Question $question, array $selectedOptions, bool $negativeEnabled): array
+    {
+        $marks = (float) ($question->pivot->marks ?? $question->marks);
+        $negative = (float) ($question->pivot->negative_marks ?? $question->negative_marks ?? 0);
+        $selected = $this->normalize($selectedOptions);
+
+        if (empty($selected)) {
+            return ['state' => 'skipped', 'is_correct' => false, 'marks_awarded' => 0.0, 'max_marks' => $marks];
+        }
+
+        $isCorrect = $selected === $this->normalize($question->correct_options ?? []);
+
+        return [
+            'state' => $isCorrect ? 'correct' : 'wrong',
+            'is_correct' => $isCorrect,
+            'marks_awarded' => $isCorrect ? $marks : ($negativeEnabled ? -abs($negative) : 0.0),
+            'max_marks' => $marks,
+        ];
+    }
+
+    /**
+     * Score a set of selections for an exam WITHOUT persisting anything (admin preview).
+     * Uses the same rule as score(), so a preview total equals what a student would get.
+     *
+     * @param  array<int|string, array>  $selections  question_id => selected option keys
+     * @return array{score: float, max_score: float, percentage: float, total: int, attempted: int, correct: int, wrong: int, skipped: int, questions: array<int, array>}
+     */
+    public function preview(Exam $exam, array $selections): array
+    {
+        $exam->loadMissing('questions');
+        $negativeEnabled = (bool) $exam->negative_marking_enabled;
+        $totals = ['score' => 0.0, 'max_score' => 0.0, 'attempted' => 0, 'correct' => 0, 'wrong' => 0, 'skipped' => 0];
+        $questions = [];
+
+        foreach ($exam->questions as $question) {
+            $selected = array_values(array_unique(array_map('strval', $selections[$question->id] ?? [])));
+            $verdict = $this->evaluate($question, $selected, $negativeEnabled);
+
+            $totals['max_score'] += $verdict['max_marks'];
+            $totals['score'] += $verdict['marks_awarded'];
+            $totals[$verdict['state']]++;
+            if ($verdict['state'] !== 'skipped') {
+                $totals['attempted']++;
+            }
+
+            $questions[$question->id] = ['selected_options' => $selected, ...$verdict];
+        }
+
+        $totals['score'] = round($totals['score'], 2);
+        $totals['max_score'] = round($totals['max_score'], 2);
+
+        return [
+            ...$totals,
+            'percentage' => $totals['max_score'] > 0 ? round($totals['score'] / $totals['max_score'] * 100, 2) : 0.0,
+            'total' => $exam->questions->count(),
+            'questions' => $questions,
+        ];
     }
 
     /**

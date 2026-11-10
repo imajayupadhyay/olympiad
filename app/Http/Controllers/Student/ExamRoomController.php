@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Answer;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
+use App\Services\ExamPaperService;
 use App\Services\ExamScoringService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -17,8 +19,8 @@ class ExamRoomController extends Controller
 {
     public function __construct(
         protected ExamScoringService $scoring,
-    ) {
-    }
+        protected ExamPaperService $paper,
+    ) {}
 
     /**
      * Start (or resume) an attempt. Single attempt per exam, only inside the admin window.
@@ -56,7 +58,7 @@ class ExamRoomController extends Controller
     /**
      * The exam room: sanitized questions, saved answers, server-computed remaining time.
      */
-    public function index(Request $request, ExamAttempt $attempt): Response|\Illuminate\Http\RedirectResponse
+    public function index(Request $request, ExamAttempt $attempt): Response|RedirectResponse
     {
         $this->authorizeAttempt($request, $attempt);
 
@@ -64,7 +66,7 @@ class ExamRoomController extends Controller
             return redirect()->route('student.exam-room.submitted', $attempt);
         }
 
-        $exam = $attempt->exam()->with(['questions', 'sections:id,exam_id,name,instructions,sort_order'])->first();
+        $exam = $this->paper->load($attempt->exam);
 
         $remaining = $this->remainingSeconds($attempt, $exam);
         if ($remaining <= 0) {
@@ -73,43 +75,22 @@ class ExamRoomController extends Controller
             return redirect()->route('student.exam-room.submitted', $attempt);
         }
 
-        $questions = $this->orderedQuestions($attempt, $exam);
-        $saved = $attempt->answers()->get()->keyBy('question_id');
-
-        $payload = $questions->map(function ($q) use ($attempt, $exam, $saved) {
-            $answer = $saved->get($q->id);
-
-            return [
-                'id'             => $q->id,
-                'section_id'     => $q->pivot->exam_section_id,
-                'question_text'  => $q->question_text,
-                'question_image_url' => $q->question_image_url,
-                'question_type'  => $q->question_type,                 // single | multiple
-                'marks'          => (float) ($q->pivot->marks ?? $q->marks),
-                'options'        => $this->orderedOptions($attempt, $exam, $q),
-                'selected'       => $answer?->selected_options ?? [],
-                'flagged'        => (bool) ($answer?->is_flagged ?? false),
-            ];
-        })->values();
+        $payload = $this->paper->questions($exam, (string) $attempt->id, $attempt->answers()->get()->keyBy('question_id'));
 
         return Inertia::render('Student/ExamRoom/Index', [
             'attempt' => [
-                'id'          => $attempt->id,
-                'started_at'  => $attempt->started_at,
+                'id' => $attempt->id,
+                'started_at' => $attempt->started_at,
             ],
             'exam' => [
-                'id'                => $exam->id,
-                'name'              => $exam->name,
-                'duration_minutes'  => $exam->duration_minutes,
-                'negative_marking_enabled'    => (bool) $exam->negative_marking_enabled,
-                'total_questions'   => $payload->count(),
+                'id' => $exam->id,
+                'name' => $exam->name,
+                'duration_minutes' => $exam->duration_minutes,
+                'negative_marking_enabled' => (bool) $exam->negative_marking_enabled,
+                'total_questions' => $payload->count(),
             ],
-            'sections'          => $exam->sections->map(fn ($section) => [
-                'id'           => $section->id,
-                'name'         => $section->name,
-                'instructions' => $section->instructions,
-            ])->values(),
-            'questions'         => $payload,
+            'sections' => $this->paper->sections($exam),
+            'questions' => $payload,
             'remaining_seconds' => $remaining,
         ]);
     }
@@ -126,10 +107,10 @@ class ExamRoomController extends Controller
         }
 
         $data = $request->validate([
-            'question_id'      => 'required|integer',
+            'question_id' => 'required|integer',
             'selected_options' => 'array',
             'selected_options.*' => 'string|in:a,b,c,d',
-            'is_flagged'       => 'boolean',
+            'is_flagged' => 'boolean',
         ]);
 
         // Question must belong to this exam.
@@ -140,7 +121,7 @@ class ExamRoomController extends Controller
             ['exam_attempt_id' => $attempt->id, 'question_id' => $data['question_id']],
             [
                 'selected_options' => array_values(array_unique($data['selected_options'] ?? [])),
-                'is_flagged'       => $data['is_flagged'] ?? false,
+                'is_flagged' => $data['is_flagged'] ?? false,
             ],
         );
 
@@ -170,7 +151,7 @@ class ExamRoomController extends Controller
     /**
      * Post-submit confirmation (no score shown — results are admin-declared).
      */
-    public function submitted(Request $request, ExamAttempt $attempt): Response|\Illuminate\Http\RedirectResponse
+    public function submitted(Request $request, ExamAttempt $attempt): Response|RedirectResponse
     {
         $this->authorizeAttempt($request, $attempt);
 
@@ -182,7 +163,7 @@ class ExamRoomController extends Controller
             'exam' => $attempt->exam()->first()->only(['id', 'name']),
             'attempt' => [
                 'total_questions' => $attempt->total_attempted + $attempt->total_skipped,
-                'answered'        => $attempt->total_attempted,
+                'answered' => $attempt->total_attempted,
                 'time_taken_seconds' => $attempt->time_taken_seconds,
             ],
         ]);
@@ -208,43 +189,5 @@ class ExamRoomController extends Controller
         }
 
         return (int) max(0, Carbon::now()->diffInSeconds($deadline, false));
-    }
-
-    /**
-     * Questions in pivot order, deterministically shuffled per-attempt when randomized.
-     * Shuffling stays inside each section so the paper keeps its section order.
-     */
-    protected function orderedQuestions(ExamAttempt $attempt, Exam $exam)
-    {
-        $questions = $exam->questions;
-
-        if ($exam->randomize_questions) {
-            $questions = $questions
-                ->groupBy(fn ($q) => $q->pivot->exam_section_id ?? 0)
-                ->flatMap(fn ($group) => $group->sortBy(fn ($q) => md5($attempt->id.'-'.$q->id)))
-                ->values();
-        }
-
-        return $questions;
-    }
-
-    /**
-     * Build option list [{key,text}], preserving original letters (so scoring stays valid),
-     * deterministically shuffled per-attempt when randomized.
-     *
-     * @return array<int, array{key:string,text:string}>
-     */
-    protected function orderedOptions(ExamAttempt $attempt, Exam $exam, $q): array
-    {
-        $options = collect(['a', 'b', 'c', 'd'])
-            ->map(fn ($k) => ['key' => $k, 'text' => $q->{'option_'.$k}])
-            ->filter(fn ($o) => filled($o['text']))
-            ->values();
-
-        if ($exam->randomize_options) {
-            $options = $options->sortBy(fn ($o) => md5($attempt->id.'-'.$q->id.'-'.$o['key']))->values();
-        }
-
-        return $options->all();
     }
 }
