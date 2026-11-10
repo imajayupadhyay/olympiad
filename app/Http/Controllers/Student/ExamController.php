@@ -8,7 +8,9 @@ use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Models\Result;
 use App\Models\Subject;
+use App\Models\User;
 use App\Services\EnrollmentService;
+use App\Services\ExamSessionService;
 use App\Services\PaymentService;
 use App\Services\ReferralService;
 use Illuminate\Http\Request;
@@ -21,8 +23,7 @@ class ExamController extends Controller
         protected EnrollmentService $enrollments,
         protected PaymentService $payments,
         protected ReferralService $referrals,
-    ) {
-    }
+    ) {}
 
     /**
      * Two groups: the student's enrolled exams (always shown, with action state) and a
@@ -32,7 +33,8 @@ class ExamController extends Controller
     {
         $user = $request->user();
 
-        $enrolledIds = $user->enrollments()->where('status', 'enrolled')->pluck('exam_id');
+        $enrollments = $user->enrollments()->where('status', 'enrolled')->get()->keyBy('exam_id');
+        $enrolledIds = $enrollments->keys();
         $attempts = ExamAttempt::where('user_id', $user->id)->get()->keyBy('exam_id');
         $results = Result::where('user_id', $user->id)->get()->keyBy('exam_id');
 
@@ -42,7 +44,7 @@ class ExamController extends Controller
             ->withCount('questions')
             ->orderBy('starts_at')
             ->get()
-            ->map(fn (Exam $exam) => $this->enrolledCardData($exam, $attempts, $results));
+            ->map(fn (Exam $exam) => $this->enrolledCardData($exam, $attempts, $results, $enrollments->get($exam->id)));
 
         // ── Available section (filtered, excludes enrolled) ──
         $classFilter = $request->has('class_level_id')
@@ -70,46 +72,36 @@ class ExamController extends Controller
 
         return Inertia::render('Student/Exams/Index', [
             'enrolledExams' => $enrolledExams,
-            'available'     => $available,
-            'subjects'      => Subject::active(),
-            'classLevels'   => ClassLevel::active(),
-            'filters'       => [
-                'search'         => $request->input('search', ''),
-                'subject_id'     => $request->input('subject_id', ''),
+            'available' => $available,
+            'subjects' => Subject::active(),
+            'classLevels' => ClassLevel::active(),
+            'filters' => [
+                'search' => $request->input('search', ''),
+                'subject_id' => $request->input('subject_id', ''),
                 'class_level_id' => (string) ($classFilter ?? ''),
             ],
             // Refer & Earn card + instant discount preview on the selection summary —
             // identical state/feed to the registration Step 2 page.
-            'referral'      => $this->referrals->shareState($user),
-            'discounts'     => $this->referrals->usableCouponRules($user),
+            'referral' => $this->referrals->shareState($user),
+            'discounts' => $this->referrals->usableCouponRules($user),
         ]);
     }
 
     /**
      * Enrolled-card payload with the resolved single CTA (start/continue/result/awaiting/…).
      */
-    protected function enrolledCardData(Exam $exam, $attempts, $results): array
+    protected function enrolledCardData(Exam $exam, $attempts, $results, $enrollment): array
     {
         $attempt = $attempts->get($exam->id);
         $result = $results->get($exam->id);
-        $avail = $exam->availabilityState();
-
-        if ($attempt && $attempt->status === 'in_progress') {
-            $action = 'continue';
-        } elseif ($attempt) {
-            $action = ($result && $result->is_released) ? 'result' : 'awaiting';
-        } else {
-            $action = match ($avail) {
-                'live'     => 'start',
-                'upcoming' => 'upcoming',
-                default    => 'closed',
-            };
-        }
+        $cta = app(ExamSessionService::class)->studentAction($exam, $attempt, $enrollment, $result);
 
         return array_merge($this->cardData($exam, true), [
-            'action'     => $action,
+            'availability' => app(ExamSessionService::class)->windowState($exam, $enrollment),
+            'action' => $cta['action'],
+            'window_label' => $cta['window_label'],
             'attempt_id' => $attempt?->id,
-            'result_id'  => ($result && $result->is_released) ? $result->id : null,
+            'result_id' => ($result && $result->is_released) ? $result->id : null,
         ]);
     }
 
@@ -123,15 +115,31 @@ class ExamController extends Controller
         $exam->loadCount('questions')->load('subject', 'classLevel');
 
         $isEnrolled = $request->user()->isEnrolledIn($exam->id);
+        $cta = ['action' => null, 'window_label' => null];
+        $attempt = null;
+        if ($isEnrolled) {
+            $sessions = app(ExamSessionService::class);
+            $userId = $request->user()->id;
+            $attempt = ExamAttempt::where('user_id', $userId)->where('exam_id', $exam->id)->first();
+            $result = Result::where('user_id', $userId)->where('exam_id', $exam->id)->first();
+            $cta = $sessions->studentAction($exam, $attempt, $sessions->enrollment($userId, $exam->id), $result);
+            $cta['result_id'] = ($result && $result->is_released) ? $result->id : null;
+        }
 
         return Inertia::render('Student/Exams/Detail', [
             'exam' => array_merge($this->cardData($exam, $isEnrolled), [
-                'syllabus'     => $exam->syllabus,
-                'eligibility'  => $exam->eligibility,
+                'syllabus' => $exam->syllabus,
+                'eligibility' => $exam->eligibility,
                 'instructions' => $exam->instructions,
-                'negative_marking_enabled'    => (bool) $exam->negative_marking_enabled,
+                'negative_marking_enabled' => (bool) $exam->negative_marking_enabled,
                 'negative_marks_per_question' => (float) $exam->negative_marks_per_question,
-                'marks_per_question'          => (float) $exam->marks_per_question,
+                'marks_per_question' => (float) $exam->marks_per_question,
+                // Enrolled students: the same single CTA as the dashboard (personal windows,
+                // paused / reopened sessions).
+                'action' => $cta['action'],
+                'window_label' => $cta['window_label'],
+                'attempt_id' => $attempt?->id,
+                'result_id' => $cta['result_id'] ?? null,
             ]),
         ]);
     }
@@ -143,7 +151,7 @@ class ExamController extends Controller
     public function enroll(Request $request)
     {
         $data = $request->validate([
-            'exam_ids'   => 'required|array|min:1',
+            'exam_ids' => 'required|array|min:1',
             'exam_ids.*' => 'integer|exists:exams,id',
         ]);
 
@@ -167,7 +175,7 @@ class ExamController extends Controller
     /**
      * Shared enrol pipeline: free exams enrol instantly; paid ones open a Razorpay order.
      */
-    protected function processEnroll(\App\Models\User $user, array $ids)
+    protected function processEnroll(User $user, array $ids)
     {
         $exams = Exam::whereIn('id', $ids)->where('status', 'published')->get();
 
@@ -198,21 +206,21 @@ class ExamController extends Controller
     protected function cardData(Exam $exam, bool $isEnrolled): array
     {
         return [
-            'id'               => $exam->id,
-            'name'             => $exam->name,
-            'description'      => $exam->description,
-            'exam_code'        => $exam->exam_code,
-            'subject'          => $exam->subject?->only(['id', 'name', 'icon', 'color']),
-            'class_level'      => $exam->classLevel?->only(['id', 'label']),
-            'starts_at'        => $exam->starts_at,
-            'ends_at'          => $exam->ends_at,
+            'id' => $exam->id,
+            'name' => $exam->name,
+            'description' => $exam->description,
+            'exam_code' => $exam->exam_code,
+            'subject' => $exam->subject?->only(['id', 'name', 'icon', 'color']),
+            'class_level' => $exam->classLevel?->only(['id', 'label']),
+            'starts_at' => $exam->starts_at,
+            'ends_at' => $exam->ends_at,
             'duration_minutes' => $exam->duration_minutes,
-            'questions_count'  => $exam->questions_count,
-            'fee_amount'       => (float) $exam->fee_amount,
-            'fee_currency'     => $exam->fee_currency,
-            'is_free'          => $exam->isFree(),
-            'availability'     => $exam->availabilityState(),
-            'is_enrolled'      => $isEnrolled,
+            'questions_count' => $exam->questions_count,
+            'fee_amount' => (float) $exam->fee_amount,
+            'fee_currency' => $exam->fee_currency,
+            'is_free' => $exam->isFree(),
+            'availability' => $exam->availabilityState(),
+            'is_enrolled' => $isEnrolled,
         ];
     }
 }

@@ -139,7 +139,8 @@ const goToProfile = () => {
                     <div class="ex-info">
                         <strong>{{ ex.exam.name }}</strong>
                         <small>
-                            <template v-if="ex.availability === 'upcoming'">Opens {{ fmt(ex.starts_at) }}</template>
+                            <template v-if="ex.window_label">Your exam window: {{ ex.window_label }}</template>
+                            <template v-else-if="ex.availability === 'upcoming'">Opens {{ fmt(ex.starts_at) }}</template>
                             <template v-else-if="ex.availability === 'live'">Open until {{ fmt(ex.ends_at) }} · {{ ex.duration_minutes }} min</template>
                             <template v-else>Window closed</template>
                         </small>
@@ -147,7 +148,9 @@ const goToProfile = () => {
 
                     <!-- CTA per state -->
                     <button v-if="ex.action === 'start'" class="cta start" @click="startExam(ex.exam.id)">Start →</button>
-                    <Link v-else-if="ex.action === 'continue'" :href="route('student.exam-room', ex.attempt_id)" class="cta continue">Continue →</Link>
+                    <Link v-else-if="ex.action === 'continue'" :href="route('student.exam-room', ex.attempt_id)" class="cta continue">Resume →</Link>
+                    <Link v-else-if="ex.action === 'paused'" :href="route('student.exam-room', ex.attempt_id)" class="pill paused">Paused by the exam team</Link>
+                    <span v-else-if="ex.action === 'rescheduled'" class="pill upcoming">Rescheduled</span>
                     <Link v-else-if="ex.action === 'result'" :href="route('student.results.show', ex.result_id)" class="cta result">View result</Link>
                     <span v-else-if="ex.action === 'awaiting'" class="pill awaiting">Awaiting result</span>
                     <span v-else-if="ex.action === 'upcoming'" class="pill upcoming">Upcoming</span>
@@ -262,6 +265,7 @@ const goToProfile = () => {
 .pill.awaiting { color: #9a7b2e; background: rgba(214,153,31,.14); }
 .pill.upcoming { color: #2C49A6; background: rgba(44,73,166,.12); }
 .pill.closed { color: #5B6373; background: #F3E9D6; }
+.pill.paused { color: #6C3FA0; background: rgba(108,63,160,.1); text-decoration: none; }
 
 .empty { text-align: center; padding: 2rem 1rem; color: #5B6373; }
 .empty p { margin: 0 0 1rem; font-size: .92rem; }

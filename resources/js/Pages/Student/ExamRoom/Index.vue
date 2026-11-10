@@ -1,7 +1,7 @@
 <script setup>
 import ExamRoomLayout from '@/Layouts/ExamRoomLayout.vue';
 import AppLogo from '@/Components/Shared/AppLogo.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { confirmDialog } from '@/composables/useConfirm';
 
@@ -11,6 +11,9 @@ const props = defineProps({
     questions: { type: Array, default: () => [] },
     sections: { type: Array, default: () => [] },
     remaining_seconds: { type: Number, default: 0 },
+    // Live session state from ExamSessionService (null in the admin preview): token,
+    // heartbeat, server strikes, resume point and pause.
+    session: { type: Object, default: null },
     // Admin simulator (Admin/Exams/Preview): same room, but nothing is sent to the student
     // endpoints. Answers stay in memory and submit emits `finish` instead of posting.
     preview: { type: Boolean, default: false },
@@ -18,21 +21,32 @@ const props = defineProps({
 
 const emit = defineEmits(['finish', 'exit']);
 
-const MAX_STRIKES = 3;
+// Network features run only for a real student session.
+const live = !props.preview && !!props.session;
+const MAX_STRIKES = props.session?.max_strikes ?? 3;
+const HEARTBEAT_MS = (props.session?.heartbeat_seconds ?? 30) * 1000;
+const PENDING_KEY = `exam-pending-${props.attempt.id}`;
 
 /* ── state ── */
 const begun = ref(false);
 const current = ref(0);
 const remaining = ref(props.remaining_seconds);
-const strikes = ref(0);
+const strikes = ref(props.session?.violation_count ?? 0);
 const submitting = ref(false);
 const showSubmit = ref(false);
-const saveState = ref('idle');          // idle | saving | saved
+const saveState = ref('idle');          // idle | saving | saved | offline
 const warning = ref(null);
 const isFullscreen = ref(false);
+const online = ref(typeof navigator === 'undefined' ? true : navigator.onLine);
+const paused = ref(props.session?.paused ?? null);   // null | { rescheduled, window_label }
+const superseded = ref(false);
+const submitStuck = ref(false);                       // time is up but we can't reach the server
 
 let timer = null;
 let saveTimer = null;
+let beatTimer = null;
+let retryTimer = null;
+let lastSyncAt = Date.now();
 let warnedAt = { 300: false, 60: false };
 let startedAt = null;
 
@@ -46,9 +60,32 @@ props.questions.forEach((q) => {
     };
 });
 
+/* ── offline queue: answers the server hasn't confirmed yet survive reloads ── */
+const pending = reactive({});            // qid -> payload
+function readPending() {
+    try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '{}') || {}; } catch (_) { return {}; }
+}
+function writePending() {
+    try {
+        if (Object.keys(pending).length) localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+        else localStorage.removeItem(PENDING_KEY);
+    } catch (_) { /* storage blocked: the in-memory queue still retries */ }
+}
+if (live) {
+    // Picks made offline before a reload are newer than what the server sent.
+    Object.entries(readPending()).forEach(([qid, payload]) => {
+        if (!answers[qid] || !payload) return;
+        pending[qid] = payload;
+        answers[qid].selected = [...(payload.selected_options || [])];
+        answers[qid].flagged = !!payload.is_flagged;
+    });
+}
+const pendingCount = computed(() => Object.keys(pending).length);
+
 /* ── computed ── */
 const q = computed(() => props.questions[current.value] ?? null);
-const total = computed(() => props.questions.length);
+const total = computed(() => props.questions.length || props.exam.total_questions || 0);
+const isResume = computed(() => live && !!props.session?.is_resume);
 
 // Single-section (legacy) papers keep the original flat look.
 const showSections = computed(() => props.sections.length > 1);
@@ -76,14 +113,15 @@ const counts = computed(() => {
     return { answered, marked, notVisited, notAnswered };
 });
 
-const timeText = computed(() => {
-    const s = Math.max(0, remaining.value);
+const fmtTime = (secs) => {
+    const s = Math.max(0, secs);
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
     const sec = s % 60;
     const pad = (n) => String(n).padStart(2, '0');
     return h > 0 ? `${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
-});
+};
+const timeText = computed(() => fmtTime(remaining.value));
 const timeLow = computed(() => remaining.value <= 60);
 
 function paletteState(qq) {
@@ -96,6 +134,22 @@ function paletteState(qq) {
     return 'not-answered';
 }
 
+/* ── resume point: where the student was, else the first unanswered question ── */
+function resumeIndex() {
+    const byId = props.questions.findIndex((qq) => qq.id === props.session?.current_question_id);
+    if (byId !== -1) return byId;
+    const firstOpen = props.questions.findIndex((qq) => !answers[qq.id].selected.length);
+    return firstOpen === -1 ? 0 : firstOpen;
+}
+if (isResume.value && props.questions.length) {
+    const at = resumeIndex();
+    props.questions.forEach((qq, i) => {
+        const a = answers[qq.id];
+        if (i <= at || a.selected.length || a.flagged) a.visited = true;
+    });
+    current.value = at;
+}
+
 /* ── lifecycle ── */
 onMounted(() => {
     document.addEventListener('contextmenu', prevent);
@@ -103,11 +157,19 @@ onMounted(() => {
     document.addEventListener('cut', prevent);
     document.addEventListener('paste', prevent);
     document.addEventListener('fullscreenchange', onFsChange);
+    if (live) {
+        window.addEventListener('online', onOnline);
+        window.addEventListener('offline', onOffline);
+        beatTimer = setInterval(maybeHeartbeat, 5000);
+        if (pendingCount.value) flushPending();
+    }
 });
 onBeforeUnmount(() => stopEverything());
 
 function stopEverything() {
     clearInterval(timer);
+    clearInterval(beatTimer);
+    clearInterval(retryTimer);
     clearTimeout(saveTimer);
     document.removeEventListener('contextmenu', prevent);
     document.removeEventListener('copy', prevent);
@@ -116,6 +178,8 @@ function stopEverything() {
     document.removeEventListener('visibilitychange', onVisibility);
     document.removeEventListener('fullscreenchange', onFsChange);
     window.removeEventListener('beforeunload', onBeforeUnload);
+    window.removeEventListener('online', onOnline);
+    window.removeEventListener('offline', onOffline);
 }
 
 const prevent = (e) => { e.preventDefault(); };
@@ -124,6 +188,7 @@ const onBeforeUnload = (e) => { e.preventDefault(); e.returnValue = ''; };
 function onFsChange() { isFullscreen.value = !!document.fullscreenElement; }
 
 async function begin() {
+    if (!q.value) return;
     begun.value = true;
     startedAt = Date.now();
     answers[q.value.id].visited = true;
@@ -134,24 +199,99 @@ async function begin() {
 }
 
 function tick() {
+    if (paused.value) return;
     remaining.value--;
     if (!warnedAt[300] && remaining.value <= 300 && remaining.value > 60) { warnedAt[300] = true; flash('5 minutes remaining'); }
     if (!warnedAt[60] && remaining.value <= 60) { warnedAt[60] = true; flash('1 minute remaining!'); }
     if (remaining.value <= 0) doSubmit('timeout');
 }
 
-function onVisibility() {
-    if (document.hidden && begun.value && !submitting.value) {
-        strikes.value++;
-        if (strikes.value >= MAX_STRIKES) {
-            doSubmit('strikes');
-        } else {
-            warning.value = `Warning ${strikes.value}/${MAX_STRIKES}: leaving the exam tab is not allowed. The test auto-submits after ${MAX_STRIKES} strikes.`;
+async function onVisibility() {
+    if (!document.hidden || !begun.value || submitting.value || paused.value || superseded.value) return;
+
+    if (live) {
+        try {
+            const { data } = await window.axios.post(route('student.exam-room.violation', props.attempt.id), { session_token: props.session.token });
+            strikes.value = data.violation_count;
+            if (data.auto_submitted) return goSubmitted();
+            warnStrike();
+            return;
+        } catch (e) {
+            if (handleConflict(e)) return;
+            // Offline: count locally so the rule still holds; the server re-checks on submit.
         }
     }
+
+    strikes.value++;
+    if (strikes.value >= MAX_STRIKES) doSubmit('strikes');
+    else warnStrike();
+}
+function warnStrike() {
+    warning.value = `Warning ${strikes.value}/${MAX_STRIKES}: leaving the exam tab is not allowed. The test auto-submits after ${MAX_STRIKES} strikes.`;
 }
 
 function flash(msg) { warning.value = msg; setTimeout(() => { if (warning.value === msg) warning.value = null; }, 4000); }
+
+/* ── server sync ── */
+function onOnline() { online.value = true; heartbeat(); }
+function onOffline() { online.value = false; saveState.value = 'offline'; }
+function markOnline() { online.value = true; lastSyncAt = Date.now(); if (saveState.value === 'offline') saveState.value = 'saved'; }
+
+function maybeHeartbeat() {
+    if (submitting.value || superseded.value) return;
+    const every = paused.value ? 10000 : HEARTBEAT_MS;
+    if (Date.now() - lastSyncAt >= every) heartbeat();
+}
+
+async function heartbeat() {
+    if (!live || submitting.value || superseded.value) return;
+    try {
+        const { data } = await window.axios.post(route('student.exam-room.heartbeat', props.attempt.id), {
+            session_token: props.session.token,
+            current_question_id: q.value?.id ?? null,
+        });
+        markOnline();
+        if (data.resumable || (paused.value && !data.paused)) return reloadRoom();
+        if (data.paused && !paused.value) return enterPaused({ rescheduled: false, window_label: null });
+        // The server is the clock: picks up added time and corrects drift.
+        if (!paused.value && Math.abs(remaining.value - data.remaining_seconds) > 2) {
+            remaining.value = data.remaining_seconds;
+            if (remaining.value > 300) warnedAt = { 300: false, 60: false };
+        }
+        strikes.value = data.violation_count ?? strikes.value;   // admins can clear warnings
+        if (pendingCount.value) flushPending();
+        if (submitStuck.value) retrySubmit();
+    } catch (e) {
+        if (!handleConflict(e)) { online.value = false; saveState.value = 'offline'; }
+    }
+}
+
+/** 409s from the server: the session ended, was paused, or moved to another tab. */
+function handleConflict(e) {
+    if (e?.response?.status !== 409) return false;
+    const reason = e.response.data?.reason;
+    if (reason === 'closed') goSubmitted();
+    else if (reason === 'superseded') { superseded.value = true; clearInterval(timer); window.removeEventListener('beforeunload', onBeforeUnload); }
+    else if (reason === 'paused') enterPaused({ rescheduled: false, window_label: null });
+    return true;
+}
+
+function enterPaused(info) {
+    paused.value = info;
+    showSubmit.value = false;
+    warning.value = null;
+}
+
+function reloadRoom() {
+    stopEverything();
+    router.visit(route('student.exam-room', props.attempt.id), { preserveState: false, replace: true });
+}
+
+function goSubmitted() {
+    stopEverything();
+    leaveFullscreen();
+    router.visit(route('student.exam-room.submitted', props.attempt.id), { replace: true });
+}
 
 /* ── answering ── */
 function pick(key) {
@@ -174,25 +314,70 @@ function queueSave(qid) {
 }
 async function save(qid) {
     const a = answers[qid];
-    if (props.preview) {          // simulator: keep the indicator, skip the network
+    if (props.preview || !live) {          // simulator: keep the indicator, skip the network
         clearTimeout(saveTimer);
         saveState.value = 'saved';
         return;
     }
+    clearTimeout(saveTimer);
+    // Queue first, so the pick survives a failed request or a reload.
+    const payload = {
+        question_id: qid,
+        selected_options: [...a.selected],
+        is_flagged: a.flagged,
+        stamp: Date.now(),
+    };
+    pending[qid] = payload;
+    writePending();
+    await send(payload);
+}
+
+/** POST one queued answer. Returns false when the network is down (stop flushing). */
+async function send(payload) {
     try {
         await window.axios.post(route('student.exam-room.answer', props.attempt.id), {
-            question_id: qid,
-            selected_options: a.selected,
-            is_flagged: a.flagged,
+            question_id: payload.question_id,
+            selected_options: payload.selected_options,
+            is_flagged: payload.is_flagged,
+            session_token: props.session.token,
+            current_question_id: q.value?.id ?? payload.question_id,
         });
+        if (pending[payload.question_id]?.stamp === payload.stamp) {
+            delete pending[payload.question_id];
+            writePending();
+        }
+        markOnline();
         saveState.value = 'saved';
-    } catch (_) {
-        saveState.value = 'idle';
+        return true;
+    } catch (e) {
+        if (handleConflict(e)) return false;
+        if (e?.response) {        // validation etc.: drop it, retrying won't help
+            delete pending[payload.question_id];
+            writePending();
+            saveState.value = 'idle';
+            return true;
+        }
+        online.value = false;
+        saveState.value = 'offline';
+        return false;
+    }
+}
+
+let flushing = false;
+async function flushPending() {
+    if (flushing || !live) return;
+    flushing = true;
+    try {
+        for (const payload of Object.values({ ...pending })) {
+            if (!(await send(payload))) break;
+        }
+    } finally {
+        flushing = false;
     }
 }
 
 /* ── navigation ── */
-function goTo(i) { if (i >= 0 && i < total.value) { current.value = i; answers[q.value.id].visited = true; } }
+function goTo(i) { if (i >= 0 && i < props.questions.length) { current.value = i; answers[q.value.id].visited = true; } }
 function next() { goTo(current.value + 1); }
 function prev() { goTo(current.value - 1); }
 function saveAndNext() { save(q.value.id); next(); }
@@ -200,7 +385,7 @@ function markReviewNext() { answers[q.value.id].flagged = true; save(q.value.id)
 
 /* ── submit ── */
 function confirmSubmit() { showSubmit.value = true; }
-function doSubmit(reason = 'manual') {
+async function doSubmit(reason = 'manual') {
     if (submitting.value) return;
     submitting.value = true;
     clearInterval(timer);
@@ -215,9 +400,35 @@ function doSubmit(reason = 'manual') {
         });
         return;
     }
-    router.post(route('student.exam-room.submit', props.attempt.id), { reason }, {
-        onFinish: () => leaveFullscreen(),
+    submitReason = reason;
+    await postSubmit();
+}
+
+let submitReason = 'manual';
+async function postSubmit() {
+    // Push unsynced answers first; if the server is unreachable, keep trying.
+    await flushPending();
+    if (pendingCount.value || !navigator.onLine) return stuck();
+
+    let landed = false;
+    router.post(route('student.exam-room.submit', props.attempt.id), { reason: submitReason }, {
+        onSuccess: () => { landed = true; },
+        onFinish: () => {
+            leaveFullscreen();
+            if (!landed) stuck();
+        },
     });
+}
+function stuck() {
+    submitStuck.value = true;
+    clearInterval(retryTimer);
+    retryTimer = setInterval(retrySubmit, 5000);
+}
+function retrySubmit() {
+    if (!navigator.onLine) return;
+    clearInterval(retryTimer);
+    submitStuck.value = false;
+    postSubmit();
 }
 function leaveFullscreen() { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); }
 
@@ -243,17 +454,51 @@ async function exitPreview() {
     <Head title="Exam in progress" />
 
     <ExamRoomLayout>
+        <!-- ── opened in another tab / device ── -->
+        <div v-if="superseded" class="gate">
+            <div class="gate-card state-card">
+                <span class="gate-eyebrow">Exam open elsewhere</span>
+                <h1>This exam is open in another tab or device</h1>
+                <p class="state-text">Only one window can be used at a time. Your saved answers are safe. Continue here to close the other window.</p>
+                <button class="begin" @click="reloadRoom">Continue here →</button>
+            </div>
+        </div>
+
+        <!-- ── paused by the exam team / rescheduled ── -->
+        <div v-else-if="paused" class="gate">
+            <div class="gate-card state-card">
+                <span class="gate-eyebrow">{{ paused.rescheduled ? 'Exam rescheduled' : 'Exam paused' }}</span>
+                <h1>{{ exam.name }}</h1>
+                <template v-if="paused.rescheduled">
+                    <p class="state-text">The exam team has rescheduled your exam. Your answers and remaining time are saved.</p>
+                    <p v-if="paused.window_label" class="state-window">Your new window: <strong>{{ paused.window_label }}</strong></p>
+                    <p class="state-text">Come back during that window and you'll continue where you left off.</p>
+                    <Link :href="route('student.dashboard')" class="begin as-link">Back to dashboard</Link>
+                </template>
+                <template v-else>
+                    <p class="state-text">The exam team has paused your exam. Your answers and remaining time are saved and the timer is stopped.</p>
+                    <p class="state-text"><strong>Keep this page open.</strong> It continues automatically when they resume it.</p>
+                    <p class="state-wait"><span class="pulse-dot"></span> Waiting for the exam team…</p>
+                </template>
+            </div>
+        </div>
+
         <!-- ── instructions / start gate ── -->
-        <div v-if="!begun" class="gate">
+        <div v-else-if="!begun" class="gate">
             <div class="gate-card">
                 <div v-if="preview" class="preview-note">
                     <strong>Admin preview</strong>
                     This is exactly what students see. Nothing you do here is recorded: no attempt, score, rank or result.
                 </div>
-                <span class="gate-eyebrow">Test Portal</span>
+                <span class="gate-eyebrow">{{ isResume ? 'Welcome back' : 'Test Portal' }}</span>
                 <h1>{{ exam.name }}</h1>
+                <div v-if="isResume" class="resume-note">
+                    <strong>Your answers are saved.</strong>
+                    You've answered {{ counts.answered }} of {{ total }} questions. You'll continue at question {{ current + 1 }}.
+                </div>
                 <ul class="gate-facts">
-                    <li><strong>{{ total }}</strong><span>Questions</span></li>
+                    <li v-if="isResume"><strong>{{ counts.answered }}/{{ total }}</strong><span>Answered</span></li>
+                    <li v-else><strong>{{ total }}</strong><span>Questions</span></li>
                     <li><strong>{{ exam.duration_minutes }}m</strong><span>Duration</span></li>
                     <li><strong>{{ Math.floor(remaining / 60) }}m</strong><span>Time left</span></li>
                 </ul>
@@ -263,12 +508,13 @@ async function exitPreview() {
                     </li>
                 </ol>
                 <ul class="gate-rules">
-                    <li>You have <strong>one attempt</strong>. The timer is already running.</li>
+                    <li v-if="isResume">The timer kept running while you were away. If you lost time because of a technical problem, contact the exam team.</li>
+                    <li v-else>You have <strong>one attempt</strong>. The timer is already running.</li>
                     <li>Stay in full-screen. Leaving the tab <strong>{{ MAX_STRIKES }} times auto-submits</strong> your test.</li>
                     <li v-if="exam.negative_marking_enabled">This exam has <strong>negative marking</strong> for wrong answers.</li>
                     <li>Your answers save automatically. The test submits on its own when time runs out.</li>
                 </ul>
-                <button class="begin" @click="begin">Enter full-screen &amp; start →</button>
+                <button class="begin" @click="begin">{{ isResume ? 'Resume exam →' : 'Enter full-screen & start →' }}</button>
                 <button v-if="preview" type="button" class="preview-exit-link" @click="exitPreview">← Exit preview</button>
             </div>
         </div>
@@ -286,13 +532,22 @@ async function exitPreview() {
                         <span class="preview-pill" title="Admin preview: nothing is recorded">Preview</span>
                         <button type="button" class="preview-exit" @click="exitPreview">Exit</button>
                     </template>
-                    <span class="save" :class="saveState">{{ saveState === 'saving' ? 'Saving…' : (saveState === 'saved' ? 'Saved' : '') }}</span>
+                    <span class="save" :class="saveState">{{ saveState === 'saving' ? 'Saving…' : (saveState === 'saved' ? 'Saved' : (saveState === 'offline' ? 'Offline' : '')) }}</span>
                     <div class="clock" :class="{ low: timeLow }">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
                         {{ timeText }}
                     </div>
                 </div>
             </header>
+
+            <!-- connection problems -->
+            <div v-if="submitStuck" class="net-banner stuck" role="alert">
+                Time's up. Submitting your test as soon as you're back online — don't close this tab.
+            </div>
+            <div v-else-if="live && (!online || pendingCount)" class="net-banner" role="status">
+                <strong>{{ online ? 'Syncing answers…' : "You're offline." }}</strong>
+                {{ pendingCount }} answer{{ pendingCount === 1 ? '' : 's' }} kept on this device will sync when you reconnect. Don't close this tab.
+            </div>
 
             <div class="body">
                 <!-- question -->
@@ -525,6 +780,20 @@ async function exitPreview() {
 .modal-actions { display: flex; gap: .7rem; justify-content: flex-end; }
 .modal-enter-active, .modal-leave-active { transition: opacity .25s; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
+
+/* ── session states ── */
+.state-card h1 { margin-bottom: .8rem; }
+.state-text { font-size: .92rem; color: #41485a; line-height: 1.55; margin: 0 0 .8rem; }
+.state-window { font-size: .92rem; color: #0A1024; background: rgba(108,63,160,.08); border: 1px solid rgba(108,63,160,.25); border-radius: 12px; padding: .7rem .85rem; margin: 0 0 .8rem; }
+.state-wait { display: flex; align-items: center; gap: .55rem; font-size: .86rem; font-weight: 600; color: #6C3FA0; margin: 1rem 0 0; }
+.pulse-dot { width: 10px; height: 10px; border-radius: 50%; background: #6C3FA0; animation: pulse 1.2s infinite; }
+.begin.as-link { display: block; text-align: center; text-decoration: none; box-sizing: border-box; margin-top: .4rem; }
+.resume-note { margin: -.4rem 0 1.1rem; padding: .7rem .85rem; border-radius: 12px; background: rgba(22,138,102,.08); border: 1px solid rgba(22,138,102,.25); font-size: .86rem; line-height: 1.5; color: #41485a; }
+.resume-note strong { display: block; color: #168A66; }
+.net-banner { flex-shrink: 0; padding: .55rem 1.3rem; font-size: .84rem; color: #7c4a03; background: #FEF3C7; border-bottom: 1px solid #F2C84B; }
+.net-banner.stuck { color: #fff; background: #DC2626; border-color: #B91C1C; font-weight: 600; }
+.save.offline { color: #B45309; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .pulse-dot { animation: none; } }
 
 /* ── admin preview only ── */
 .preview-note { margin: 0 0 1.1rem; padding: .7rem .85rem; border-radius: 12px; background: rgba(214,153,31,.12); border: 1px solid rgba(214,153,31,.35); font-size: .82rem; line-height: 1.5; color: #41485a; }

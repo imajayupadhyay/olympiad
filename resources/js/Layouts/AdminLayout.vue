@@ -102,7 +102,7 @@
           School Designations
         </SidebarLink>
 
-        <p v-if="hasSection(['questions', 'exams', 'results', 'certificates'])" class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">Exams</p>
+        <p v-if="hasSection(['questions', 'exams', 'exam_sessions', 'results', 'certificates'])" class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">Exams</p>
 
         <SidebarLink v-if="can('questions')" :href="route('admin.questions.index')" :active="isActive('/admin/questions')">
           <template #icon>
@@ -120,6 +120,15 @@
             </svg>
           </template>
           Exams
+        </SidebarLink>
+
+        <SidebarLink v-if="can('exam_sessions')" :href="route('admin.exam-sessions.index')" :active="isActive('/admin/exam-sessions')">
+          <template #icon>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </template>
+          Ongoing Exams
         </SidebarLink>
 
         <SidebarLink v-if="can('results')" :href="route('admin.results')" :active="isActive('/admin/results')">

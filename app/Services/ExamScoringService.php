@@ -6,7 +6,6 @@ use App\Models\Answer;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Models\Question;
-use Illuminate\Support\Carbon;
 
 class ExamScoringService
 {
@@ -158,12 +157,12 @@ class ExamScoringService
         return $clean;
     }
 
+    /**
+     * Active time used: paused / closed time is excluded and the value is capped at the
+     * time the student was given (ExamAttempt::timeUsedSeconds()).
+     */
     protected function elapsedSeconds(ExamAttempt $attempt): int
     {
-        if (! $attempt->started_at) {
-            return 0;
-        }
-
-        return (int) max(0, Carbon::now()->diffInSeconds($attempt->started_at, true));
+        return $attempt->timeUsedSeconds(now());
     }
 }

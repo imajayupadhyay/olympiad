@@ -19,9 +19,9 @@ class ResultController extends Controller
     {
         $exams = Exam::with(['subject', 'classLevel'])
             ->withCount([
-                'attempts as total_attempts' => fn($q) => $q->whereIn('status', ['submitted', 'timed_out', 'auto_submitted']),
+                'attempts as total_attempts' => fn ($q) => $q->whereIn('status', ['submitted', 'timed_out', 'auto_submitted']),
                 'results as processed_count',
-                'results as released_count' => fn($q) => $q->where('is_released', true),
+                'results as released_count' => fn ($q) => $q->where('is_released', true),
             ])
             ->whereIn('status', ['published', 'archived'])
             ->latest('starts_at')
@@ -53,10 +53,10 @@ class ResultController extends Controller
 
         $stats = [
             'total_attempts' => ExamAttempt::where('exam_id', $exam->id)->whereIn('status', ['submitted', 'timed_out', 'auto_submitted'])->count(),
-            'processed'      => Result::where('exam_id', $exam->id)->count(),
-            'released'       => Result::where('exam_id', $exam->id)->where('is_released', true)->count(),
-            'avg_score'      => Result::where('exam_id', $exam->id)->avg('total_score') ?? 0,
-            'highest_score'  => Result::where('exam_id', $exam->id)->max('total_score') ?? 0,
+            'processed' => Result::where('exam_id', $exam->id)->count(),
+            'released' => Result::where('exam_id', $exam->id)->where('is_released', true)->count(),
+            'avg_score' => Result::where('exam_id', $exam->id)->avg('total_score') ?? 0,
+            'highest_score' => Result::where('exam_id', $exam->id)->max('total_score') ?? 0,
         ];
 
         // Cohort section stats only matter when the paper has more than one section.
@@ -66,9 +66,9 @@ class ResultController extends Controller
             : [];
 
         return Inertia::render('Admin/Results/Show', [
-            'exam'    => $exam,
+            'exam' => $exam,
             'results' => $results,
-            'stats'   => $stats,
+            'stats' => $stats,
             'sectionStats' => $sectionStats,
         ]);
     }
@@ -91,20 +91,20 @@ class ResultController extends Controller
             $ranked = $attempts->sortByDesc('total_score')->values();
 
             foreach ($ranked as $rank => $attempt) {
-                $score      = $attempt->total_score;
+                $score = $attempt->total_score;
                 $percentage = $maxScore > 0 ? round(($score / $maxScore) * 100, 2) : 0;
 
                 Result::updateOrCreate(
                     ['user_id' => $attempt->user_id, 'exam_id' => $exam->id],
                     [
                         'exam_attempt_id' => $attempt->id,
-                        'total_score'     => $score,
-                        'max_score'       => $maxScore,
-                        'percentage'      => $percentage,
-                        'section_scores'  => $sectionScores->breakdown($attempt, $exam),
-                        'rank_national'   => $rank + 1,
-                        'grade'           => $this->grade($percentage),
-                        'is_released'     => false,
+                        'total_score' => $score,
+                        'max_score' => $maxScore,
+                        'percentage' => $percentage,
+                        'section_scores' => $sectionScores->breakdown($attempt, $exam),
+                        'rank_national' => $rank + 1,
+                        'grade' => $this->grade($percentage),
+                        'is_released' => false,
                     ]
                 );
             }
@@ -112,7 +112,11 @@ class ResultController extends Controller
             $this->calculatePercentiles($exam->id);
         });
 
-        return back()->with('success', "Results processed for {$attempts->count()} students. Ranks assigned.");
+        // Open or paused sessions (e.g. reopened from Ongoing Exams) are not ranked yet.
+        $open = ExamAttempt::where('exam_id', $exam->id)->where('status', 'in_progress')->count();
+        $note = $open ? " {$open} session(s) are still open — process again after they finish." : '';
+
+        return back()->with('success', "Results processed for {$attempts->count()} students. Ranks assigned.{$note}");
     }
 
     public function release(Request $request, Exam $exam, ManagedEmailService $emails)
@@ -144,14 +148,14 @@ class ResultController extends Controller
     public function override(Request $request, Result $result)
     {
         $data = $request->validate([
-            'score_override'  => 'required|numeric|min:0',
+            'score_override' => 'required|numeric|min:0',
             'override_reason' => 'required|string|max:500',
         ]);
 
         $result->update([
-            'score_override'  => $data['score_override'],
+            'score_override' => $data['score_override'],
             'override_reason' => $data['override_reason'],
-            'override_by'     => auth()->id(),
+            'override_by' => auth()->id(),
         ]);
 
         return back()->with('success', 'Score override applied successfully.');
@@ -165,14 +169,14 @@ class ResultController extends Controller
             $pct >= 60 => 'B',
             $pct >= 45 => 'C',
             $pct >= 33 => 'D',
-            default    => 'F',
+            default => 'F',
         };
     }
 
     private function calculatePercentiles(int $examId): void
     {
         $results = Result::where('exam_id', $examId)->orderBy('total_score')->get();
-        $total   = $results->count();
+        $total = $results->count();
         foreach ($results as $i => $r) {
             $r->update(['percentile' => round(($i / $total) * 100, 2)]);
         }

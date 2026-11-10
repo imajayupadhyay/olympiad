@@ -28,12 +28,15 @@ const start = () => router.post(route('student.exams.start', props.exam.id));
 
         <h3 class="name">{{ exam.name }}</h3>
 
-        <div class="win">{{ fmt(exam.starts_at) }} → {{ fmt(exam.ends_at) }}</div>
+        <div v-if="exam.window_label" class="win personal">Your exam window: {{ exam.window_label }}</div>
+        <div v-else class="win">{{ fmt(exam.starts_at) }} → {{ fmt(exam.ends_at) }}</div>
 
         <!-- state CTA -->
         <div class="cta-row">
             <button v-if="exam.action === 'start'" class="cta start" @click="start">Start exam →</button>
-            <Link v-else-if="exam.action === 'continue'" :href="route('student.exam-room', exam.attempt_id)" class="cta continue">Continue →</Link>
+            <Link v-else-if="exam.action === 'continue'" :href="route('student.exam-room', exam.attempt_id)" class="cta continue">Resume exam →</Link>
+            <Link v-else-if="exam.action === 'paused'" :href="route('student.exam-room', exam.attempt_id)" class="pill paused">Paused by the exam team</Link>
+            <span v-else-if="exam.action === 'rescheduled'" class="pill upcoming">Rescheduled — see your window above</span>
             <Link v-else-if="exam.action === 'result'" :href="route('student.results.show', exam.result_id)" class="cta result">View result →</Link>
             <span v-else-if="exam.action === 'awaiting'" class="pill awaiting"><span class="d"></span> Awaiting result</span>
             <span v-else-if="exam.action === 'upcoming'" class="pill upcoming">Starts {{ fmt(exam.starts_at) }}</span>
@@ -70,4 +73,6 @@ const start = () => router.post(route('student.exams.start', props.exam.id));
 .pill.awaiting { color: #9a7b2e; background: rgba(214,153,31,.14); }
 .pill.upcoming { color: #2C49A6; background: rgba(44,73,166,.1); }
 .pill.closed { color: #5B6373; background: #F3E9D6; }
+.pill.paused { color: #6C3FA0; background: rgba(108,63,160,.1); text-decoration: none; }
+.win.personal { color: #6C3FA0; font-weight: 600; }
 </style>

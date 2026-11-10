@@ -83,14 +83,22 @@ const sections = computed(() => [
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>
                             <div>
                                 <strong>You're enrolled</strong>
-                                <small v-if="exam.availability === 'live'">The exam is live — start whenever you're ready.</small>
+                                <small v-if="exam.window_label">Your exam window: {{ exam.window_label }}.</small>
+                                <small v-else-if="exam.action === 'continue'">Your answers are saved — resume where you left off.</small>
+                                <small v-else-if="exam.action === 'paused'">The exam team has paused your exam.</small>
+                                <small v-else-if="exam.action === 'awaiting' || exam.action === 'result'">You've completed this exam.</small>
+                                <small v-else-if="exam.availability === 'live'">The exam is live — start whenever you're ready.</small>
                                 <small v-else-if="exam.availability === 'upcoming'">Starts {{ fmt(exam.starts_at) }}.</small>
                                 <small v-else>The exam window has closed.</small>
                             </div>
                         </div>
-                        <button v-if="exam.availability === 'live'" class="cta start" :disabled="startForm.processing" @click="startExam">
+                        <button v-if="exam.action === 'start'" class="cta start" :disabled="startForm.processing" @click="startExam">
                             {{ startForm.processing ? 'Starting…' : 'Start exam →' }}
                         </button>
+                        <Link v-else-if="exam.action === 'continue' || exam.action === 'paused'" :href="route('student.exam-room', exam.attempt_id)" class="cta start">
+                            {{ exam.action === 'paused' ? 'Open exam' : 'Resume exam →' }}
+                        </Link>
+                        <Link v-else-if="exam.action === 'result'" :href="route('student.results.show', exam.result_id)" class="cta start">View result →</Link>
                     </template>
 
                     <button v-else-if="exam.availability === 'closed'" class="cta closed" disabled>Window closed</button>
@@ -146,6 +154,7 @@ const sections = computed(() => [
 .cta:hover:not(:disabled) { transform: translateY(-2px); }
 .cta:disabled { cursor: not-allowed; }
 .cta.closed { background: #e9e3d4; color: #9aa0ad; box-shadow: none; }
+a.cta { display: block; text-align: center; text-decoration: none; box-sizing: border-box; }
 
 .cta.start { margin-top: .8rem; background: linear-gradient(135deg, #1aa177, #168A66); box-shadow: 0 12px 26px -12px rgba(22,138,102,.7); }
 .enrolled-box { display: flex; gap: .7rem; align-items: flex-start; background: rgba(22,138,102,.08); border: 1px solid rgba(22,138,102,.25); border-radius: 13px; padding: .9rem; }

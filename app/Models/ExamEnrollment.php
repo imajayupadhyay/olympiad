@@ -18,12 +18,17 @@ class ExamEnrollment extends Model
         'amount',
         'currency',
         'enrolled_at',
+        'window_starts_at',
+        'window_ends_at',
     ];
 
     protected $casts = [
-        'amount'      => 'decimal:2',
+        'amount' => 'decimal:2',
         'assigned_at' => 'datetime',
         'enrolled_at' => 'datetime',
+        // Personal window set by an admin reschedule (Ongoing Exams); overrides the exam window.
+        'window_starts_at' => 'datetime',
+        'window_ends_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -44,6 +49,11 @@ class ExamEnrollment extends Model
     public function assignedByAdmin(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_by_admin_id');
+    }
+
+    public function hasPersonalWindow(): bool
+    {
+        return $this->window_starts_at !== null && $this->window_ends_at !== null;
     }
 
     public function isEnrolled(): bool

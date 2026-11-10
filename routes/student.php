@@ -1,18 +1,18 @@
 <?php
 
+use App\Http\Controllers\Student\CertificateController;
 use App\Http\Controllers\Student\DashboardController;
 use App\Http\Controllers\Student\ExamController;
 use App\Http\Controllers\Student\ExamRoomController;
-use App\Http\Controllers\Student\ResultController;
-use App\Http\Controllers\Student\ProfileController;
-use App\Http\Controllers\Student\CertificateController;
 use App\Http\Controllers\Student\LeaderboardController;
-use App\Http\Controllers\Student\PracticeController;
+use App\Http\Controllers\Student\NotificationController;
 use App\Http\Controllers\Student\PaymentController;
+use App\Http\Controllers\Student\PracticeController;
+use App\Http\Controllers\Student\ProfileController;
 use App\Http\Controllers\Student\ReferralController;
+use App\Http\Controllers\Student\ResultController;
 use App\Http\Controllers\Student\SupportController;
 use App\Http\Controllers\Student\SupportWidgetController;
-use App\Http\Controllers\Student\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->group(function () {
@@ -31,6 +31,10 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
     Route::post('/exams/{exam}/start', [ExamRoomController::class, 'start'])->name('exams.start');
     Route::get('/exam-room/{attempt}', [ExamRoomController::class, 'index'])->name('exam-room');
     Route::post('/exam-room/{attempt}/answer', [ExamRoomController::class, 'saveAnswer'])->name('exam-room.answer');
+    Route::post('/exam-room/{attempt}/heartbeat', [ExamRoomController::class, 'heartbeat'])
+        ->middleware('throttle:30,1')->name('exam-room.heartbeat');
+    Route::post('/exam-room/{attempt}/violation', [ExamRoomController::class, 'violation'])
+        ->middleware('throttle:30,1')->name('exam-room.violation');
     Route::post('/exam-room/{attempt}/submit', [ExamRoomController::class, 'submit'])->name('exam-room.submit');
     Route::get('/exam-room/{attempt}/submitted', [ExamRoomController::class, 'submitted'])->name('exam-room.submitted');
 

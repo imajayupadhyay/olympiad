@@ -19,6 +19,7 @@ class AdminPermissions
         'school_designations' => ['label' => 'School Designations', 'section' => 'School Data', 'route' => 'admin.school-designations.index'],
         'questions' => ['label' => 'Question Bank', 'section' => 'Exams', 'route' => 'admin.questions.index'],
         'exams' => ['label' => 'Exams', 'section' => 'Exams', 'route' => 'admin.exams.index'],
+        'exam_sessions' => ['label' => 'Ongoing Exams', 'section' => 'Exams', 'route' => 'admin.exam-sessions.index'],
         'results' => ['label' => 'Results', 'section' => 'Exams', 'route' => 'admin.results'],
         'certificates' => ['label' => 'Certificates', 'section' => 'Exams', 'route' => 'admin.certificates'],
         'payments' => ['label' => 'Payments', 'section' => 'Finance & Comms', 'route' => 'admin.payments'],

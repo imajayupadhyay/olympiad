@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ExamController;
 use App\Http\Controllers\Admin\ExamPreviewController;
 use App\Http\Controllers\Admin\ExamQuestionBankController;
 use App\Http\Controllers\Admin\ExamQuestionImportController;
+use App\Http\Controllers\Admin\ExamSessionController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
@@ -135,6 +136,19 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/exams/{exam}/preview/score', [ExamPreviewController::class, 'score'])
         ->middleware('admin.permission:exams,read')
         ->name('exams.preview.score');
+    // Ongoing Exams: live sessions + recovery (literal routes before {attempt}).
+    Route::prefix('exam-sessions')->name('exam-sessions.')->group(function () {
+        Route::get('/', [ExamSessionController::class, 'index'])->middleware('admin.permission:exam_sessions,read')->name('index');
+        Route::post('/enrollments/{enrollment}/reschedule', [ExamSessionController::class, 'rescheduleEnrollment'])->middleware('admin.permission:exam_sessions,write')->name('enrollments.reschedule');
+        Route::delete('/enrollments/{enrollment}/reschedule', [ExamSessionController::class, 'unscheduleEnrollment'])->middleware('admin.permission:exam_sessions,write')->name('enrollments.unschedule');
+        Route::post('/exams/{exam}/{action}', [ExamSessionController::class, 'bulk'])->whereIn('action', ['suspend', 'resume', 'add_time'])->middleware('admin.permission:exam_sessions,write')->name('bulk');
+        Route::get('/{attempt}', [ExamSessionController::class, 'show'])->middleware('admin.permission:exam_sessions,read')->name('show');
+        foreach (['suspend', 'resume', 'add-time' => 'addTime', 'reopen', 'reset', 'reschedule', 'force-submit' => 'forceSubmit', 'clear-violations' => 'clearViolations'] as $uri => $method) {
+            $uri = is_int($uri) ? $method : $uri;
+            Route::post("/{attempt}/{$uri}", [ExamSessionController::class, $method])->middleware('admin.permission:exam_sessions,write')->name($uri);
+        }
+    });
+
     Route::resource('exams', ExamController::class)
         ->middlewareFor(['index', 'show'], 'admin.permission:exams,read')
         ->middlewareFor(['create', 'edit', 'store', 'update'], 'admin.permission:exams,write')
