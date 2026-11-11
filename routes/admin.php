@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\ExamPreviewController;
 use App\Http\Controllers\Admin\ExamQuestionBankController;
 use App\Http\Controllers\Admin\ExamQuestionImportController;
 use App\Http\Controllers\Admin\ExamSessionController;
+use App\Http\Controllers\Admin\HallTicketController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
@@ -27,8 +28,10 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\SchoolDesignationController;
 use App\Http\Controllers\Admin\Settings\ClassLevelController;
+use App\Http\Controllers\Admin\Settings\HallTicketSettingController;
 use App\Http\Controllers\Admin\Settings\QuestionCategoryController;
 use App\Http\Controllers\Admin\Settings\ReceiptSettingController;
+use App\Http\Controllers\Admin\Settings\StudentCustomFieldController;
 use App\Http\Controllers\Admin\Settings\SubjectController;
 use App\Http\Controllers\Admin\StaffUserController;
 use App\Http\Controllers\Admin\SupportController;
@@ -149,6 +152,18 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         }
     });
 
+    // Hall Tickets: verify submitted student documents, approve/reject, print.
+    Route::prefix('hall-tickets')->name('hall-tickets.')->group(function () {
+        Route::get('/', [HallTicketController::class, 'index'])->middleware('admin.permission:hall_tickets,read')->name('index');
+        Route::get('/{hallTicket}', [HallTicketController::class, 'show'])->middleware('admin.permission:hall_tickets,read')->name('show');
+        Route::get('/{hallTicket}/print', [HallTicketController::class, 'print'])->middleware('admin.permission:hall_tickets,read')->name('print');
+        Route::get('/{hallTicket}/documents/{type}', [HallTicketController::class, 'document'])
+            ->whereIn('type', ['live_photo', 'passport_photo', 'school_id_card'])
+            ->middleware('admin.permission:hall_tickets,read')->name('document');
+        Route::post('/{hallTicket}/approve', [HallTicketController::class, 'approve'])->middleware('admin.permission:hall_tickets,write')->name('approve');
+        Route::post('/{hallTicket}/reject', [HallTicketController::class, 'reject'])->middleware('admin.permission:hall_tickets,write')->name('reject');
+    });
+
     Route::resource('exams', ExamController::class)
         ->middlewareFor(['index', 'show'], 'admin.permission:exams,read')
         ->middlewareFor(['create', 'edit', 'store', 'update'], 'admin.permission:exams,write')
@@ -238,5 +253,15 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
         Route::get('/receipts', [ReceiptSettingController::class, 'index'])->middleware('admin.permission:settings_receipts,read')->name('receipts');
         Route::post('/receipts', [ReceiptSettingController::class, 'update'])->middleware('admin.permission:settings_receipts,write')->name('receipts.update');
+
+        // Hall ticket layout + admin-defined student fields (§12.15).
+        Route::get('/hall-ticket', [HallTicketSettingController::class, 'index'])->middleware('admin.permission:settings_hall_ticket,read')->name('hall-ticket');
+        Route::put('/hall-ticket', [HallTicketSettingController::class, 'update'])->middleware('admin.permission:settings_hall_ticket,write')->name('hall-ticket.update');
+        Route::post('/hall-ticket/reset', [HallTicketSettingController::class, 'reset'])->middleware('admin.permission:settings_hall_ticket,write')->name('hall-ticket.reset');
+        Route::post('/hall-ticket/preview', [HallTicketSettingController::class, 'preview'])->middleware(['admin.permission:settings_hall_ticket,read', 'throttle:120,1'])->name('hall-ticket.preview');
+        Route::post('/hall-ticket/fields', [StudentCustomFieldController::class, 'store'])->middleware('admin.permission:settings_hall_ticket,write')->name('hall-ticket.fields.store');
+        Route::post('/hall-ticket/fields/reorder', [StudentCustomFieldController::class, 'reorder'])->middleware('admin.permission:settings_hall_ticket,write')->name('hall-ticket.fields.reorder');
+        Route::put('/hall-ticket/fields/{field}', [StudentCustomFieldController::class, 'update'])->middleware('admin.permission:settings_hall_ticket,write')->name('hall-ticket.fields.update');
+        Route::delete('/hall-ticket/fields/{field}', [StudentCustomFieldController::class, 'destroy'])->middleware('admin.permission:settings_hall_ticket,delete')->name('hall-ticket.fields.destroy');
     });
 });

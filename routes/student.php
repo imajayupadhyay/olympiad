@@ -4,6 +4,7 @@ use App\Http\Controllers\Student\CertificateController;
 use App\Http\Controllers\Student\DashboardController;
 use App\Http\Controllers\Student\ExamController;
 use App\Http\Controllers\Student\ExamRoomController;
+use App\Http\Controllers\Student\HallTicketController;
 use App\Http\Controllers\Student\LeaderboardController;
 use App\Http\Controllers\Student\NotificationController;
 use App\Http\Controllers\Student\PaymentController;
@@ -22,6 +23,13 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
     Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo');
     Route::delete('/profile/photo', [ProfileController::class, 'deletePhoto'])->name('profile.photo.delete');
+    Route::get('/profile/documents/{type}', [ProfileController::class, 'showDocument'])->whereIn('type', ['live_photo', 'passport_photo', 'school_id_card'])->name('profile.documents.show');
+    Route::post('/profile/documents/{type}', [ProfileController::class, 'storeDocument'])->whereIn('type', ['live_photo', 'passport_photo', 'school_id_card'])->middleware('throttle:20,1')->name('profile.documents.store');
+    Route::delete('/profile/documents/{type}', [ProfileController::class, 'deleteDocument'])->whereIn('type', ['live_photo', 'passport_photo', 'school_id_card'])->name('profile.documents.delete');
+
+    Route::get('/hall-ticket', [HallTicketController::class, 'index'])->name('hall-ticket');
+    Route::post('/hall-ticket', [HallTicketController::class, 'store'])->middleware('throttle:10,1')->name('hall-ticket.store');
+    Route::get('/hall-ticket/print', [HallTicketController::class, 'print'])->name('hall-ticket.print');
 
     Route::get('/exams', [ExamController::class, 'index'])->name('exams');
     Route::post('/exams/enroll', [ExamController::class, 'enroll'])->name('exams.enroll');

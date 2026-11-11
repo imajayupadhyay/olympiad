@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\HallTicket;
 use App\Models\StudentNotification;
 use App\Models\SupportTicket;
 use App\Support\AdminPermissions;
@@ -70,6 +71,9 @@ class HandleInertiaRequests extends Middleware
                 'admin_is_super' => $user->isSuperAdmin(),
                 'admin_support_unread' => AdminPermissions::allows($user, 'support', 'read')
                     ? (int) SupportTicket::where('admin_unread', '>', 0)->count()
+                    : 0,
+                'admin_hall_tickets_pending' => AdminPermissions::allows($user, 'hall_tickets', 'read')
+                    ? (int) HallTicket::where('status', 'pending')->count()
                     : 0,
             ];
         }

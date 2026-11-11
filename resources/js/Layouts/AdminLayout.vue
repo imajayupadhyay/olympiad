@@ -102,7 +102,7 @@
           School Designations
         </SidebarLink>
 
-        <p v-if="hasSection(['questions', 'exams', 'exam_sessions', 'results', 'certificates'])" class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">Exams</p>
+        <p v-if="hasSection(['questions', 'exams', 'exam_sessions', 'results', 'hall_tickets', 'certificates'])" class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">Exams</p>
 
         <SidebarLink v-if="can('questions')" :href="route('admin.questions.index')" :active="isActive('/admin/questions')">
           <template #icon>
@@ -138,6 +138,21 @@
             </svg>
           </template>
           Results
+        </SidebarLink>
+
+        <SidebarLink v-if="can('hall_tickets')" :href="route('admin.hall-tickets.index')" :active="isActive('/admin/hall-tickets')">
+          <template #icon>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>
+            </svg>
+          </template>
+          <span class="flex items-center justify-between flex-1">
+            Hall Tickets
+            <span
+              v-if="$page.props.admin_hall_tickets_pending > 0"
+              class="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-white text-[10px] font-bold font-number"
+            >{{ $page.props.admin_hall_tickets_pending > 99 ? '99+' : $page.props.admin_hall_tickets_pending }}</span>
+          </span>
         </SidebarLink>
 
         <SidebarLink v-if="can('certificates')" :href="route('admin.certificates')" :active="isActive('/admin/certificates')">
@@ -238,7 +253,7 @@
           Forms
         </SidebarLink>
 
-        <p v-if="hasSection(['settings_subjects', 'settings_categories', 'settings_classes', 'settings_receipts'])" class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">Settings</p>
+        <p v-if="hasSection(['settings_subjects', 'settings_categories', 'settings_classes', 'settings_receipts', 'settings_hall_ticket'])" class="text-blue-400 text-[10px] font-semibold uppercase tracking-widest px-3 pb-2 pt-4">Settings</p>
 
         <SidebarLink v-if="can('settings_subjects')" :href="route('admin.settings.subjects')" :active="isActive('/admin/settings/subjects')">
           <template #icon>
@@ -275,6 +290,15 @@
           </template>
           Receipt Settings
         </SidebarLink>
+
+        <SidebarLink v-if="can('settings_hall_ticket')" :href="route('admin.settings.hall-ticket')" :active="isActive('/admin/settings/hall-ticket')">
+          <template #icon>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+            </svg>
+          </template>
+          Hall Ticket Layout
+        </SidebarLink>
       </nav>
 
       <!-- User + Logout -->
@@ -307,7 +331,7 @@
 
     <!-- Page content (offset by sidebar width when open on desktop, full width otherwise) -->
     <div
-      class="flex-1 flex flex-col min-h-screen transition-[margin] duration-300 ease-in-out motion-reduce:transition-none"
+      class="flex-1 min-w-0 flex flex-col min-h-screen transition-[margin] duration-300 ease-in-out motion-reduce:transition-none"
       :class="sidebarOpen ? 'lg:ml-64' : 'ml-0'"
     >
 

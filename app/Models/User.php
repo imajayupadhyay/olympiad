@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Services\PhoneNumberService;
+use App\Services\StudentCustomFieldService;
 use App\Support\AdminPermissions;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,6 +28,7 @@ class User extends Authenticatable
         'name', 'email', 'role', 'admin_role_id', 'registration_source', 'password', 'password_changed_at',
         'class_level_id', 'phone', 'phone_e164', 'phone_verified_at', 'dob', 'school', 'school_address', 'city', 'pincode', 'state', 'photo', 'is_active',
         'referral_code', 'referred_by',
+        'live_photo', 'passport_photo', 'school_id_card', 'coordinator_name', 'coordinator_phone',
     ];
 
     /** Where a student account was created — drives campaign reporting in the admin panel. */
@@ -236,6 +238,10 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        // Private-disk paths for hall-ticket documents; pages get authorised URLs instead.
+        'live_photo',
+        'passport_photo',
+        'school_id_card',
     ];
 
     /**
@@ -265,37 +271,66 @@ class User extends Authenticatable
         return is_null($this->password_changed_at);
     }
 
+    public function hallTicket()
+    {
+        return $this->hasOne(HallTicket::class);
+    }
+
     /**
-     * Profile-completion breakdown used to drive the engagement progress bar.
-     * Core fields (name/email/class) are always present from registration; the
-     * rest are what the student fills in later on their profile page.
+     * Items counted by profile completion, keyed by column. The single list behind
+     * the dashboard nudge, the profile page and hall-ticket eligibility (§9.7).
+     * The optional avatar (`photo`) is not counted.
+     */
+    public const PROFILE_FIELDS = [
+        'name' => 'Full name',
+        'email' => 'Email',
+        'class_level_id' => 'Class',
+        'phone' => 'Phone',
+        'dob' => 'Date of birth',
+        'school' => 'School',
+        'school_address' => 'School address',
+        'city' => 'City',
+        'pincode' => 'PIN code',
+        'state' => 'State',
+        'coordinator_name' => 'School coordinator name',
+        'coordinator_phone' => 'Coordinator phone',
+        'live_photo' => 'Live photo',
+        'passport_photo' => 'Passport-size photo',
+        'school_id_card' => 'School ID card',
+    ];
+
+    /**
+     * Profile-completion breakdown used by the progress bars and hall-ticket eligibility.
      *
-     * @return array{percent:int, filled:int, total:int, missing:list<string>}
+     * @return array{percent:int, filled:int, total:int, missing:list<string>, fields:array<string,bool>}
      */
     public function profileCompletion(): array
     {
-        $fields = [
-            'Full name' => filled($this->name),
-            'Email' => filled($this->email),
-            'Class' => filled($this->class_level_id),
-            'Phone' => filled($this->phone),
-            'Date of birth' => filled($this->dob),
-            'School' => filled($this->school),
-            'School address' => filled($this->school_address),
-            'City' => filled($this->city),
-            'PIN code' => filled($this->pincode),
-            'State' => filled($this->state),
-            'Photo' => filled($this->photo),
-        ];
+        $labels = self::PROFILE_FIELDS;
+        $fields = collect(self::PROFILE_FIELDS)
+            ->mapWithKeys(fn (string $label, string $column) => [$column => filled($this->getAttribute($column))])
+            ->all();
+
+        // Admin-defined fields count only when marked required (optional ones never lower the %).
+        foreach (app(StudentCustomFieldService::class)->requiredCompletion($this) as $key => $item) {
+            $fields[$key] = $item['filled'];
+            $labels[$key] = $item['label'];
+        }
 
         $total = count($fields);
         $filled = count(array_filter($fields));
 
         return [
-            'percent' => (int) round($filled / $total * 100),
+            // floor, not round: 89.6% must not display as a passing 90%.
+            'percent' => (int) floor($filled / $total * 100),
             'filled' => $filled,
             'total' => $total,
-            'missing' => array_keys(array_filter($fields, fn ($ok) => ! $ok)),
+            'missing' => array_values(array_map(
+                fn (string $column) => $labels[$column],
+                array_keys(array_filter($fields, fn ($ok) => ! $ok)),
+            )),
+            'fields' => $fields,
+            'labels' => $labels,
         ];
     }
 }

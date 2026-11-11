@@ -9,6 +9,7 @@ use App\Models\ExamAttempt;
 use App\Models\ReferralSetting;
 use App\Models\Result;
 use App\Services\ExamSessionService;
+use App\Services\HallTicketService;
 use App\Services\ReferralService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -69,6 +70,7 @@ class DashboardController extends Controller
                 'profile' => $user->profileCompletion(),
                 'profile_url' => route('student.profile'),
             ],
+            'hallTicket' => app(HallTicketService::class)->summary($user->loadMissing('hallTicket')),
         ]);
     }
 

@@ -76,14 +76,16 @@ class DashboardOnboardingTest extends TestCase
             'phone' => null, 'dob' => null, 'school' => null, 'school_address' => null,
             'city' => null, 'pincode' => null, 'state' => null, 'photo' => null,
         ]);
-        // name + email + class filled → 3 of 11.
+        // name + email + class filled → 3 of 15 (the optional avatar isn't counted).
         $this->assertSame(3, $bare->profileCompletion()['filled']);
-        $this->assertSame(11, $bare->profileCompletion()['total']);
-        $this->assertSame(27, $bare->profileCompletion()['percent']);
+        $this->assertSame(15, $bare->profileCompletion()['total']);
+        $this->assertSame(20, $bare->profileCompletion()['percent']);
 
         $full = $this->student([
             'phone' => '9990001112', 'dob' => '2012-01-01', 'school' => 'DPS', 'school_address' => 'MG Road',
-            'city' => 'Pune', 'pincode' => '411001', 'state' => 'Maharashtra', 'photo' => 'photos/x.jpg',
+            'city' => 'Pune', 'pincode' => '411001', 'state' => 'Maharashtra',
+            'coordinator_name' => 'Mrs Rao', 'coordinator_phone' => '+919876543210',
+            'live_photo' => 'docs/live.jpg', 'passport_photo' => 'docs/passport.jpg', 'school_id_card' => 'docs/id.jpg',
         ]);
         $this->assertSame(100, $full->profileCompletion()['percent']);
         $this->assertEmpty($full->profileCompletion()['missing']);

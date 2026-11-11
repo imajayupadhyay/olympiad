@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Exceptions\HallTicketException;
 use App\Http\Controllers\Controller;
 use App\Models\ClassLevel;
 use App\Models\User;
 use App\Rules\ValidPhoneNumber;
+use App\Services\HallTicketService;
+use App\Services\PhoneNumberService;
+use App\Services\StudentCustomFieldService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -15,25 +19,33 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
+    public function __construct(private HallTicketService $hallTickets) {}
+
     public function index(Request $request): Response
     {
-        $user = $request->user()->load('classLevel');
+        $user = $request->user()->load('classLevel', 'hallTicket');
 
         return Inertia::render('Student/Profile/Index', [
             'profile' => $user,
             'classLevels' => ClassLevel::active(),
             'states' => User::indianStates(),
+            'hallTicket' => $this->hallTickets->summary($user),
+            'documents' => $this->documents($user),
+            'lockedFields' => $this->hallTickets->isLocked($user) ? HallTicketService::LOCKED_FIELDS : [],
+            'customFields' => app(StudentCustomFieldService::class)->forProfile($user),
         ]);
     }
 
     /**
-     * Update personal details (name, email, class, contact, location).
+     * Update personal details. While a hall ticket is pending or approved, only
+     * the contact fields (email, phone) can change.
      */
     public function update(Request $request)
     {
         $user = $request->user();
+        $locked = $this->hallTickets->isLocked($user);
 
-        $data = $request->validate([
+        $rules = [
             'name' => 'required|string|max:100',
             'email' => 'required|email|max:255|unique:users,email,'.$user->id,
             'phone' => ['nullable', 'string', 'max:25', new ValidPhoneNumber],
@@ -44,12 +56,88 @@ class ProfileController extends Controller
             'city' => 'nullable|string|max:100',
             'pincode' => 'nullable|digits:6',
             'state' => 'nullable|string|max:100',
+            'coordinator_name' => 'nullable|string|max:100',
+            'coordinator_phone' => ['nullable', 'string', 'max:25', new ValidPhoneNumber],
+        ];
+
+        if ($locked) {
+            $rules = array_diff_key($rules, array_flip(HallTicketService::LOCKED_FIELDS));
+        }
+
+        $customFields = app(StudentCustomFieldService::class);
+        if (! $locked) {
+            // Admin-defined details are verified too, so they lock with the rest.
+            $rules = [...$rules, ...$customFields->rules()];
+        }
+
+        $data = $request->validate($rules, [], [
+            'coordinator_name' => 'coordinator name',
+            'coordinator_phone' => 'coordinator phone',
+            ...$customFields->attributes(),
         ]);
+
+        $custom = $data['custom'] ?? null;
+        unset($data['custom']);
+
+        if (array_key_exists('coordinator_phone', $data)) {
+            $data['coordinator_phone'] = app(PhoneNumberService::class)->tryNormalize($data['coordinator_phone']);
+        }
 
         // Re-verification flow not enforced — email is editable directly.
         $user->update($data);
 
-        return back()->with('success', 'Your profile has been updated.');
+        if (! $locked && is_array($custom)) {
+            $customFields->save($user, $custom);
+        }
+
+        return back()->with('success', $locked
+            ? 'Contact details updated. Your other details are locked while your hall ticket is under review or approved.'
+            : 'Your profile has been updated.');
+    }
+
+    /** Upload or replace a hall-ticket document (live photo, passport photo, school ID card). */
+    public function storeDocument(Request $request, string $type)
+    {
+        $request->validate(['file' => $this->hallTickets->documentRules($type)], [
+            'file.dimensions' => 'The passport photo must be at least 200 × 200 pixels.',
+        ], ['file' => HallTicketService::DOCUMENTS[$type]['label'] ?? 'file']);
+
+        try {
+            $this->hallTickets->storeDocument($request->user(), $type, $request->file('file'));
+        } catch (HallTicketException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', HallTicketService::DOCUMENTS[$type]['label'].' saved.');
+    }
+
+    public function deleteDocument(Request $request, string $type)
+    {
+        try {
+            $this->hallTickets->deleteDocument($request->user(), $type);
+        } catch (HallTicketException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', HallTicketService::DOCUMENTS[$type]['label'].' removed.');
+    }
+
+    /** Stream the signed-in student's own document. */
+    public function showDocument(Request $request, string $type)
+    {
+        return $this->hallTickets->documentResponse($request->user(), $type);
+    }
+
+    /** @return array<string, array{label:string, uploaded:bool, url:?string, is_pdf:bool}> */
+    private function documents(User $user): array
+    {
+        return collect(HallTicketService::DOCUMENTS)->map(fn (array $doc, string $type) => [
+            'label' => $doc['label'],
+            'uploaded' => filled($user->getAttribute($type)),
+            // Cache-buster so a replaced photo shows immediately.
+            'url' => $user->getAttribute($type) ? route('student.profile.documents.show', ['type' => $type, 'v' => substr(md5((string) $user->getAttribute($type)), 0, 8)]) : null,
+            'is_pdf' => str_ends_with((string) $user->getAttribute($type), '.pdf'),
+        ])->all();
     }
 
     /**

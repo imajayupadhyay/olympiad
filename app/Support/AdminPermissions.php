@@ -21,6 +21,7 @@ class AdminPermissions
         'exams' => ['label' => 'Exams', 'section' => 'Exams', 'route' => 'admin.exams.index'],
         'exam_sessions' => ['label' => 'Ongoing Exams', 'section' => 'Exams', 'route' => 'admin.exam-sessions.index'],
         'results' => ['label' => 'Results', 'section' => 'Exams', 'route' => 'admin.results'],
+        'hall_tickets' => ['label' => 'Hall Tickets', 'section' => 'Exams', 'route' => 'admin.hall-tickets.index'],
         'certificates' => ['label' => 'Certificates', 'section' => 'Exams', 'route' => 'admin.certificates'],
         'payments' => ['label' => 'Payments', 'section' => 'Finance & Comms', 'route' => 'admin.payments'],
         'receipts' => ['label' => 'Receipts', 'section' => 'Finance & Comms', 'route' => 'admin.receipts.index'],
@@ -35,6 +36,7 @@ class AdminPermissions
         'settings_categories' => ['label' => 'Categories', 'section' => 'Settings', 'route' => 'admin.settings.categories'],
         'settings_classes' => ['label' => 'Class Levels', 'section' => 'Settings', 'route' => 'admin.settings.classes'],
         'settings_receipts' => ['label' => 'Receipt Settings', 'section' => 'Settings', 'route' => 'admin.settings.receipts'],
+        'settings_hall_ticket' => ['label' => 'Hall Ticket Layout', 'section' => 'Settings', 'route' => 'admin.settings.hall-ticket'],
     ];
 
     public static function moduleOptions(): array

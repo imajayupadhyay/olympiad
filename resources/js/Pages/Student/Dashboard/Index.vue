@@ -9,6 +9,7 @@ const props = defineProps({
     stats: { type: Object, default: () => ({}) },
     referral: { type: Object, default: null },
     onboarding: { type: Object, default: () => ({}) },
+    hallTicket: { type: Object, default: null },
 });
 
 // Keep the referral widget counters fresh (≤5s) without a manual refresh.
@@ -94,6 +95,32 @@ const goToProfile = () => {
     dismissOnboarding();
     router.visit(props.onboarding.profile_url);
 };
+
+/* ── Hall ticket card + 90% gate ── */
+const ht = computed(() => props.hallTicket ?? { status: 'none', eligibility: {} });
+const htElig = computed(() => ht.value.eligibility ?? {});
+const htButton = computed(() => ({
+    approved: 'View Hall Ticket',
+    pending: 'Track Hall Ticket',
+}[ht.value.status] || 'Generate Hall Ticket'));
+const htLine = computed(() => ({
+    approved: `Approved · Roll No. ${ht.value.roll_number}. Ready to print.`,
+    pending: 'Submitted · awaiting verification by the examination team.',
+    rejected: 'Changes needed. Update your profile and submit again.',
+}[ht.value.status] || 'Your admit card for every olympiad you\'re enrolled in.'));
+
+const showGate = ref(false);
+const gateBar = ref(0);
+const openHallTicket = () => {
+    const locked = ['pending', 'approved'].includes(ht.value.status);
+    if (!locked && !htElig.value.eligible) {
+        showGate.value = true;
+        gateBar.value = 0;
+        requestAnimationFrame(() => requestAnimationFrame(() => { gateBar.value = htElig.value.percent ?? 0; }));
+        return;
+    }
+    router.visit(route('student.hall-ticket'));
+};
 </script>
 
 <template>
@@ -124,6 +151,26 @@ const goToProfile = () => {
                 <span class="stat-ic">{{ s.icon }}</span>
                 <div><strong>{{ s.value }}</strong><span>{{ s.label }}</span></div>
             </div>
+        </section>
+
+        <!-- hall ticket -->
+        <section class="htc" :class="ht.status">
+            <div class="htc-stub" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16.2a3.4 3.4 0 0 1 6.4 0M14 10h4M14 13.5h3"/></svg>
+            </div>
+            <div class="htc-body">
+                <p class="htc-kicker">Exams are approaching</p>
+                <h3>Hall <span class="ital">Ticket</span></h3>
+                <p class="htc-line">{{ htLine }}</p>
+                <div v-if="!['pending', 'approved'].includes(ht.status)" class="htc-meter">
+                    <div class="htc-bar"><span :style="{ width: (htElig.percent ?? 0) + '%' }" :class="{ ok: htElig.eligible }"></span></div>
+                    <small><b>{{ htElig.percent ?? 0 }}%</b> profile complete · {{ htElig.min_percent ?? 90 }}% needed</small>
+                </div>
+            </div>
+            <button type="button" class="htc-cta" @click="openHallTicket">
+                {{ htButton }}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
         </section>
 
         <!-- my exams -->
@@ -178,6 +225,44 @@ const goToProfile = () => {
                 <Link :href="route('student.referrals')" class="refer-cta">Refer friends →</Link>
             </div>
         </section>
+
+        <!-- hall ticket gate: profile below 90% -->
+        <Teleport to="body">
+            <Transition name="onb">
+                <div v-if="showGate" class="onb-overlay" @click.self="showGate = false">
+                    <div class="onb-card" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+                        <button class="onb-x" @click="showGate = false" aria-label="Close">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+                        </button>
+                        <div class="onb-badge gate">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16.2a3.4 3.4 0 0 1 6.4 0M14 10h4M14 13.5h3"/></svg>
+                        </div>
+                        <h3 id="gate-title" class="onb-title">Complete your <span class="ital">profile</span> first</h3>
+                        <p class="onb-sub">
+                            Completing at least <b>{{ htElig.min_percent ?? 90 }}%</b> of your profile is mandatory before you can generate your hall ticket.
+                            Your live photo, passport-size photo, school ID card and school coordinator details are always required.
+                        </p>
+                        <div class="onb-prog">
+                            <div class="onb-prog-top">
+                                <span>Profile completeness</span>
+                                <strong>{{ htElig.percent ?? 0 }}% <small class="gate-of">/ {{ htElig.min_percent ?? 90 }}%</small></strong>
+                            </div>
+                            <div class="onb-bar gate-bar">
+                                <span class="onb-bar-fill" :style="{ width: gateBar + '%' }"></span>
+                                <i class="gate-mark" :style="{ left: (htElig.min_percent ?? 90) + '%' }"></i>
+                            </div>
+                            <p class="onb-prog-meta">{{ htElig.filled }} of {{ htElig.total }} details added · still needs:</p>
+                            <div class="onb-chips">
+                                <span v-for="m in (htElig.missing ?? []).slice(0, 6)" :key="m" class="onb-chip" :class="{ req: htElig.required_missing?.includes(m) }">{{ m }}</span>
+                                <span v-if="(htElig.missing ?? []).length > 6" class="onb-chip more">+{{ htElig.missing.length - 6 }}</span>
+                            </div>
+                        </div>
+                        <Link :href="route('student.profile')" class="onb-cta gate-cta">Complete my profile →</Link>
+                        <button class="onb-later" @click="showGate = false">Not now</button>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
 
         <!-- first-login onboarding modal -->
         <Teleport to="body">
@@ -334,4 +419,40 @@ const goToProfile = () => {
 .onb-enter-active, .onb-leave-active { transition: opacity .25s ease; }
 .onb-enter-from, .onb-leave-to { opacity: 0; }
 .onb-enter-active .onb-card { animation: fadeUp .35s cubic-bezier(.2,.7,.2,1) both; }
+/* ── hall ticket card ── */
+.htc { position: relative; display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; margin-bottom: 1.3rem; padding: 1.25rem 1.4rem 1.25rem 1.25rem;
+    border-radius: 20px; background: #fff; border: 1px solid #E7D9BE; overflow: hidden; box-shadow: 0 14px 40px -24px rgba(10,16,36,.35); }
+.htc::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 6px; background: linear-gradient(180deg, #EE6A2C, #D6991F); }
+.htc::after { content: ""; position: absolute; right: -60px; top: -80px; width: 220px; height: 220px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(242,200,75,.22), transparent 70%); pointer-events: none; }
+.htc-stub { width: 64px; height: 64px; flex-shrink: 0; border-radius: 18px; display: grid; place-items: center; color: #F2C84B;
+    background: linear-gradient(135deg, #1B2748, #0A1024); box-shadow: 0 12px 26px -12px rgba(10,16,36,.6); margin-left: .35rem; }
+.htc-stub svg { width: 32px; height: 32px; }
+.htc-body { flex: 1; min-width: 220px; position: relative; z-index: 1; }
+.htc-kicker { margin: 0; font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #C9501A; }
+.htc h3 { margin: .1rem 0 .2rem; font-family: "Fraunces", serif; font-weight: 600; font-size: 1.3rem; color: #0A1024; }
+.htc h3 .ital { font-style: italic; color: #C9501A; }
+.htc-line { margin: 0; font-size: .86rem; color: #5B6373; }
+.htc-meter { margin-top: .6rem; max-width: 380px; }
+.htc-bar { height: 7px; border-radius: 999px; background: #EADFC8; overflow: hidden; }
+.htc-bar span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #F2C84B, #D6991F); transition: width .8s; }
+.htc-bar span.ok { background: linear-gradient(90deg, #1aa177, #168A66); }
+.htc-meter small { display: block; margin-top: .3rem; font-size: .74rem; color: #9aa0ad; }
+.htc-meter b { font-family: "Space Grotesk", monospace; color: #0A1024; }
+.htc-cta { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: .5rem; border: 0; cursor: pointer; color: #fff; font-weight: 700; font-size: .92rem;
+    padding: .85rem 1.3rem; border-radius: 14px; background: linear-gradient(135deg, #F2854E, #EE6A2C); box-shadow: 0 14px 28px -12px rgba(238,106,44,.75); transition: transform .15s; white-space: nowrap; }
+.htc-cta svg { width: 17px; height: 17px; transition: transform .2s; }
+.htc-cta:hover { transform: translateY(-2px); }
+.htc-cta:hover svg { transform: translateX(3px); }
+.htc.approved .htc-cta { background: linear-gradient(135deg, #1aa177, #168A66); box-shadow: 0 14px 28px -12px rgba(22,138,102,.7); }
+.htc.pending .htc-cta { background: linear-gradient(135deg, #1B2748, #0A1024); box-shadow: 0 14px 28px -12px rgba(10,16,36,.6); }
+@media (max-width: 560px) { .htc-cta { width: 100%; justify-content: center; } }
+
+.onb-badge.gate { background: linear-gradient(135deg, #1B2748, #0A1024); color: #F2C84B; box-shadow: 0 16px 30px -12px rgba(10,16,36,.6); }
+.gate-of { font-size: .75rem; color: #9aa0ad; }
+.gate-bar { position: relative; overflow: visible; }
+.gate-bar .onb-bar-fill { overflow: hidden; }
+.gate-mark { position: absolute; top: -4px; bottom: -4px; width: 2px; background: #0A1024; border-radius: 2px; }
+.onb-chip.req { color: #C9501A; border-color: rgba(238,106,44,.45); }
+.gate-cta { display: block; text-decoration: none; background: linear-gradient(135deg, #F2854E, #EE6A2C); box-shadow: 0 16px 34px -14px rgba(238,106,44,.7); }
 </style>

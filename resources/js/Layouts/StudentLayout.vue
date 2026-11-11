@@ -23,6 +23,7 @@ const sidebarOpen = ref(false);
 const nav = [
     { label: 'Dashboard',    href: '/student/dashboard',    match: '/student/dashboard',    icon: 'grid' },
     { label: 'Exams',        href: '/student/exams',        match: '/student/exams',        icon: 'doc'  },
+    { label: 'Hall Ticket',  href: '/student/hall-ticket',  match: '/student/hall-ticket',  icon: 'ticket'},
     { label: 'Results',      href: '/student/results',      match: '/student/results',      icon: 'chart'},
     { label: 'Certificates', href: '/student/certificates', match: '/student/certificates', icon: 'medal'},
     { label: 'Payments',     href: '/student/payments',     match: '/student/payments',     icon: 'card' },
@@ -248,6 +249,7 @@ const icons = {
     crown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l4 4 5-7 5 7 4-4v11H3V7Z"/></svg>',
     medal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="15" r="6"/><path d="M9 9 7 2m8 7 2-7M10.5 13.5 12 12l1.5 1.5"/></svg>',
     bolt:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>',
+    ticket:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4Z"/><path d="M9 6v12" stroke-dasharray="2 2"/><path d="M13 10h4M13 14h3"/></svg>',
     card:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>',
     support:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/><path d="M8 9h8M8 13h5"/></svg>',
     gift:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v9h14v-9"/><path d="M12 8S10 3 7.5 4.5 9 8 12 8Zm0 0s2-5 4.5-3.5S15 8 12 8Z"/></svg>',
