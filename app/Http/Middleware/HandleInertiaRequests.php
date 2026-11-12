@@ -6,6 +6,7 @@ use App\Models\HallTicket;
 use App\Models\StudentNotification;
 use App\Models\SupportTicket;
 use App\Support\AdminPermissions;
+use App\Support\LocalTime;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -44,6 +45,8 @@ class HandleInertiaRequests extends Middleware
                 'info' => $request->session()->get('info'),
                 'meta_purchase' => $request->session()->get('meta_purchase'),
             ],
+            // The clock schedule times are typed and shown in (workflow.md §5.7).
+            'timezone' => ['name' => LocalTime::timezone(), 'abbr' => LocalTime::abbreviation()],
             ...$this->badges($request),
         ];
     }

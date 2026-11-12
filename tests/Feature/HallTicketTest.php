@@ -12,6 +12,7 @@ use App\Models\Subject;
 use App\Models\User;
 use App\Services\HallTicketService;
 use App\Support\AdminPermissions;
+use App\Support\LocalTime;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -337,7 +338,7 @@ class HallTicketTest extends TestCase
 
         return Exam::create([
             'subject_id' => $subject->id, 'class_level_id' => $this->class->id, 'name' => $name, 'slug' => str($name)->slug(),
-            'exam_code' => 'NEO-'.str()->random(6), 'starts_at' => $starts, 'ends_at' => $ends, 'duration_minutes' => 60,
+            'exam_code' => 'NEO-'.str()->random(6), 'starts_at' => LocalTime::parse($starts), 'ends_at' => LocalTime::parse($ends), 'duration_minutes' => 60,
             'fee_amount' => 0, 'fee_currency' => 'INR', 'scoring_mode' => 'question_bank', 'marks_per_question' => 1,
             'status' => 'published', 'created_by' => $this->admin->id,
         ]);

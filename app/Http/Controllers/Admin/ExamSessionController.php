@@ -9,9 +9,9 @@ use App\Models\ExamAttempt;
 use App\Models\ExamEnrollment;
 use App\Services\ExamSessionBoardService;
 use App\Services\ExamSessionService;
+use App\Support\LocalTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -45,7 +45,7 @@ class ExamSessionController extends Controller
             'sessions' => fn () => $tab === 'not_started' ? null : $this->board->sessions($tab, $examIds, $search),
             'notStarted' => fn () => $tab === 'not_started' ? $this->board->notStarted($examIds, $search) : null,
             'limits' => ['max_minutes' => ExamSessionService::MAX_GRANT_MINUTES, 'max_strikes' => ExamSessionService::MAX_STRIKES],
-            'serverTime' => now()->format('g:i:s A'),
+            'serverTime' => LocalTime::now()->format('g:i:s A').' '.LocalTime::abbreviation(),
         ]);
     }
 
@@ -178,9 +178,9 @@ class ExamSessionController extends Controller
             'reason' => isset($data['reason']) ? trim($data['reason']) : null,
             'notify' => $request->boolean('notify', true),
             'minutes' => isset($data['minutes']) ? (int) $data['minutes'] : null,
-            // datetime-local values are wall time, stored as entered (§7 of workflow.md).
+            // datetime-local values are wall time on the display clock; store the instant (§5.7).
             'window' => ! empty($data['window_starts_at']) && ! empty($data['window_ends_at'])
-                ? [Carbon::parse($data['window_starts_at']), Carbon::parse($data['window_ends_at'])]
+                ? [LocalTime::parse($data['window_starts_at']), LocalTime::parse($data['window_ends_at'])]
                 : null,
         ];
     }

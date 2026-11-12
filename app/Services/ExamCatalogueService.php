@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Exam;
 use App\Models\Subject;
+use App\Support\LocalTime;
 use Illuminate\Support\Collection;
 
 class ExamCatalogueService
@@ -64,10 +65,8 @@ class ExamCatalogueService
      * 15 Nov 10:00 AM" is one card even though it is five exam rows. A subject that
      * runs different classes on different days yields one card per day.
      *
-     * Times are formatted here, not in the browser. The admin form posts a
-     * datetime-local wall time that is stored unconverted, so formatting the stored
-     * value shows exactly what the admin typed; serialising it as an ISO instant would
-     * let the viewer's timezone shift it.
+     * Times are formatted here, on the display clock (LocalTime, workflow.md §5.7), so
+     * the page shows exactly what the admin typed whatever the viewer's device says.
      *
      * Only sessions that have not finished are listed: anything starting today or
      * later, plus earlier-starting windows that are still open.
@@ -77,13 +76,15 @@ class ExamCatalogueService
     public function upcomingSchedule(): array
     {
         $now = now();
+        // "Today" is the display clock's day, expressed as a stored (UTC) instant.
+        $today = LocalTime::now()->startOfDay()->setTimezone(config('app.timezone'));
 
         $exams = Exam::query()
             ->where('status', 'published')
             ->whereNotNull('starts_at')
             ->whereHas('subject', fn ($q) => $q->where('is_active', true))
             ->where(fn ($q) => $q
-                ->where('starts_at', '>=', $now->copy()->startOfDay())
+                ->where('starts_at', '>=', $today)
                 ->orWhere('ends_at', '>', $now))
             ->with([
                 'subject:id,name,icon,color,sort_order',
@@ -128,8 +129,8 @@ class ExamCatalogueService
         /** @var Exam $first */
         $first = $exams->first();
         $subject = $first->subject;
-        $start = $first->starts_at;
-        $end = $first->ends_at;
+        $start = LocalTime::local($first->starts_at);
+        $end = LocalTime::local($first->ends_at);
         $sameDayEnd = $end && $end->isSameDay($start);
 
         return [

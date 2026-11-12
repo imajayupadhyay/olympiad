@@ -280,6 +280,7 @@
 </template>
 
 <script setup>
+import { formatLocal } from '@/Services/localTime.service';
 import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
@@ -356,7 +357,7 @@ const diffTotal = computed(() => props.charts.difficulty.reduce((a, d) => a + d.
 /* ── helpers ── */
 const avatarColors = ['#131C3D', '#EE6A2C', '#168A66', '#6C3FA0', '#2C49A6', '#DC2626', '#D6991F'];
 const avatarColor = (name) => avatarColors[(name?.charCodeAt(0) || 0) % avatarColors.length];
-const formatDate = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+const formatDate = (d) => formatLocal(d, { day: 'numeric', month: 'short' });
 const inrCompact = (amount) => new Intl.NumberFormat('en-IN', {
   style: 'currency',
   currency: 'INR',

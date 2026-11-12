@@ -10,6 +10,7 @@ use App\Models\ExamSessionEvent;
 use App\Models\Result;
 use App\Models\StudentNotification;
 use App\Models\User;
+use App\Support\LocalTime;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -705,12 +706,15 @@ class ExamSessionService
         return ['action' => $action, 'window_label' => $label];
     }
 
-    /** Server-formatted window ("Wed, 12 Nov · 10:00 AM – 6:00 PM"); stored wall time, per §7. */
+    /** Server-formatted window on the display clock ("Wed, 12 Nov · 10:00 AM – 6:00 PM"), per §5.7. */
     public function windowLabel(?Carbon $starts, ?Carbon $ends): ?string
     {
         if (! $starts || ! $ends) {
             return null;
         }
+
+        $starts = LocalTime::local($starts);
+        $ends = LocalTime::local($ends);
 
         return $starts->isSameDay($ends)
             ? $starts->format('D, j M · g:i A').' – '.$ends->format('g:i A')

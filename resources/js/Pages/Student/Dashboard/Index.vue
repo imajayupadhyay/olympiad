@@ -1,4 +1,5 @@
 <script setup>
+import { formatLocal } from '@/Services/localTime.service';
 import StudentLayout from '@/Layouts/StudentLayout.vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, ref } from 'vue';
@@ -55,7 +56,8 @@ const greeting = computed(() => {
 });
 const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-const fmt = (d) => d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'TBA';
+// Exam times are shown on the display clock (IST), not the device's (workflow.md §5.7).
+const fmt = (d) => formatLocal(d, undefined, 'TBA');
 
 const statCards = computed(() => [
     { label: 'Enrolled', value: props.stats.enrolled ?? 0, icon: '🎯' },

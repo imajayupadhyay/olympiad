@@ -72,6 +72,7 @@
 </template>
 
 <script setup>
+import { formatWall, timezoneAbbr } from '@/Services/localTime.service';
 import { computed } from 'vue';
 import { formatMarks, marksFor } from './examBuilder';
 
@@ -110,7 +111,8 @@ const rows = computed(() => {
 const totalQuestions = computed(() => rows.value.reduce((sum, row) => sum + row.count, 0));
 const totalMarks = computed(() => rows.value.reduce((sum, row) => sum + row.marks, 0));
 
-const formatDate = (value) => (value ? new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Not set');
+// The form holds datetime-local wall time (already on the display clock): show it as typed.
+const formatDate = (value) => (value ? `${formatWall(value)} ${timezoneAbbr()}` : 'Not set');
 const facts = computed(() => [
   { label: 'Olympiad subject', value: subjectName(props.exam.subject_id) },
   { label: 'Class', value: props.classLevels.find((level) => Number(level.id) === Number(props.exam.class_level_id))?.label || '—' },

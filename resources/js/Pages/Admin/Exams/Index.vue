@@ -254,6 +254,7 @@
 </template>
 
 <script setup>
+import { formatLocal } from '@/Services/localTime.service';
 import { computed, ref, watch } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
@@ -349,12 +350,12 @@ const money = (value) => Number(value || 0).toLocaleString('en-IN', {
 const formatDateTime = (value) => {
   if (!value) return 'Not scheduled';
 
-  return new Intl.DateTimeFormat('en-IN', {
+  return formatLocal(value, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(value));
+  });
 };
 </script>

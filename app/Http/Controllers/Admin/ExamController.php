@@ -9,6 +9,7 @@ use App\Models\Question;
 use App\Models\QuestionCategory;
 use App\Models\Subject;
 use App\Services\ExamSectionService;
+use App\Support\LocalTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,9 +20,7 @@ use Inertia\Inertia;
 
 class ExamController extends Controller
 {
-    public function __construct(private ExamSectionService $sections)
-    {
-    }
+    public function __construct(private ExamSectionService $sections) {}
 
     private function meta(): array
     {
@@ -286,6 +285,11 @@ class ExamController extends Controller
             'status' => ['required', Rule::in(array_keys(Exam::statuses()))],
         ]);
 
+        // datetime-local values are wall time on the display clock; store the instant (§5.7).
+        foreach (['starts_at', 'ends_at', 'result_release_at'] as $field) {
+            $data[$field] = LocalTime::parse($data[$field] ?? null);
+        }
+
         $data['fee_currency'] = strtoupper($data['fee_currency']);
         $data['negative_marking_enabled'] = $request->boolean('negative_marking_enabled');
         $data['negative_marks_per_question'] = $data['negative_marking_enabled']
@@ -404,7 +408,7 @@ class ExamController extends Controller
 
     private function dateForInput($date): ?string
     {
-        return $date?->format('Y-m-d\TH:i');
+        return LocalTime::forInput($date);
     }
 
     private function uniqueSlug(string $name, ?int $ignoreId = null): string

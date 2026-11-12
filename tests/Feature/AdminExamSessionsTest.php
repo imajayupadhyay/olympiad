@@ -16,6 +16,7 @@ use App\Models\Subject;
 use App\Models\User;
 use App\Services\ExamSessionService;
 use App\Support\AdminPermissions;
+use App\Support\LocalTime;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -222,7 +223,7 @@ class AdminExamSessionsTest extends TestCase
         $this->post(route('admin.exam-sessions.reset', $attempt), [
             'reason' => 'Corrupted', 'window_starts_at' => '2026-11-11T10:00', 'window_ends_at' => '2026-11-11T12:00',
         ])->assertSessionHas('success');
-        $this->assertDatabaseHas('exam_enrollments', ['user_id' => $attempt->user_id, 'window_starts_at' => '2026-11-11 10:00:00']);
+        $this->assertDatabaseHas('exam_enrollments', ['user_id' => $attempt->user_id, 'window_starts_at' => '2026-11-11 04:30:00']);   // 10:00 AM IST, stored as UTC
     }
 
     public function test_reschedule_resume_later_continues_inside_the_new_window(): void
@@ -243,7 +244,7 @@ class AdminExamSessionsTest extends TestCase
         $this->actingAs($attempt->user)->get(route('student.dashboard'))
             ->assertInertia(fn (Assert $page) => $page->where('myExams.0.action', 'rescheduled'));
 
-        Carbon::setTestNow('2026-11-11 09:30:00');
+        Carbon::setTestNow(LocalTime::parse('2026-11-11 09:30'));   // inside the 9–11 AM IST window
         $this->get(route('student.exam-room', $attempt))->assertInertia(fn (Assert $page) => $page
             ->where('session.paused', null)
             ->where('remaining_seconds', 20 * 60)

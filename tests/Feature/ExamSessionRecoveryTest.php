@@ -207,7 +207,7 @@ class ExamSessionRecoveryTest extends TestCase
         ]);
         $this->actingAs($this->student)->get(route('student.dashboard'))->assertInertia(fn (Assert $page) => $page
             ->where('myExams.0.action', 'rescheduled')
-            ->where('myExams.0.window_label', 'Wed, 11 Nov · 10:00 AM – 12:00 PM'));
+            ->where('myExams.0.window_label', 'Wed, 11 Nov · 3:30 PM – 5:30 PM'));
 
         $this->travel(1)->day();
         $this->post(route('student.exams.start', $this->exam))->assertRedirect();

@@ -1,4 +1,5 @@
 <script setup>
+import { formatLocal } from '@/Services/localTime.service';
 import { Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
@@ -6,7 +7,8 @@ const props = defineProps({
     exam: { type: Object, required: true },
 });
 
-const fmt = (d) => d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'TBA';
+// Exam times are shown on the display clock (IST), not the device's (workflow.md §5.7).
+const fmt = (d) => formatLocal(d, undefined, 'TBA');
 
 const availMeta = computed(() => ({
     upcoming: { label: 'Upcoming', cls: 'av-upcoming' },

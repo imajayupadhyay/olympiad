@@ -69,6 +69,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Display Timezone
+    |--------------------------------------------------------------------------
+    |
+    | Every datetime is stored as a UTC instant ('timezone' above must stay UTC).
+    | This is the clock admins type schedule times in and everyone reads them
+    | in. All conversion goes through App\Support\LocalTime (workflow.md §5.7).
+    |
+    */
+
+    'display_timezone' => env('APP_DISPLAY_TIMEZONE', 'Asia/Kolkata'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |

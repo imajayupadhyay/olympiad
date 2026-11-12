@@ -8,7 +8,9 @@ use App\Models\EmailTemplate;
 use App\Models\Exam;
 use App\Models\Payment;
 use App\Models\Result;
+use App\Models\SupportTicket;
 use App\Models\User;
+use App\Support\LocalTime;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -173,7 +175,7 @@ class ManagedEmailService
             'exam_names' => $examNames->join(', '),
             'amount_paid' => $this->money((float) $payment->amount, $payment->currency),
             'transaction_id' => $payment->razorpay_payment_id ?: $payment->razorpay_order_id ?: $payment->manual_reference ?: 'N/A',
-            'payment_datetime' => optional($payment->paid_at)->timezone(config('app.timezone'))->format('d M Y, h:i A') ?: now()->format('d M Y, h:i A'),
+            'payment_datetime' => LocalTime::format($payment->paid_at ?? now(), 'd M Y, h:i A'),
             'payment_method' => $payment->method ?: $payment->gateway ?: 'Razorpay',
             'payment_gateway' => Str::headline($payment->gateway ?: 'Razorpay'),
         ]);
@@ -186,8 +188,8 @@ class ManagedEmailService
         return $this->variablesForUser($user, [
             'exam_name' => $exam->name,
             'exam_code' => $exam->exam_code,
-            'exam_start_datetime' => optional($exam->starts_at)->timezone(config('app.timezone'))->format('d M Y, h:i A'),
-            'exam_end_datetime' => optional($exam->ends_at)->timezone(config('app.timezone'))->format('d M Y, h:i A'),
+            'exam_start_datetime' => LocalTime::format($exam->starts_at, 'd M Y, h:i A'),
+            'exam_end_datetime' => LocalTime::format($exam->ends_at, 'd M Y, h:i A'),
             'exam_duration' => $exam->duration_minutes,
             'student_class' => $exam->classLevel?->label ?: $user->classLevel?->label,
         ]);
@@ -222,7 +224,7 @@ class ManagedEmailService
         ]);
     }
 
-    public function supportTicketVariables(User $user, \App\Models\SupportTicket $ticket, string $replySnippet): array
+    public function supportTicketVariables(User $user, SupportTicket $ticket, string $replySnippet): array
     {
         return $this->variablesForUser($user, [
             'ticket_subject' => $ticket->subject,

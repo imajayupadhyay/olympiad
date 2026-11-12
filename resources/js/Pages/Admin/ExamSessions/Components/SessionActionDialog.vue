@@ -1,4 +1,5 @@
 <script setup>
+import { timezoneAbbr, toLocalInput } from '@/Services/localTime.service';
 // One dialog for every Ongoing Exams action. The fields shown depend on the action;
 // the server (ExamSessionService) re-checks everything inside a row lock.
 import { computed, onMounted, ref } from 'vue';
@@ -17,8 +18,8 @@ const defaultWindow = () => {
   start.setSeconds(0, 0);
   const minutes = Math.max(60, (props.target.exam?.duration_minutes ?? props.target.duration_minutes ?? 60) + 30);
   const end = new Date(start.getTime() + minutes * 60 * 1000);
-  const local = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  return [local(start), local(end)];
+  // Wall time on the display clock (IST), whatever this device's timezone is (workflow.md §5.7).
+  return [toLocalInput(start), toLocalInput(end)];
 };
 const [ws, we] = defaultWindow();
 
@@ -157,12 +158,12 @@ const onKey = (e) => { if (e.key === 'Escape' && !form.processing) emit('close')
         </label>
         <div v-if="cfg.window === 'required' || (cfg.window === 'optional' && giveWindow)" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="label">Window opens</label>
+            <label class="label">Window opens ({{ timezoneAbbr() }})</label>
             <input v-model="form.window_starts_at" type="datetime-local" class="field" />
             <p v-if="form.errors.window_starts_at" class="error">{{ form.errors.window_starts_at }}</p>
           </div>
           <div>
-            <label class="label">Window closes</label>
+            <label class="label">Window closes ({{ timezoneAbbr() }})</label>
             <input v-model="form.window_ends_at" type="datetime-local" class="field" />
             <p v-if="form.errors.window_ends_at" class="error">{{ form.errors.window_ends_at }}</p>
           </div>

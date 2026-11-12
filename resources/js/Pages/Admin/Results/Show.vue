@@ -302,6 +302,7 @@
 </template>
 
 <script setup>
+import { formatLocalDate } from '@/Services/localTime.service';
 import { ref, reactive } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
@@ -317,8 +318,7 @@ const barWidth = (value, max) => `${max > 0 ? Math.max(0, Math.min(100, (value /
 
 const fmt = (v) => (v != null ? parseFloat(v).toFixed(1) : '—');
 
-const formatDate = (d) =>
-  new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+const formatDate = (d) => formatLocalDate(d);
 
 const initials = (name) =>
   name?.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';

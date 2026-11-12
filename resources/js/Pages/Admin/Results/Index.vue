@@ -101,11 +101,11 @@
 </template>
 
 <script setup>
+import { formatLocalDate } from '@/Services/localTime.service';
 import { Link } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 
 defineProps({ exams: Array });
 
-const formatDate = (d) =>
-  new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+const formatDate = (d) => formatLocalDate(d);
 </script>

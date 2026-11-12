@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ClassLevel;
 use App\Models\Exam;
 use App\Models\Subject;
+use App\Support\LocalTime;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia;
@@ -21,7 +22,8 @@ class PublicExamDatesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Carbon::setTestNow('2026-10-10 09:00:00');
+        // Schedule times in this file are India wall time, as an admin types them (workflow.md §5.7).
+        Carbon::setTestNow(LocalTime::parse('2026-10-10 09:00:00'));
     }
 
     protected function tearDown(): void
@@ -53,14 +55,20 @@ class PublicExamDatesTest extends TestCase
         static $n = 0;
         $n++;
 
+        foreach (['starts_at', 'ends_at'] as $field) {
+            if (isset($overrides[$field])) {
+                $overrides[$field] = LocalTime::parse($overrides[$field]);
+            }
+        }
+
         return Exam::create(array_merge([
             'subject_id' => $subject->id,
             'class_level_id' => $this->classLevel($level)->id,
             'name' => "{$subject->name} Olympiad Class {$level}",
             'slug' => 'date-exam-'.$n,
             'exam_code' => 'ED'.(1000 + $n),
-            'starts_at' => '2026-11-15 10:00:00',
-            'ends_at' => '2026-11-15 13:00:00',
+            'starts_at' => LocalTime::parse('2026-11-15 10:00:00'),
+            'ends_at' => LocalTime::parse('2026-11-15 13:00:00'),
             'duration_minutes' => 60,
             'fee_amount' => 299,
             'fee_currency' => 'INR',
@@ -166,12 +174,11 @@ class PublicExamDatesTest extends TestCase
         $maths = $this->subject('Mathematics');
         $exam = $this->exam($maths, 8);
 
-        $exam->update(['starts_at' => '2027-01-09 11:15:00', 'ends_at' => '2027-01-09 12:15:00']);
+        $exam->update(['starts_at' => LocalTime::parse('2027-01-09 11:15:00'), 'ends_at' => LocalTime::parse('2027-01-09 12:15:00')]);
 
         $session = $this->sessions()[0];
         $this->assertSame('2027-01-09', $session['date']);
         $this->assertSame('11:15 AM', $session['start_time']);
         $this->assertSame('January 2027', $session['month_label']);
     }
-
 }

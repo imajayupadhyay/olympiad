@@ -240,6 +240,7 @@
 </template>
 
 <script setup>
+import { formatLocalDate } from '@/Services/localTime.service';
 import { computed, ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
@@ -262,8 +263,7 @@ const doToggle = () => {
 const initials = (name) =>
   name?.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
 
-const formatDate = (d) =>
-  new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+const formatDate = (d) => formatLocalDate(d);
 
 const formatCurrency = (amount, currency = 'INR') =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(Number(amount) || 0);

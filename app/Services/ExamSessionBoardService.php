@@ -6,6 +6,7 @@ use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Models\ExamEnrollment;
 use App\Models\ExamSessionEvent;
+use App\Support\LocalTime;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
@@ -67,7 +68,7 @@ class ExamSessionBoardService
                 'exam_code' => $exam->exam_code,
                 'class' => $exam->classLevel?->label,
                 'availability' => $exam->availabilityState(),
-                'window_label' => $this->sessions->windowLabel($exam->starts_at, $exam->ends_at) ?? ($exam->starts_at?->format('D, j M · g:i A').' onwards'),
+                'window_label' => $this->sessions->windowLabel($exam->starts_at, $exam->ends_at) ?? (LocalTime::format($exam->starts_at, 'D, j M · g:i A').' onwards'),
                 'duration_minutes' => $exam->duration_minutes,
                 'open' => (int) ($row->open_count ?? 0),
                 'paused' => (int) ($row->paused_count ?? 0),
@@ -176,7 +177,7 @@ class ExamSessionBoardService
                 'actor' => $event->actor?->name,
                 'reason' => $event->reason,
                 'summary' => $this->eventSummary($event),
-                'at' => $event->created_at->format('j M, g:i:s A'),
+                'at' => LocalTime::format($event->created_at, 'j M, g:i:s A'),
                 'previous_attempt' => $event->exam_attempt_id === null,
             ]);
 
@@ -191,9 +192,9 @@ class ExamSessionBoardService
                 'paused_seconds' => $attempt->paused_seconds + ($attempt->isPaused() ? (int) $attempt->suspended_at->diffInSeconds(now(), true) : 0),
                 'used_seconds' => $attempt->isFinished() ? (int) $attempt->time_taken_seconds : $attempt->timeUsedSeconds(),
                 'remaining_seconds' => $attempt->isOpen() ? $attempt->remainingSeconds() : 0,
-                'started_at' => $attempt->started_at?->format('j M, g:i:s A'),
-                'deadline_at' => $attempt->deadline_at?->format('j M, g:i:s A'),
-                'submitted_at' => $attempt->submitted_at?->format('j M, g:i:s A'),
+                'started_at' => LocalTime::format($attempt->started_at, 'j M, g:i:s A'),
+                'deadline_at' => LocalTime::format($attempt->deadline_at, 'j M, g:i:s A'),
+                'submitted_at' => LocalTime::format($attempt->submitted_at, 'j M, g:i:s A'),
             ],
             'device' => [
                 'ip' => $lastRoom->meta['ip'] ?? $attempt->ip_address,
@@ -233,8 +234,8 @@ class ExamSessionBoardService
             'current_number' => $attempt->current_question_id ? ($positions[$attempt->exam_id]['map'][$attempt->current_question_id] ?? null) : null,
             'remaining_seconds' => $attempt->isOpen() ? $attempt->remainingSeconds() : 0,
             'last_seen' => ($attempt->last_seen_at ?? $attempt->started_at)?->diffForHumans(short: true),
-            'started_at' => $attempt->started_at?->format('j M, g:i A'),
-            'submitted_at' => $attempt->submitted_at?->format('j M, g:i A'),
+            'started_at' => LocalTime::format($attempt->started_at, 'j M, g:i A'),
+            'submitted_at' => LocalTime::format($attempt->submitted_at, 'j M, g:i A'),
             'violation_count' => $attempt->violation_count,
             'device_switches' => (int) ($attempt->device_switches ?? 0),
             'reopen_count' => $attempt->reopen_count,

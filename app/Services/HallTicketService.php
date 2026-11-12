@@ -7,6 +7,7 @@ use App\Models\ExamEnrollment;
 use App\Models\HallTicket;
 use App\Models\StudentNotification;
 use App\Models\User;
+use App\Support\LocalTime;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -88,7 +89,7 @@ class HallTicketService
             'label' => $ticket?->statusLabel() ?? 'Not submitted',
             'roll_number' => $ticket?->isApproved() ? $ticket->roll_number : null,
             'rejection_reason' => $ticket?->isRejected() ? $ticket->rejection_reason : null,
-            'submitted_at' => $ticket?->submitted_at?->format('j M Y, g:i A'),
+            'submitted_at' => LocalTime::format($ticket?->submitted_at, 'j M Y, g:i A'),
             'locked' => (bool) $ticket?->locksProfile(),
             'eligibility' => $this->eligibility($user),
         ];
@@ -338,7 +339,7 @@ class HallTicketService
             'status' => $ticket->status,
             'roll_number' => $ticket->isApproved() ? $ticket->roll_number : null,
             'session_at' => $ticket->approved_at ?? $ticket->submitted_at ?? now(),
-            'approved_on' => $ticket->isApproved() ? $ticket->approved_at?->format('j F Y') : null,
+            'approved_on' => $ticket->isApproved() ? LocalTime::format($ticket->approved_at, 'j F Y') : null,
             'values' => $values,
             'photo_url' => $user->passport_photo ? $documentUrl('passport_photo') : null,
             'exams' => $exams,

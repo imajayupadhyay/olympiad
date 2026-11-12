@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\HallTicketSetting;
 use App\Models\StudentCustomField;
+use App\Support\LocalTime;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -336,13 +337,13 @@ class HallTicketLayoutService
             };
         }
 
-        $day = now()->addDays(10)->setTime(10, 0);
+        $day = LocalTime::now()->addDays(10)->setTime(10, 0);
 
         return [
             'status' => $status,
             'roll_number' => $status === 'approved' ? 'NEO260500001' : null,
             'session_at' => now(),
-            'approved_on' => $status === 'approved' ? now()->format('j F Y') : null,
+            'approved_on' => $status === 'approved' ? LocalTime::now()->format('j F Y') : null,
             'values' => $status === 'approved' ? $values : [...$values, 'roll_number' => null],
             'photo_url' => null,
             'exams' => [
@@ -357,9 +358,9 @@ class HallTicketLayoutService
     private function examCells(array $exam, int $i, array $columns, array $layout): array
     {
         /** @var Carbon|null $starts */
-        $starts = $exam['starts'] ?? null;
+        $starts = LocalTime::local($exam['starts'] ?? null);
         /** @var Carbon|null $ends */
-        $ends = $exam['ends'] ?? null;
+        $ends = LocalTime::local($exam['ends'] ?? null);
         $sameDay = $starts && $ends && $starts->isSameDay($ends);
         $closes = $ends ? ($sameDay || ! $starts ? $ends->format('g:i A') : $ends->format('j M, g:i A')) : null;
         $detail = collect([$exam['subject'] ?? null, $exam['exam_code'] ?? null])->filter()->implode(' · ')

@@ -121,12 +121,12 @@
             <h2 class="font-heading font-bold text-text-main text-sm uppercase tracking-wider mb-4">Schedule & Fees</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
               <div>
-                <label class="label">Opens At *</label>
+                <label class="label">Opens At * <span class="normal-case font-normal text-text-muted">({{ timezoneAbbr() }})</span></label>
                 <input v-model="form.starts_at" type="datetime-local" class="field" :class="form.errors.starts_at ? 'border-danger' : 'border-gray-200'" />
                 <p v-if="form.errors.starts_at" class="error">{{ form.errors.starts_at }}</p>
               </div>
               <div>
-                <label class="label">Closes At</label>
+                <label class="label">Closes At <span class="normal-case font-normal text-text-muted">({{ timezoneAbbr() }})</span></label>
                 <input v-model="form.ends_at" type="datetime-local" class="field" :class="form.errors.ends_at ? 'border-danger' : 'border-gray-200'" />
                 <p v-if="form.errors.ends_at" class="error">{{ form.errors.ends_at }}</p>
               </div>
@@ -138,6 +138,9 @@
                   <span class="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xs">mins</span>
                 </div>
                 <p v-if="form.errors.duration_minutes" class="error">{{ form.errors.duration_minutes }}</p>
+                <p class="text-[11px] text-text-muted mt-1 leading-snug">
+                  Students may start any time between Opens At and Closes At. The timer runs for this long from the moment they start, and stops at Closes At if that comes first.
+                </p>
               </div>
               <div>
                 <label class="label">Exam Fee *</label>
@@ -254,7 +257,7 @@
               </span>
             </label>
             <div>
-              <label class="label">Release results at</label>
+              <label class="label">Release results at <span class="normal-case font-normal text-text-muted">({{ timezoneAbbr() }})</span></label>
               <input v-model="form.result_release_at" type="datetime-local" class="field" :class="form.errors.result_release_at ? 'border-danger' : 'border-gray-200'" />
               <p v-if="form.errors.result_release_at" class="error">{{ form.errors.result_release_at }}</p>
             </div>
@@ -327,6 +330,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { Link, router, useForm } from '@inertiajs/vue3';
 import SectionBuilder from './SectionBuilder.vue';
 import ExamReview from './ExamReview.vue';
+import { timezoneAbbr } from '@/Services/localTime.service';
 import { hydrateSections } from './examBuilder';
 import { confirmDialog } from '@/composables/useConfirm';
 
