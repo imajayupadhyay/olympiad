@@ -8,35 +8,41 @@ class AdminPermissions
 {
     public const ACTIONS = ['read', 'write', 'delete'];
 
+    /**
+     * Every admin module, in sidebar order. `section` is the sidebar category and the
+     * grouping in the Roles permission matrix (AdminLayout renders the sidebar from this
+     * list, shared as `admin_modules`). Keys are permanent: they are stored in
+     * admin_role_permissions. Labels and sections can change freely.
+     */
     public const MODULES = [
-        'dashboard' => ['label' => 'Dashboard', 'section' => 'Main', 'route' => 'admin.dashboard'],
-        'students' => ['label' => 'Students', 'section' => 'Main', 'route' => 'admin.users.index'],
-        'reports' => ['label' => 'Reports', 'section' => 'Main', 'route' => 'admin.reports.index'],
-        'staff_users' => ['label' => 'Users', 'section' => 'Access', 'route' => 'admin.staff-users.index'],
-        'roles' => ['label' => 'Permission Management', 'section' => 'Access', 'route' => 'admin.roles.index'],
-        'schools' => ['label' => 'Schools', 'section' => 'School Data', 'route' => 'admin.schools.index'],
-        'data_entry' => ['label' => 'Data Entry', 'section' => 'School Data', 'route' => 'admin.data-entry.index'],
-        'school_designations' => ['label' => 'School Designations', 'section' => 'School Data', 'route' => 'admin.school-designations.index'],
-        'questions' => ['label' => 'Question Bank', 'section' => 'Exams', 'route' => 'admin.questions.index'],
+        'dashboard' => ['label' => 'Dashboard', 'section' => 'Overview', 'route' => 'admin.dashboard'],
+        'reports' => ['label' => 'Student Reports', 'section' => 'Overview', 'route' => 'admin.reports.index'],
+        'students' => ['label' => 'Students', 'section' => 'Students', 'route' => 'admin.users.index'],
+        'hall_tickets' => ['label' => 'Hall Tickets', 'section' => 'Students', 'route' => 'admin.hall-tickets.index'],
+        'support' => ['label' => 'Support Tickets', 'section' => 'Students', 'route' => 'admin.support.index'],
         'exams' => ['label' => 'Exams', 'section' => 'Exams', 'route' => 'admin.exams.index'],
+        'questions' => ['label' => 'Question Bank', 'section' => 'Exams', 'route' => 'admin.questions.index'],
         'exam_sessions' => ['label' => 'Ongoing Exams', 'section' => 'Exams', 'route' => 'admin.exam-sessions.index'],
-        'results' => ['label' => 'Results', 'section' => 'Exams', 'route' => 'admin.results'],
-        'hall_tickets' => ['label' => 'Hall Tickets', 'section' => 'Exams', 'route' => 'admin.hall-tickets.index'],
-        'certificates' => ['label' => 'Certificates', 'section' => 'Exams', 'route' => 'admin.certificates'],
-        'payments' => ['label' => 'Payments', 'section' => 'Finance & Comms', 'route' => 'admin.payments'],
-        'receipts' => ['label' => 'Receipts', 'section' => 'Finance & Comms', 'route' => 'admin.receipts.index'],
-        'coupons' => ['label' => 'Coupons', 'section' => 'Finance & Comms', 'route' => 'admin.coupons'],
-        'referrals' => ['label' => 'Referrals', 'section' => 'Finance & Comms', 'route' => 'admin.referrals'],
-        'notifications' => ['label' => 'Notifications', 'section' => 'Finance & Comms', 'route' => 'admin.notifications'],
-        'support' => ['label' => 'Support', 'section' => 'Finance & Comms', 'route' => 'admin.support.index'],
-        'emails' => ['label' => 'Emails', 'section' => 'Finance & Comms', 'route' => 'admin.emails'],
-        'content' => ['label' => 'Content', 'section' => 'Finance & Comms', 'route' => 'admin.content'],
-        'forms' => ['label' => 'Forms', 'section' => 'Finance & Comms', 'route' => 'admin.forms.index'],
+        'results' => ['label' => 'Results', 'section' => 'Results & Certificates', 'route' => 'admin.results'],
+        'certificates' => ['label' => 'Certificates', 'section' => 'Results & Certificates', 'route' => 'admin.certificates'],
+        'payments' => ['label' => 'Payments', 'section' => 'Payments & Offers', 'route' => 'admin.payments'],
+        'receipts' => ['label' => 'Receipts & GST', 'section' => 'Payments & Offers', 'route' => 'admin.receipts.index'],
+        'coupons' => ['label' => 'Coupons', 'section' => 'Payments & Offers', 'route' => 'admin.coupons'],
+        'referrals' => ['label' => 'Referrals', 'section' => 'Payments & Offers', 'route' => 'admin.referrals'],
+        'notifications' => ['label' => 'Notifications', 'section' => 'Communication', 'route' => 'admin.notifications'],
+        'emails' => ['label' => 'Email Templates', 'section' => 'Communication', 'route' => 'admin.emails'],
+        'content' => ['label' => 'Homepage Content', 'section' => 'Website', 'route' => 'admin.content'],
+        'forms' => ['label' => 'Contact Leads', 'section' => 'Website', 'route' => 'admin.forms.index'],
+        'schools' => ['label' => 'Schools', 'section' => 'Schools', 'route' => 'admin.schools.index'],
+        'data_entry' => ['label' => 'Data Entry', 'section' => 'Schools', 'route' => 'admin.data-entry.index'],
+        'school_designations' => ['label' => 'Designations', 'section' => 'Schools', 'route' => 'admin.school-designations.index'],
         'settings_subjects' => ['label' => 'Subjects', 'section' => 'Settings', 'route' => 'admin.settings.subjects'],
-        'settings_categories' => ['label' => 'Categories', 'section' => 'Settings', 'route' => 'admin.settings.categories'],
+        'settings_categories' => ['label' => 'Question Categories', 'section' => 'Settings', 'route' => 'admin.settings.categories'],
         'settings_classes' => ['label' => 'Class Levels', 'section' => 'Settings', 'route' => 'admin.settings.classes'],
-        'settings_receipts' => ['label' => 'Receipt Settings', 'section' => 'Settings', 'route' => 'admin.settings.receipts'],
         'settings_hall_ticket' => ['label' => 'Hall Ticket Layout', 'section' => 'Settings', 'route' => 'admin.settings.hall-ticket'],
+        'settings_receipts' => ['label' => 'Receipt Settings', 'section' => 'Settings', 'route' => 'admin.settings.receipts'],
+        'staff_users' => ['label' => 'Staff Users', 'section' => 'Staff & Access', 'route' => 'admin.staff-users.index'],
+        'roles' => ['label' => 'Roles & Permissions', 'section' => 'Staff & Access', 'route' => 'admin.roles.index'],
     ];
 
     public static function moduleOptions(): array
