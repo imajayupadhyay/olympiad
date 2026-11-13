@@ -91,6 +91,49 @@ class ManagedEmailService
         ];
     }
 
+    /**
+     * An admin-composed broadcast email (Admin → Notifications → Email). Placeholders
+     * are already filled by NotificationPlaceholderService; this only wraps the body in
+     * the branded shell and records the `email_logs` row (template key
+     * `notification_blast`, related to the NotificationLog). The caller sends it with
+     * sendRendered() inside its own queued batch job.
+     *
+     * @return array{0: EmailLog, 1: array{subject: string, html_body: string, text_body: string}}
+     */
+    public function prepareBroadcast(User $recipient, string $subject, string $html, array $meta = []): array
+    {
+        $text = trim(html_entity_decode(strip_tags(preg_replace('#<(br|/p|/li|/h[1-6]|/div)\s*/?>#i', "\n", $html) ?? $html)));
+        $text = preg_replace("/\n{3,}/", "\n\n", $text) ?? $text;
+
+        $rendered = [
+            'subject' => Str::limit($subject, 250, ''),
+            'html_body' => $this->wrapHtml($html),
+            'text_body' => $text,
+        ];
+
+        $log = EmailLog::create([
+            'email_template_id' => EmailTemplate::where('key', 'notification_blast')->value('id'),
+            'template_key' => 'notification_blast',
+            'recipient_user_id' => $recipient->id,
+            'related_type' => $meta['related_type'] ?? null,
+            'related_id' => $meta['related_id'] ?? null,
+            'recipient_email' => $recipient->email,
+            'recipient_name' => $recipient->name,
+            'subject' => $rendered['subject'],
+            'status' => 'queued',
+            'meta' => $this->safeMeta($meta),
+            'queued_at' => now(),
+        ]);
+
+        return [$log, $rendered];
+    }
+
+    /** Branded shell around arbitrary body HTML (used by the broadcast preview). */
+    public function wrapBody(string $html): string
+    {
+        return $this->wrapHtml($html);
+    }
+
     public function sendRendered(EmailLog $log, array $rendered): void
     {
         $apiKey = config('services.brevo.api_key');

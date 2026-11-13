@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\ExamQuestionImportController;
 use App\Http\Controllers\Admin\ExamSessionController;
 use App\Http\Controllers\Admin\HallTicketController;
 use App\Http\Controllers\Admin\LeadController;
+use App\Http\Controllers\Admin\NotificationComposerController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\QuestionBulkImportController;
@@ -36,6 +37,7 @@ use App\Http\Controllers\Admin\Settings\SubjectController;
 use App\Http\Controllers\Admin\StaffUserController;
 use App\Http\Controllers\Admin\SupportController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\WhatsAppTemplateController;
 use Illuminate\Support\Facades\Route;
 
 // ── Secure Admin Login (obfuscated URL) ──────────────────────────────────────
@@ -210,11 +212,20 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/referrals/settings', [ReferralSettingController::class, 'index'])->middleware('admin.permission:referrals,read')->name('referrals.settings');
     Route::put('/referrals/settings', [ReferralSettingController::class, 'update'])->middleware('admin.permission:referrals,write')->name('referrals.settings.update');
 
+    // Notifications (workflow.md §13.2). Literal paths before {log}.
     Route::get('/notifications', [NotificationController::class, 'index'])->middleware('admin.permission:notifications,read')->name('notifications');
-    Route::get('/notifications/students', [NotificationController::class, 'students'])->middleware('admin.permission:notifications,read')->name('notifications.students');
-    Route::post('/notifications/preview', [NotificationController::class, 'preview'])->middleware('admin.permission:notifications,read')->name('notifications.preview');
-    Route::post('/notifications/send', [NotificationController::class, 'send'])->middleware('admin.permission:notifications,write')->name('notifications.send');
-    Route::delete('/notifications/{log}', [NotificationController::class, 'destroy'])->middleware('admin.permission:notifications,delete')->name('notifications.destroy');
+    Route::post('/notifications/audience', [NotificationComposerController::class, 'audience'])->middleware('admin.permission:notifications,read')->name('notifications.audience');
+    Route::get('/notifications/students', [NotificationComposerController::class, 'students'])->middleware('admin.permission:notifications,read')->name('notifications.students');
+    Route::post('/notifications/preview', [NotificationComposerController::class, 'preview'])->middleware('admin.permission:notifications,read')->name('notifications.preview');
+    Route::post('/notifications/test', [NotificationComposerController::class, 'test'])->middleware(['admin.permission:notifications,write', 'throttle:10,1'])->name('notifications.test');
+    Route::get('/notifications/whatsapp/templates', [WhatsAppTemplateController::class, 'index'])->middleware('admin.permission:notifications,read')->name('notifications.whatsapp.templates');
+    Route::get('/notifications/whatsapp/templates/{template}', [WhatsAppTemplateController::class, 'show'])->middleware('admin.permission:notifications,read')->where('template', '[A-Za-z0-9_\-]+')->name('notifications.whatsapp.template');
+    Route::post('/notifications/send', [NotificationController::class, 'send'])->middleware(['admin.permission:notifications,write', 'throttle:20,1'])->name('notifications.send');
+    Route::get('/notifications/{log}', [NotificationController::class, 'show'])->middleware('admin.permission:notifications,read')->whereNumber('log')->name('notifications.show');
+    Route::post('/notifications/{log}/retry', [NotificationController::class, 'retry'])->middleware('admin.permission:notifications,write')->whereNumber('log')->name('notifications.retry');
+    Route::post('/notifications/{log}/deliveries/{delivery}/retry', [NotificationController::class, 'retryDelivery'])->middleware('admin.permission:notifications,write')->whereNumber('log')->name('notifications.deliveries.retry');
+    Route::post('/notifications/{log}/refresh-status', [NotificationController::class, 'refreshStatus'])->middleware(['admin.permission:notifications,read', 'throttle:10,1'])->whereNumber('log')->name('notifications.refresh-status');
+    Route::delete('/notifications/{log}', [NotificationController::class, 'destroy'])->middleware('admin.permission:notifications,delete')->whereNumber('log')->name('notifications.destroy');
 
     Route::get('/support', [SupportController::class, 'index'])->middleware('admin.permission:support,read')->name('support.index');
     Route::get('/support/{ticket}', [SupportController::class, 'show'])->middleware('admin.permission:support,read')->name('support.show');

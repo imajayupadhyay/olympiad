@@ -23,6 +23,13 @@ Schedule::command('exam-attempts:finalize-expired')
     ->withoutOverlapping(5)
     ->onOneServer();
 
+// Admin broadcasts: resume stalled email/WhatsApp sends and pull WhatsApp
+// delivered/read/failed status from Bird (workflow.md §13.2).
+Schedule::command('notifications:maintain')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer();
+
 Schedule::call(function (): void {
     LoginOtpChallenge::where('created_at', '<', now()->subDay())->delete();
 })->dailyAt('02:20')->name('prune-login-otp-challenges')->withoutOverlapping();

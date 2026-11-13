@@ -2,12 +2,13 @@
 import StudentLayout from '@/Layouts/StudentLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { formatLocal } from '@/Services/localTime.service';
 
 const props = defineProps({
     notifications: { type: Object, default: () => ({ data: [], links: [] }) },
 });
 
-const fmt = (d) => d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+const fmt = (d) => formatLocal(d, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 const hasUnread = computed(() => props.notifications.data.some((n) => !n.is_read));
 
@@ -89,7 +90,7 @@ const markAll = () => {
 .ic svg { width: 18px; height: 18px; }
 .body { min-width: 0; flex: 1; }
 .body strong { display: block; color: #0A1024; font-size: .95rem; margin-bottom: .1rem; }
-.body p { margin: 0 0 .3rem; font-size: .85rem; color: #5B6373; line-height: 1.45; }
+.body p { margin: 0 0 .3rem; font-size: .85rem; color: #5B6373; line-height: 1.45; white-space: pre-line; overflow-wrap: anywhere; }
 .body small { font-size: .74rem; color: #9aa0ad; }
 .new-dot { width: 8px; height: 8px; border-radius: 50%; background: #EE6A2C; flex-shrink: 0; margin-top: .4rem; }
 

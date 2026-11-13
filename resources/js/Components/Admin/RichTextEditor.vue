@@ -209,6 +209,11 @@ watch(() => props.modelValue, (val) => {
 });
 
 onBeforeUnmount(() => editor.value?.destroy());
+
+// Lets a parent insert text at the cursor (e.g. a {{placeholder}} from Notifications).
+defineExpose({
+  insertText: (text) => editor.value?.chain().focus().insertContent(text).run(),
+});
 </script>
 
 <style scoped>

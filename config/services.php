@@ -64,6 +64,18 @@ return [
         'source' => env('AISENSY_SOURCE', 'neo_student_login'),
     ],
 
+    // Bird (WhatsApp templates for admin broadcasts, workflow.md §13.5). Only the
+    // key and sender number are secrets/account-specific; the rest are tuning knobs.
+    'bird' => [
+        'api_key' => env('BIRD_API_KEY'),
+        'base_url' => env('BIRD_BASE_URL', 'https://eu1.platform.bird.com'),
+        'whatsapp_from' => env('BIRD_WHATSAPP_FROM'),
+        'send_interval_ms' => (int) env('BIRD_WHATSAPP_SEND_INTERVAL_MS', 500),
+        'batch_size' => (int) env('BIRD_WHATSAPP_BATCH_SIZE', 40),
+        'template_cache_minutes' => (int) env('BIRD_TEMPLATE_CACHE_MINUTES', 10),
+        'max_rate_limit_retries' => (int) env('BIRD_WHATSAPP_MAX_RATE_LIMIT_RETRIES', 8),
+    ],
+
     'auth_otp' => [
         // Use a dedicated random production secret. APP_KEY is a safe fallback
         // for development and prevents an empty pepper from weakening hashes.
