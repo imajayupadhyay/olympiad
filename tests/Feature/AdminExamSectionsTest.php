@@ -114,6 +114,43 @@ class AdminExamSectionsTest extends TestCase
         $this->assertSame([$m2->id, $m1->id, $r1->id], $exam->questions()->pluck('questions.id')->all());
     }
 
+    public function test_deleting_a_populated_section_preserves_other_sections_and_bank_questions(): void
+    {
+        [$removed, $kept] = [$this->question($this->reasoning), $this->question($this->math)];
+        $exam = $this->examWithSections([['Reasoning', $this->reasoning, [$removed]], ['Mathematics', $this->math, [$kept]]]);
+        [$first, $second] = $exam->sections()->get();
+        $otherExam = $this->examWithSections([['Other exam', $this->reasoning, [$removed]]]);
+
+        $this->actingAs($this->admin)->put(route('admin.exams.update', $exam), [
+            ...$this->examPayload(),
+            'sections' => [['id' => $second->id, 'name' => 'Mathematics', 'subject_id' => $this->math->id, 'question_ids' => [$kept->id]]],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseMissing('exam_sections', ['id' => $first->id]);
+        $this->assertSame([$second->id], $exam->sections()->pluck('id')->all());
+        $this->assertSame([$kept->id], $exam->questions()->pluck('questions.id')->all());
+        $this->assertDatabaseHas('questions', ['id' => $removed->id]);
+        $this->assertSame([$removed->id], $otherExam->questions()->pluck('questions.id')->all());
+    }
+
+    public function test_last_section_can_be_removed_from_a_draft_but_not_a_published_exam(): void
+    {
+        $question = $this->question($this->math);
+        $exam = $this->examWithSections([['Mathematics', $this->math, [$question]]]);
+
+        $this->actingAs($this->admin)->put(route('admin.exams.update', $exam), [
+            ...$this->examPayload(), 'status' => 'published', 'sections' => [],
+        ])->assertSessionHasErrors('sections');
+        $this->assertCount(1, $exam->sections()->get());
+
+        $this->actingAs($this->admin)->put(route('admin.exams.update', $exam), [
+            ...$this->examPayload(), 'sections' => [],
+        ])->assertSessionHasNoErrors();
+        $this->assertCount(0, $exam->sections()->get());
+        $this->assertCount(0, $exam->questions()->get());
+        $this->assertDatabaseHas('questions', ['id' => $question->id]);
+    }
+
     public function test_publishing_is_blocked_by_an_empty_section(): void
     {
         $question = $this->question($this->math);

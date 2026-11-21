@@ -40,9 +40,12 @@
               </span>
               <span v-if="sectionHasErrors(index)" class="mt-1 w-2 h-2 rounded-full bg-danger shrink-0" title="Needs attention"></span>
             </button>
-            <div class="hidden group-hover:flex gap-1 px-3 pb-2 -mt-1 justify-end">
+            <div class="flex gap-1 px-3 pb-2 -mt-1 justify-end">
               <button type="button" class="mini" :disabled="index === 0" @click="moveSection(index, -1)" aria-label="Move section up">↑</button>
               <button type="button" class="mini" :disabled="index === sections.length - 1" @click="moveSection(index, 1)" aria-label="Move section down">↓</button>
+              <button type="button" class="mini mini-delete" @click="removeSection(section.key)" :aria-label="`Delete ${section.name || 'untitled section'}`" title="Delete section">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+              </button>
             </div>
           </li>
         </ol>
@@ -107,12 +110,6 @@
               <div class="md:col-span-2">
                 <label class="label">Section instructions <span class="font-normal">(shown to students)</span></label>
                 <textarea v-model="activeSection.instructions" rows="2" placeholder="e.g. Each question carries 3 marks." class="field resize-y"></textarea>
-              </div>
-              <div class="md:col-span-4 flex justify-end">
-                <button type="button" @click="removeSection" class="text-xs font-bold px-3 py-2 rounded-lg"
-                        :class="deleteArmed ? 'bg-danger text-white' : 'text-danger hover:bg-danger/5'">
-                  {{ deleteArmed ? `Click again to delete with ${activeSection.question_ids.length} question(s)` : 'Delete section' }}
-                </button>
               </div>
             </div>
 
@@ -252,6 +249,7 @@
 
 <script setup>
 import { computed, reactive, ref, watch } from 'vue';
+import { confirmDialog } from '@/composables/useConfirm';
 import QuestionBankDrawer from './QuestionBankDrawer.vue';
 import QuestionWriterDrawer from './QuestionWriterDrawer.vue';
 import ExamImportDialog from './ExamImportDialog.vue';
@@ -277,7 +275,6 @@ const emit = defineEmits(['changed']);
 const activeKey = ref(props.sections[0]?.key ?? null);
 const compact = ref(true);
 const showSettings = ref(false);
-const deleteArmed = ref(false);
 const bankOpen = ref(false);
 const writerOpen = ref(false);
 // Arriving from "Import" (exams list) or "Save & import from Excel" opens the dialog straight away.
@@ -310,7 +307,6 @@ watch(() => props.sections.length, () => {
   if (!activeSection.value) activeKey.value = props.sections[0]?.key ?? null;
 });
 watch(activeKey, () => {
-  deleteArmed.value = false;
   moveMenu.value = null;
 });
 
@@ -342,18 +338,24 @@ function addSection() {
 
 function toggleSettings() {
   showSettings.value = !showSettings.value;
-  deleteArmed.value = false;
 }
 
-function removeSection() {
-  if (activeSection.value.question_ids.length && !deleteArmed.value) {
-    deleteArmed.value = true;
-    return;
-  }
-  const index = activeIndex.value;
+async function removeSection(key) {
+  const section = props.sections.find((item) => item.key === key);
+  if (!section) return;
+  const count = section.question_ids.length;
+  const confirmed = await confirmDialog({
+    title: `Delete ${section.name || 'untitled section'}?`,
+    message: `This removes the section and its ${count} question${count === 1 ? '' : 's'} from this exam. Questions remain in the question bank. Save the exam to apply this change.${props.attemptsCount ? ' Changing the paper can affect students’ results.' : ''}`,
+    confirmText: 'Delete section',
+    tone: 'danger',
+  });
+  if (!confirmed) return;
+  const index = props.sections.findIndex((item) => item.key === key);
+  if (index === -1) return;
+  const wasActive = activeKey.value === key;
   props.sections.splice(index, 1);
-  activeKey.value = props.sections[Math.max(0, index - 1)]?.key ?? null;
-  deleteArmed.value = false;
+  if (wasActive) activeKey.value = props.sections[Math.max(0, index - 1)]?.key ?? null;
   changed();
 }
 
@@ -473,6 +475,7 @@ function dropOnQuestion(position) {
 .action { @apply inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors; }
 .icon { @apply w-8 h-8 grid place-items-center rounded-lg text-sm text-text-muted hover:bg-gray-100 hover:text-text-main disabled:opacity-30 disabled:hover:bg-transparent; }
 .mini { @apply w-6 h-6 grid place-items-center rounded-md text-xs text-text-muted bg-white border border-gray-200 hover:text-primary disabled:opacity-30; }
+.mini-delete { @apply text-danger hover:text-danger hover:bg-danger/10; }
 .rich :deep(p) { margin: 0; }
 .rich :deep(img) { max-height: 140px; max-width: 100%; border-radius: 8px; margin: .25rem 0; }
 </style>
