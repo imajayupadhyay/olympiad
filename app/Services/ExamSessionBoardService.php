@@ -110,7 +110,7 @@ class ExamSessionBoardService
                 ->where(fn ($open) => $open->where('status', 'in_progress')->whereNull('suspended_at')->where(fn ($w) => $w
                     ->whereRaw('COALESCE(last_seen_at, started_at) < ?', [$now->copy()->subSeconds(60)])
                     ->orWhere('deadline_at', '<=', $now)
-                    ->orWhere('violation_count', '>=', 2)))
+                    ->orWhere('violation_count', '>=', ExamSessionService::MAX_STRIKES - 1)))
                 ->orWhere(fn ($ended) => $ended->whereIn('status', ['timed_out', 'auto_submitted'])->where('submitted_at', '>=', $now->copy()->subDay()))),
             'ended' => $query->whereIn('status', ExamAttempt::FINISHED)->where('submitted_at', '>=', $now->copy()->subDays(7)),
             default => $query->where('status', 'in_progress'),

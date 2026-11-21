@@ -10,6 +10,7 @@ use App\Models\ExamEnrollment;
 use App\Models\Question;
 use App\Models\Subject;
 use App\Models\User;
+use App\Services\ExamSessionService;
 use App\Support\AdminPermissions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -48,6 +49,7 @@ class AdminExamPreviewTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Admin/Exams/Preview')
                 ->where('exam.name', $exam->name)
+                ->where('exam.max_strikes', ExamSessionService::MAX_STRIKES)
                 ->where('remaining_seconds', 60 * 60)
                 ->has('sections', 2)
                 ->where('sections.0.name', 'Reasoning')

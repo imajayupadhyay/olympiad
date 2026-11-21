@@ -7,6 +7,7 @@ use App\Models\Exam;
 use App\Services\ExamPaperService;
 use App\Services\ExamScoringService;
 use App\Services\ExamSectionScoreService;
+use App\Services\ExamSessionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,6 +50,7 @@ class ExamPreviewController extends Controller
                 'duration_minutes' => $exam->duration_minutes,
                 'negative_marking_enabled' => (bool) $exam->negative_marking_enabled,
                 'total_questions' => $questions->count(),
+                'max_strikes' => ExamSessionService::MAX_STRIKES,
             ],
             'sections' => $this->paper->sections($exam),
             'questions' => $questions,

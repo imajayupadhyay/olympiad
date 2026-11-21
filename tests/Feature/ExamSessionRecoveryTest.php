@@ -139,15 +139,14 @@ class ExamSessionRecoveryTest extends TestCase
             ->assertOk()->assertJsonPath('paused', true);
     }
 
-    public function test_server_counts_tab_switches_and_auto_submits_on_the_third(): void
+    public function test_server_counts_tab_switches_and_auto_submits_on_the_second(): void
     {
         $attempt = $this->start();
         $token = $this->roomToken($attempt);
 
         $this->postJson(route('student.exam-room.violation', $attempt), ['session_token' => $token])->assertJsonPath('violation_count', 1);
-        $this->postJson(route('student.exam-room.violation', $attempt), ['session_token' => $token])->assertJsonPath('auto_submitted', false);
         // A reload keeps the count.
-        $this->assertSame(2, $this->roomProps($attempt)['session']['violation_count']);
+        $this->assertSame(1, $this->roomProps($attempt)['session']['violation_count']);
         $token = $attempt->fresh()->session_token;
         $this->postJson(route('student.exam-room.violation', $attempt), ['session_token' => $token])->assertJsonPath('auto_submitted', true);
 

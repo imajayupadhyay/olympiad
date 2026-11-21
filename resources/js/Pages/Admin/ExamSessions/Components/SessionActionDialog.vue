@@ -9,7 +9,7 @@ const props = defineProps({
   action: { type: String, required: true },
   // A session row, a not-started enrolment row, or an exam group (bulk actions).
   target: { type: Object, required: true },
-  limits: { type: Object, default: () => ({ max_minutes: 180, max_strikes: 3 }) },
+  limits: { type: Object, default: () => ({ max_minutes: 180, max_strikes: 2 }) },
 });
 const emit = defineEmits(['close']);
 

@@ -27,7 +27,7 @@ const sectionStarts = (i) => showSections.value && rows.value[i]?.section && row
 
 const endedBy = computed(() => ({
     timeout: 'Time ran out, so the test auto-submitted.',
-    strikes: 'You left the exam tab 3 times, so the test auto-submitted (students get the same rule).',
+    strikes: 'The exam page was hidden twice, so the test auto-submitted (students get the same rule).',
 }[props.result.reason] || null));
 
 const fmt = (value) => Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });

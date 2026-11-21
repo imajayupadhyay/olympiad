@@ -103,6 +103,20 @@ class AdminExamSessionsTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->component('Admin/ExamSessions/Show')->where('session.answered', 1)->has('questions', 4));
     }
 
+    public function test_first_warning_appears_in_the_attention_queue(): void
+    {
+        $attempt = $this->liveSession('Warned Student');
+        $attempt->update(['violation_count' => 1]);
+
+        $this->actingAs($this->admin)->get(route('admin.exam-sessions.index', ['tab' => 'attention']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('limits.max_strikes', ExamSessionService::MAX_STRIKES)
+                ->has('sessions.data', 1)
+                ->where('sessions.data.0.student.name', 'Warned Student')
+                ->where('sessions.data.0.violation_count', 1));
+    }
+
     public function test_pause_freezes_the_clock_and_resume_gives_the_paused_time_back(): void
     {
         $attempt = $this->liveSession();

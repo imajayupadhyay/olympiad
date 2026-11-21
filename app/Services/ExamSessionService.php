@@ -40,7 +40,7 @@ class ExamSessionService
 
     public const DEVICE_SWITCH_SECONDS = 90;
 
-    public const MAX_STRIKES = 3;
+    public const MAX_STRIKES = 2;
 
     public const MAX_GRANT_MINUTES = 180;
 

@@ -2,7 +2,7 @@
 import ExamRoomLayout from '@/Layouts/ExamRoomLayout.vue';
 import AppLogo from '@/Components/Shared/AppLogo.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { confirmDialog } from '@/composables/useConfirm';
 
 const props = defineProps({
@@ -23,7 +23,7 @@ const emit = defineEmits(['finish', 'exit']);
 
 // Network features run only for a real student session.
 const live = !props.preview && !!props.session;
-const MAX_STRIKES = props.session?.max_strikes ?? 3;
+const MAX_STRIKES = props.session?.max_strikes ?? props.exam.max_strikes ?? 2;
 const HEARTBEAT_MS = (props.session?.heartbeat_seconds ?? 30) * 1000;
 const PENDING_KEY = `exam-pending-${props.attempt.id}`;
 
@@ -36,6 +36,8 @@ const submitting = ref(false);
 const showSubmit = ref(false);
 const saveState = ref('idle');          // idle | saving | saved | offline
 const warning = ref(null);
+const violationWarning = ref(false);
+const warningButton = ref(null);
 const isFullscreen = ref(false);
 const online = ref(typeof navigator === 'undefined' ? true : navigator.onLine);
 const paused = ref(props.session?.paused ?? null);   // null | { rescheduled, window_label }
@@ -211,6 +213,10 @@ async function onVisibility() {
 
     if (live) {
         try {
+            // Save the latest selection before the server can auto-submit this attempt.
+            clearTimeout(saveTimer);
+            await flushPending();
+            if (pendingCount.value) throw new Error('Answers are still waiting to sync.');
             const { data } = await window.axios.post(route('student.exam-room.violation', props.attempt.id), { session_token: props.session.token });
             strikes.value = data.violation_count;
             if (data.auto_submitted) return goSubmitted();
@@ -218,7 +224,8 @@ async function onVisibility() {
             return;
         } catch (e) {
             if (handleConflict(e)) return;
-            // Offline: count locally so the rule still holds; the server re-checks on submit.
+            warning.value = 'The exam could not verify this interruption. Check your connection and contact the exam team if needed.';
+            return;
         }
     }
 
@@ -227,7 +234,12 @@ async function onVisibility() {
     else warnStrike();
 }
 function warnStrike() {
-    warning.value = `Warning ${strikes.value}/${MAX_STRIKES}: leaving the exam tab is not allowed. The test auto-submits after ${MAX_STRIKES} strikes.`;
+    violationWarning.value = true;
+    nextTick(() => warningButton.value?.focus());
+}
+
+async function restoreFullscreen() {
+    try { await document.documentElement.requestFullscreen(); } catch (_) { /* Browser may not support fullscreen. */ }
 }
 
 function flash(msg) { warning.value = msg; setTimeout(() => { if (warning.value === msg) warning.value = null; }, 4000); }
@@ -309,6 +321,11 @@ function toggleFlag() { answers[q.value.id].flagged = !answers[q.value.id].flagg
 
 function queueSave(qid) {
     saveState.value = 'saving';
+    if (live) {
+        const a = answers[qid];
+        pending[qid] = { question_id: qid, selected_options: [...a.selected], is_flagged: a.flagged, stamp: Date.now() };
+        writePending();
+    }
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => save(qid), 500);
 }
@@ -510,7 +527,8 @@ async function exitPreview() {
                 <ul class="gate-rules">
                     <li v-if="isResume">The timer kept running while you were away. If you lost time because of a technical problem, contact the exam team.</li>
                     <li v-else>You have <strong>one attempt</strong>. The timer is already running.</li>
-                    <li>Stay in full-screen. Leaving the tab <strong>{{ MAX_STRIKES }} times auto-submits</strong> your test.</li>
+                    <li>Stay on the exam page. The first time the page is hidden you will receive a final warning; a second time automatically submits your test.</li>
+                    <li>Use fullscreen where supported. You can return to fullscreen if it closes.</li>
                     <li v-if="exam.negative_marking_enabled">This exam has <strong>negative marking</strong> for wrong answers.</li>
                     <li>Your answers save automatically. The test submits on its own when time runs out.</li>
                 </ul>
@@ -547,6 +565,9 @@ async function exitPreview() {
             <div v-else-if="live && (!online || pendingCount)" class="net-banner" role="status">
                 <strong>{{ online ? 'Syncing answers…' : "You're offline." }}</strong>
                 {{ pendingCount }} answer{{ pendingCount === 1 ? '' : 's' }} kept on this device will sync when you reconnect. Don't close this tab.
+            </div>
+            <div v-if="begun && !isFullscreen" class="net-banner" role="status">
+                Fullscreen is not active. <button type="button" class="underline font-bold" @click="restoreFullscreen">Return to fullscreen</button> if supported by your browser.
             </div>
 
             <div class="body">
@@ -630,6 +651,14 @@ async function exitPreview() {
                 </aside>
             </div>
         </template>
+
+        <div v-if="violationWarning && begun && !submitting && !paused && !superseded" class="overlay" role="alertdialog" aria-modal="true" aria-labelledby="violation-title" aria-describedby="violation-message">
+            <div class="modal">
+                <h3 id="violation-title">First and final warning</h3>
+                <p id="violation-message">Leaving the examination page is not permitted. If the page becomes hidden again, your exam will be submitted automatically.</p>
+                <div class="modal-actions"><button ref="warningButton" type="button" class="solid" @keydown.tab.prevent @click="violationWarning = false">I understand</button></div>
+            </div>
+        </div>
 
         <!-- warning toast -->
         <Transition name="warn">
