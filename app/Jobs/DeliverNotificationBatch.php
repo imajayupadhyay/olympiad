@@ -6,10 +6,11 @@ use App\Models\Exam;
 use App\Models\NotificationDelivery;
 use App\Models\NotificationLog;
 use App\Models\User;
-use App\Services\Notifications\BirdException;
 use App\Services\Notifications\EmailNotificationChannel;
 use App\Services\Notifications\NotificationBroadcastService;
 use App\Services\Notifications\NotificationPlaceholderService;
+use App\Services\Notifications\WhatsApp\WhatsAppProviderException;
+use App\Services\Notifications\WhatsApp\WhatsAppProviderManager;
 use App\Services\Notifications\WhatsAppNotificationChannel;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -17,8 +18,9 @@ use Throwable;
 
 /**
  * Sends one batch of an email or WhatsApp broadcast, then queues the next batch
- * (a chain per broadcast). Carries only the log id. Claimed rows are released on a
- * Bird 429 (the next batch waits Retry-After) or when the job dies; the
+ * (a chain per broadcast). Carries only the log id. WhatsApp goes through the
+ * provider the broadcast was created with (workflow.md §13.6). Claimed rows are
+ * released on a provider 429 (the next batch waits Retry-After) or when the job dies; the
  * `notifications:maintain` scheduler resumes anything left behind.
  */
 class DeliverNotificationBatch implements ShouldQueue
@@ -39,6 +41,7 @@ class DeliverNotificationBatch implements ShouldQueue
         NotificationPlaceholderService $placeholders,
         EmailNotificationChannel $email,
         WhatsAppNotificationChannel $whatsapp,
+        WhatsAppProviderManager $providers,
     ): void {
         $log = NotificationLog::find($this->notificationLogId);
 
@@ -46,9 +49,8 @@ class DeliverNotificationBatch implements ShouldQueue
             return;
         }
 
-        $size = $log->channel === 'whatsapp'
-            ? max(1, (int) config('services.bird.batch_size', 40))
-            : 50;
+        $provider = $log->channel === 'whatsapp' ? $providers->forLog($log) : null;
+        $size = $provider ? $provider->batchSize() : 50;
 
         $batch = $broadcasts->claim($log, $size);
         if ($batch->isEmpty()) {
@@ -78,15 +80,15 @@ class DeliverNotificationBatch implements ShouldQueue
             try {
                 $log->channel === 'email'
                     ? $email->deliver($delivery, $log, $user, $exam)
-                    : $whatsapp->deliver($delivery, $log, $user, $exam);
-            } catch (BirdException $e) {
+                    : $whatsapp->deliver($delivery, $log, $user, $exam, $provider);
+            } catch (WhatsAppProviderException $e) {
                 // Rate limited: hand the rest of the batch back and wait.
                 $broadcasts->release($batch->slice($index)->pluck('id'));
                 $hits = (int) data_get($log->meta, 'rate_limit_hits', 0) + 1;
                 $log->update(['meta' => array_merge((array) $log->meta, ['rate_limit_hits' => $hits, 'last_rate_limit_at' => now()->toIso8601String()])]);
                 $broadcasts->refreshCounts($log);
 
-                if ($hits <= (int) config('services.bird.max_rate_limit_retries', 8) && config('queue.default') !== 'sync') {
+                if ($hits <= ($provider?->maxRateLimitRetries() ?? 8) && config('queue.default') !== 'sync') {
                     self::dispatch($log->id)->delay(now()->addSeconds(max(5, $e->retryAfter ?? 60)));
                 }
 

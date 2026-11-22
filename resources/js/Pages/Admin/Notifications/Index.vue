@@ -43,7 +43,7 @@
         <template #audience><AudienceBuilder v-model="audience" channel="whatsapp" :options="options" @summary="summary = $event" /></template>
       </WhatsAppComposer>
     </template>
-    <HistoryPanel v-else :logs="logs" :filters="historyFilters" />
+    <HistoryPanel v-else :logs="logs" :filters="historyFilters" :providers="options.providers" />
   </AdminLayout>
 </template>
 

@@ -33,6 +33,10 @@
         <env name="BIRD_API_KEY" value=""/>
         <env name="BIRD_WHATSAPP_FROM" value=""/>
         <env name="BIRD_WHATSAPP_SEND_INTERVAL_MS" value="0"/>
+        <env name="MSG91_AUTH_KEY" value=""/>
+        <env name="MSG91_BASE_URL" value=""/>
+        <env name="MSG91_WHATSAPP_NUMBER" value=""/>
+        <env name="MSG91_WHATSAPP_SEND_INTERVAL_MS" value="0"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>

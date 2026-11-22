@@ -3,6 +3,8 @@
 namespace App\Services\Notifications;
 
 use App\Models\Exam;
+use App\Services\Notifications\WhatsApp\WhatsAppProviderException;
+use App\Services\Notifications\WhatsApp\WhatsAppProviderManager;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -12,7 +14,8 @@ use Illuminate\Validation\ValidationException;
  *   email     subject + body_html (TipTap HTML; values escaped on render)
  *   in_app    title + message (plain text) + optional /student/… link
  *   whatsapp  template_id + variable mapping → an immutable template snapshot built
- *             from Bird's live catalogue (the browser never supplies template text)
+ *             from the ACTIVE provider's catalogue (the browser never supplies template
+ *             text); the snapshot records the provider, which pins the broadcast to it
  */
 class NotificationComposer
 {
@@ -20,8 +23,7 @@ class NotificationComposer
 
     public function __construct(
         private readonly NotificationPlaceholderService $placeholders,
-        private readonly BirdTemplateCatalogue $templates,
-        private readonly BirdWhatsAppGateway $bird,
+        private readonly WhatsAppProviderManager $providers,
     ) {}
 
     public function rules(string $channel): array
@@ -40,6 +42,7 @@ class NotificationComposer
             ],
             'whatsapp' => [
                 'whatsapp' => ['required', 'array'],
+                'whatsapp.provider' => ['nullable', 'string', 'max:20'],
                 'whatsapp.template_id' => ['required', 'string', 'max:100'],
                 'whatsapp.variables' => ['nullable', 'array', 'max:30'],
                 'whatsapp.variables.*.source' => ['required', 'in:placeholder,text'],
@@ -102,21 +105,34 @@ class NotificationComposer
         return ['subject' => trim((string) $email['subject']), 'body_html' => $body];
     }
 
-    /** Builds the template snapshot from Bird's live catalogue. */
+    /**
+     * Builds the template snapshot from the active provider's catalogue. Sending and
+     * test sends need a provider that can send; previews only need its templates.
+     */
     private function whatsappSnapshot(array $input, bool $strict): array
     {
-        if (! $this->bird->isConfigured()) {
-            throw ValidationException::withMessages(['whatsapp.template_id' => 'WhatsApp is not configured on this server (BIRD_API_KEY).']);
+        $provider = $this->providers->active();
+        $label = $provider->label();
+
+        // The composer was opened before someone switched providers: its template id
+        // belongs to the other provider.
+        if (filled($input['provider'] ?? null) && $input['provider'] !== $provider->key()) {
+            throw ValidationException::withMessages(['whatsapp.template_id' => "WhatsApp messages now go through {$label} (the provider was switched in Settings → Messaging). Reload the page and pick a {$label} template."]);
+        }
+
+        $templatesReachable = $provider->templateSource() === 'registry' || $provider->isConfigured();
+        if (($strict && ! $provider->canSend()) || ! $templatesReachable) {
+            throw ValidationException::withMessages(['whatsapp.template_id' => (string) ($provider->unavailableReason() ?? "WhatsApp is not configured for {$label}.")]);
         }
 
         try {
-            $template = $this->templates->find((string) $input['template_id']);
-        } catch (BirdException $e) {
-            throw ValidationException::withMessages(['whatsapp.template_id' => 'Could not load the template from Bird: '.$e->getMessage()]);
+            $template = $provider->template((string) $input['template_id']);
+        } catch (WhatsAppProviderException $e) {
+            throw ValidationException::withMessages(['whatsapp.template_id' => "Could not load the template from {$label}: ".$e->getMessage()]);
         }
 
         if (! $template) {
-            throw ValidationException::withMessages(['whatsapp.template_id' => 'This template no longer exists in Bird. Refresh the template list.']);
+            throw ValidationException::withMessages(['whatsapp.template_id' => "This template no longer exists in {$label}. Refresh the template list."]);
         }
 
         if (! $template['usable']) {
@@ -156,6 +172,7 @@ class NotificationComposer
         }
 
         return [
+            'provider' => $provider->key(),
             'id' => $template['id'],
             'slug' => $template['slug'],
             'name' => $template['name'],

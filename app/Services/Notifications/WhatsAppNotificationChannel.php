@@ -6,11 +6,15 @@ use App\Models\Exam;
 use App\Models\NotificationDelivery;
 use App\Models\NotificationLog;
 use App\Models\User;
+use App\Services\Notifications\WhatsApp\WhatsAppProvider;
+use App\Services\Notifications\WhatsApp\WhatsAppProviderException;
+use App\Services\Notifications\WhatsApp\WhatsAppProviderManager;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * WhatsApp channel: one Bird template message per delivery.
+ * WhatsApp channel: one template message per delivery, sent through the provider the
+ * broadcast was created with (WhatsAppProviderManager::forLog, workflow.md §13.6).
  *
  * The broadcast stores an immutable template snapshot (slug, language, body and the
  * admin's variable mapping). Each variable is either a placeholder or text that may
@@ -18,8 +22,9 @@ use Illuminate\Support\Facades\Cache;
  * and long space runs inside parameters, so values are collapsed to one line. A
  * required variable that is still blank skips that student (never sent half-filled).
  *
- * Sends are paced across every worker (services.bird.send_interval_ms) with a shared
- * cache slot; a 429 is re-thrown so DeliverNotificationBatch can back off.
+ * Sends are paced across every worker (the provider's sendIntervalMs) with a shared
+ * cache slot per provider account; a 429 is re-thrown so DeliverNotificationBatch can
+ * back off.
  */
 class WhatsAppNotificationChannel
 {
@@ -27,13 +32,14 @@ class WhatsAppNotificationChannel
     public const PERMANENT_META_ERRORS = ['131026', '131021', '131009'];
 
     public function __construct(
-        private readonly BirdWhatsAppGateway $bird,
+        private readonly WhatsAppProviderManager $providers,
         private readonly NotificationPlaceholderService $placeholders,
     ) {}
 
-    public function deliver(NotificationDelivery $delivery, NotificationLog $log, User $user, ?Exam $exam): void
+    public function deliver(NotificationDelivery $delivery, NotificationLog $log, User $user, ?Exam $exam, ?WhatsAppProvider $provider = null): void
     {
         $template = (array) $log->whatsapp_template;
+        $provider ??= $this->providers->forLog($log);
 
         if (blank($user->phone_e164)) {
             $delivery->markSkipped('Student has no WhatsApp number on file.', 'no_phone');
@@ -52,18 +58,14 @@ class WhatsAppNotificationChannel
 
         $delivery->update([
             'destination' => $user->phone_e164,
+            'provider' => $provider->key(),
             'payload' => ['variables' => $variables],
             'attempts' => $delivery->attempts + 1,
         ]);
 
         try {
-            $message = $this->paced(fn () => $this->bird->send(
-                $user->phone_e164,
-                (string) $template['slug'],
-                (string) ($template['language'] ?? 'en'),
-                $variables,
-            ));
-        } catch (BirdException $e) {
+            $message = $this->paced($provider, fn () => $provider->send($user->phone_e164, $template, $variables));
+        } catch (WhatsAppProviderException $e) {
             if ($e->isRateLimited()) {
                 throw $e;
             }
@@ -121,16 +123,18 @@ class WhatsAppNotificationChannel
     }
 
     /**
-     * Pulls Bird's current status for an accepted message.
-     * accepted/pending/sent → sent; delivered; read (read_at); failed (+ last_error).
+     * Pulls the provider's current status for an accepted message (the provider that
+     * sent it, not the active one). The provider normalises its payload:
+     * sent; delivered (delivered_at); read (read_at); failed (+ error, error_code).
      */
-    public function syncStatus(NotificationDelivery $delivery): void
+    public function syncStatus(NotificationDelivery $delivery, ?WhatsAppProvider $provider = null): void
     {
         if (blank($delivery->provider_message_id)) {
             return;
         }
 
-        $message = $this->bird->message($delivery->provider_message_id);
+        $provider ??= $this->providers->forDelivery($delivery);
+        $message = $provider->messageStatus($delivery->provider_message_id);
         $status = (string) ($message['status'] ?? '');
         $updates = ['status_checked_at' => now()];
 
@@ -142,13 +146,13 @@ class WhatsAppNotificationChannel
         }
 
         if ($status === 'failed') {
-            $code = (string) data_get($message, 'last_error.meta_error_code', data_get($message, 'last_error.code', ''));
+            $code = (string) ($message['error_code'] ?? '');
             $updates += [
                 'status' => 'failed',
-                'error' => (string) (data_get($message, 'last_error.description') ?: 'WhatsApp could not deliver this message.'),
+                'error' => (string) (($message['error'] ?? null) ?: 'WhatsApp could not deliver this message.'),
                 'error_code' => $code ?: 'failed',
                 'permanent_failure' => in_array($code, self::PERMANENT_META_ERRORS, true),
-                'failed_at' => filled(data_get($message, 'last_error.occurred_at')) ? Carbon::parse(data_get($message, 'last_error.occurred_at')) : now(),
+                'failed_at' => filled($message['failed_at'] ?? null) ? Carbon::parse($message['failed_at']) : now(),
             ];
         } elseif (isset($updates['read_at'])) {
             $updates['status'] = 'read';
@@ -164,11 +168,11 @@ class WhatsAppNotificationChannel
         return trim((string) preg_replace('/\s+/u', ' ', $value));
     }
 
-    /** One send at a time per Bird account, at least send_interval_ms apart, across all workers. */
-    private function paced(callable $send): array
+    /** One send at a time per provider account, at least sendIntervalMs apart, across all workers. */
+    private function paced(WhatsAppProvider $provider, callable $send): array
     {
-        $key = 'bird:wa-send:'.substr(hash('sha256', (string) config('services.bird.api_key')), 0, 16);
-        $interval = max(0, (int) config('services.bird.send_interval_ms', 500));
+        $key = $provider->paceKey();
+        $interval = $provider->sendIntervalMs();
 
         return Cache::lock($key.':lock', 30)->block(25, function () use ($key, $interval, $send) {
             $wait = (int) Cache::get($key.':next', 0) - (int) floor(microtime(true) * 1000);

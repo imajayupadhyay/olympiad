@@ -8,6 +8,8 @@ use App\Models\NotificationDelivery;
 use App\Models\NotificationLog;
 use App\Models\StudentNotification;
 use App\Models\User;
+use App\Services\Notifications\WhatsApp\WhatsAppProviderException;
+use App\Services\Notifications\WhatsApp\WhatsAppProviderManager;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +27,9 @@ use Illuminate\Support\Str;
  *   maintain()  releases stale claims, resumes stalled sends, syncs WhatsApp status.
  *
  * Channels never touch each other: a WhatsApp outage can't fail an email broadcast.
+ * A WhatsApp broadcast is pinned to the provider it was created with
+ * (notification_logs.provider, copied onto every delivery): switching providers in
+ * Settings → Messaging only affects new broadcasts (workflow.md §13.6).
  */
 class NotificationBroadcastService
 {
@@ -36,6 +41,7 @@ class NotificationBroadcastService
         private readonly NotificationAudienceService $audience,
         private readonly NotificationPlaceholderService $placeholders,
         private readonly InAppNotificationChannel $inApp,
+        private readonly WhatsAppProviderManager $providers,
     ) {}
 
     /**
@@ -106,6 +112,7 @@ class NotificationBroadcastService
                     'notification_log_id' => $log->id,
                     'user_id' => $u->id,
                     'channel' => $channel,
+                    'provider' => $channel === 'whatsapp' ? $log->provider : null,
                     'recipient_name' => $u->name,
                     'destination' => $channel === 'email' ? $u->email : $u->phone_e164,
                     'status' => 'pending',
@@ -144,6 +151,7 @@ class NotificationBroadcastService
                 'link' => $content['link'] ?? null,
             ],
             'whatsapp' => [
+                'provider' => $this->providers->exists($content['template']['provider'] ?? null) ? $content['template']['provider'] : WhatsAppProviderManager::DEFAULT,
                 'title' => $content['template']['name'],
                 'message' => (string) ($content['template']['body'] ?? ''),
                 'whatsapp_template' => $content['template'],
@@ -283,11 +291,25 @@ class NotificationBroadcastService
         return ['released' => $released, 'resumed' => $resumed, 'synced' => $synced];
     }
 
-    /** Polls Bird for accepted WhatsApp messages from the last 7 days. */
+    /**
+     * Polls each provider (the one that sent the message, not the active one) for
+     * accepted WhatsApp messages from the last 7 days. Providers that are not
+     * configured or can't look up status are left out.
+     */
     public function syncWhatsAppStatuses(WhatsAppNotificationChannel $whatsapp, ?NotificationLog $log = null, int $limit = 300): int
     {
+        $providers = collect($this->providers->all())
+            ->filter(fn ($p) => $p->isConfigured() && $p->supportsStatusSync());
+
+        if ($providers->isEmpty() || $limit <= 0) {
+            return 0;
+        }
+
+        $keys = $providers->keys()->all();
         $query = NotificationDelivery::query()
             ->where('channel', 'whatsapp')
+            ->where(fn ($q) => $q->whereIn('provider', $keys)
+                ->when(in_array(WhatsAppProviderManager::DEFAULT, $keys, true), fn ($w) => $w->orWhereNull('provider')))
             ->whereIn('status', ['sent', 'delivered'])
             ->whereNotNull('provider_message_id')
             ->where('sent_at', '>=', now()->subDays(7))
@@ -303,10 +325,10 @@ class NotificationBroadcastService
         $logIds = [];
         foreach ($query->get() as $delivery) {
             try {
-                $whatsapp->syncStatus($delivery);
+                $whatsapp->syncStatus($delivery, $providers->get($delivery->provider ?: WhatsAppProviderManager::DEFAULT));
                 $synced++;
                 $logIds[$delivery->notification_log_id] = true;
-            } catch (BirdException $e) {
+            } catch (WhatsAppProviderException $e) {
                 if ($e->isRateLimited()) {
                     break;
                 }

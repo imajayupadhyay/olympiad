@@ -28,7 +28,7 @@ class NotificationDelivery extends Model
     public const SUCCESS = ['sent', 'delivered', 'read'];
 
     protected $fillable = [
-        'notification_log_id', 'user_id', 'channel', 'recipient_name', 'destination', 'status',
+        'notification_log_id', 'user_id', 'channel', 'provider', 'recipient_name', 'destination', 'status',
         'provider_message_id', 'email_log_id', 'payload', 'error', 'error_code', 'permanent_failure',
         'attempts', 'claim_token', 'claimed_at', 'sent_at', 'delivered_at', 'read_at', 'failed_at',
         'status_checked_at',

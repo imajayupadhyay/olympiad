@@ -5,10 +5,14 @@
         <h2 id="hist-h" class="font-heading font-bold text-text-main text-sm">Broadcast history</h2>
         <span class="text-xs text-text-muted font-number">{{ logs.total.toLocaleString('en-IN') }} total</span>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
-        <select v-model="f.channel" class="field" aria-label="Channel" @change="apply">
+      <div class="grid grid-cols-1 sm:grid-cols-5 gap-2">
+        <select v-model="f.channel" class="field" aria-label="Channel" @change="if (f.channel !== 'whatsapp') f.provider = ''; apply()">
           <option value="">All channels</option>
           <option v-for="(c, key) in CHANNELS" :key="key" :value="key">{{ c.label }}</option>
+        </select>
+        <select v-model="f.provider" class="field" aria-label="WhatsApp provider" @change="if (f.provider) f.channel = 'whatsapp'; apply()">
+          <option value="">Any provider</option>
+          <option v-for="p in providers" :key="p.key" :value="p.key">WhatsApp · {{ p.label }}</option>
         </select>
         <select v-model="f.status" class="field" aria-label="Status" @change="apply">
           <option value="">Any status</option>
@@ -30,6 +34,7 @@
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-2 mb-1">
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="CHANNELS[log.channel]?.cls">{{ CHANNELS[log.channel]?.label ?? log.channel }}</span>
+                <span v-if="log.provider_label" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-text-muted" :title="`Sent through ${log.provider_label}`">via {{ log.provider_label }}</span>
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="LOG_STATUS[log.status]?.cls">{{ LOG_STATUS[log.status]?.label ?? log.status }}</span>
                 <p class="font-semibold text-text-main text-sm truncate max-w-full">{{ log.title }}</p>
               </div>
@@ -84,9 +89,10 @@ import { CHANNELS, LOG_STATUS } from './notifications';
 const props = defineProps({
   logs: { type: Object, required: true },
   filters: { type: Object, default: () => ({}) },
+  providers: { type: Array, default: () => [] },
 });
 
-const f = reactive({ channel: props.filters.channel ?? '', status: props.filters.status ?? '', q: props.filters.q ?? '' });
+const f = reactive({ channel: props.filters.channel ?? '', provider: props.filters.provider ?? '', status: props.filters.status ?? '', q: props.filters.q ?? '' });
 const apply = () => router.get(route('admin.notifications'), { tab: 'history', ...Object.fromEntries(Object.entries(f).filter(([, v]) => v)) }, { preserveScroll: true, preserveState: true, only: ['logs', 'historyFilters', 'tab'] });
 const pct = (n, log) => `${log.recipient_count ? Math.min(100, (n / log.recipient_count) * 100) : 0}%`;
 </script>

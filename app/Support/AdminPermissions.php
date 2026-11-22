@@ -41,6 +41,7 @@ class AdminPermissions
         'settings_classes' => ['label' => 'Class Levels', 'section' => 'Settings', 'route' => 'admin.settings.classes'],
         'settings_hall_ticket' => ['label' => 'Hall Ticket Layout', 'section' => 'Settings', 'route' => 'admin.settings.hall-ticket'],
         'settings_receipts' => ['label' => 'Receipt Settings', 'section' => 'Settings', 'route' => 'admin.settings.receipts'],
+        'settings_messaging' => ['label' => 'Messaging', 'section' => 'Settings', 'route' => 'admin.settings.messaging'],
         'staff_users' => ['label' => 'Staff Users', 'section' => 'Staff & Access', 'route' => 'admin.staff-users.index'],
         'roles' => ['label' => 'Roles & Permissions', 'section' => 'Staff & Access', 'route' => 'admin.roles.index'],
     ];

@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\SchoolDesignationController;
 use App\Http\Controllers\Admin\Settings\ClassLevelController;
 use App\Http\Controllers\Admin\Settings\HallTicketSettingController;
+use App\Http\Controllers\Admin\Settings\MessagingSettingController;
 use App\Http\Controllers\Admin\Settings\QuestionCategoryController;
 use App\Http\Controllers\Admin\Settings\ReceiptSettingController;
 use App\Http\Controllers\Admin\Settings\StudentCustomFieldController;
@@ -38,6 +39,7 @@ use App\Http\Controllers\Admin\StaffUserController;
 use App\Http\Controllers\Admin\SupportController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WhatsAppTemplateController;
+use App\Services\Notifications\WhatsApp\WhatsAppProviderManager;
 use Illuminate\Support\Facades\Route;
 
 // ── Secure Admin Login (obfuscated URL) ──────────────────────────────────────
@@ -274,5 +276,19 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/hall-ticket/fields/reorder', [StudentCustomFieldController::class, 'reorder'])->middleware('admin.permission:settings_hall_ticket,write')->name('hall-ticket.fields.reorder');
         Route::put('/hall-ticket/fields/{field}', [StudentCustomFieldController::class, 'update'])->middleware('admin.permission:settings_hall_ticket,write')->name('hall-ticket.fields.update');
         Route::delete('/hall-ticket/fields/{field}', [StudentCustomFieldController::class, 'destroy'])->middleware('admin.permission:settings_hall_ticket,delete')->name('hall-ticket.fields.destroy');
+
+        // Messaging providers for WhatsApp (workflow.md §13.6). Credentials: super admin only (in the controller).
+        $providers = implode('|', array_keys(WhatsAppProviderManager::PROVIDERS));
+        Route::get('/messaging', [MessagingSettingController::class, 'index'])->middleware('admin.permission:settings_messaging,read')->name('messaging');
+        Route::put('/messaging/active-provider', [MessagingSettingController::class, 'switch'])->middleware('admin.permission:settings_messaging,write')->name('messaging.switch');
+        Route::put('/messaging/providers/{provider}', [MessagingSettingController::class, 'updateProvider'])->middleware('admin.permission:settings_messaging,write')->where('provider', $providers)->name('messaging.providers.update');
+        Route::post('/messaging/providers/{provider}/check', [MessagingSettingController::class, 'check'])->middleware(['admin.permission:settings_messaging,read', 'throttle:10,1'])->where('provider', $providers)->name('messaging.providers.check');
+        Route::post('/messaging/providers/{provider}/test', [MessagingSettingController::class, 'test'])->middleware(['admin.permission:settings_messaging,write', 'throttle:10,1'])->where('provider', $providers)->name('messaging.providers.test');
+        Route::get('/messaging/providers/{provider}/templates', [MessagingSettingController::class, 'templates'])->middleware('admin.permission:settings_messaging,read')->where('provider', $providers)->name('messaging.providers.templates');
+        Route::get('/messaging/providers/{provider}/templates/{template}', [MessagingSettingController::class, 'template'])->middleware('admin.permission:settings_messaging,read')->where('provider', $providers)->where('template', '[A-Za-z0-9_\-]+')->name('messaging.providers.template');
+        Route::post('/messaging/providers/{provider}/templates/sync', [MessagingSettingController::class, 'syncTemplates'])->middleware(['admin.permission:settings_messaging,write', 'throttle:6,1'])->where('provider', $providers)->name('messaging.providers.templates.sync');
+        Route::post('/messaging/providers/{provider}/templates', [MessagingSettingController::class, 'storeTemplate'])->middleware('admin.permission:settings_messaging,write')->where('provider', $providers)->name('messaging.templates.store');
+        Route::put('/messaging/templates/{template}', [MessagingSettingController::class, 'updateTemplate'])->middleware('admin.permission:settings_messaging,write')->whereNumber('template')->name('messaging.templates.update');
+        Route::delete('/messaging/templates/{template}', [MessagingSettingController::class, 'destroyTemplate'])->middleware('admin.permission:settings_messaging,delete')->whereNumber('template')->name('messaging.templates.destroy');
     });
 });

@@ -9,26 +9,34 @@
             <span class="step">2</span>
             <div class="min-w-0">
               <h2 id="wa-h" class="font-heading font-bold text-text-main text-sm">Choose an approved template</h2>
-              <p class="text-[11px] text-text-muted">WhatsApp only allows Meta-approved templates. They are loaded live from Bird{{ options.whatsapp.sender ? ` · sender ${options.whatsapp.sender}` : '' }}.</p>
+              <p class="text-[11px] text-text-muted">
+                WhatsApp only allows Meta-approved templates. Sending through <b>{{ providerLabel }}</b>
+                ({{ live ? 'templates loaded live' : 'templates managed in Settings → Messaging' }}){{ options.whatsapp.sender ? ` · sender ${options.whatsapp.sender}` : '' }}.
+                <Link v-if="options.whatsapp.can_manage" :href="route('admin.settings.messaging')" class="text-primary font-semibold hover:underline">Change provider</Link>
+              </p>
             </div>
           </div>
-          <button v-if="options.whatsapp.configured" type="button" class="btn-ghost" :disabled="listLoading" @click="loadTemplates(true)">
-            {{ listLoading ? 'Loading…' : '↻ Refresh from Bird' }}
+          <button v-if="templatesAvailable" type="button" class="btn-ghost" :disabled="listLoading" @click="loadTemplates(true)">
+            {{ listLoading ? 'Loading…' : (live ? `↻ Refresh from ${providerLabel}` : '↻ Reload') }}
           </button>
         </header>
 
-        <div v-if="!options.whatsapp.configured" class="p-5 text-sm text-danger">
-          WhatsApp isn’t configured on this server. Add <code>BIRD_API_KEY</code>, <code>BIRD_BASE_URL</code> and <code>BIRD_WHATSAPP_FROM</code> to the server <code>.env</code>, then run <code>php artisan config:clear</code>.
+        <div v-if="!templatesAvailable" class="p-5 text-sm text-danger">
+          {{ options.whatsapp.unavailable_reason || `WhatsApp isn’t configured for ${providerLabel}.` }}
+          <Link v-if="options.whatsapp.can_manage" :href="route('admin.settings.messaging')" class="block mt-2 font-semibold underline">Open Settings → Messaging</Link>
         </div>
 
         <div v-else class="p-4 sm:p-5 space-y-4">
+          <p v-if="!options.whatsapp.can_send" class="rounded-xl bg-gold/10 border border-gold/30 text-gold-dark text-xs p-3" role="status">
+            {{ options.whatsapp.unavailable_reason }} You can preview templates, but sending is disabled.
+          </p>
           <p v-if="listError" class="rounded-xl bg-danger/5 border border-danger/20 text-danger text-xs p-3" role="alert">{{ listError }}</p>
 
           <!-- library -->
           <div v-if="!selected || browsing">
             <input v-model="search" type="search" class="field mb-3" placeholder="Search templates by name or category" aria-label="Search templates" />
-            <p v-if="listLoading && !templates.length" class="text-xs text-text-muted py-6 text-center">Loading templates from Bird…</p>
-            <p v-else-if="!filtered.length" class="text-xs text-text-muted py-6 text-center">No templates match.</p>
+            <p v-if="listLoading && !templates.length" class="text-xs text-text-muted py-6 text-center">Loading templates from {{ providerLabel }}…</p>
+            <p v-else-if="!filtered.length" class="text-xs text-text-muted py-6 text-center">{{ templates.length ? 'No templates match.' : `No ${providerLabel} templates yet.` }}</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               <button v-for="t in filtered" :key="t.id" type="button"
                       class="text-left rounded-xl border p-3 transition-colors"
@@ -47,7 +55,7 @@
                 <span v-if="!t.usable" class="block text-[11px] text-text-muted mt-1.5">{{ t.unusable_reason }}</span>
               </button>
             </div>
-            <p v-if="fetchedAt" class="text-[11px] text-text-muted mt-3">{{ templates.length }} template(s) in Bird · fetched {{ formatLocal(fetchedAt, { hour: '2-digit', minute: '2-digit' }) }}. New templates approved in Bird appear here after a refresh.</p>
+            <p v-if="fetchedAt" class="text-[11px] text-text-muted mt-3">{{ templates.length }} template(s) in {{ providerLabel }} · fetched {{ formatLocal(fetchedAt, { hour: '2-digit', minute: '2-digit' }) }}. {{ live ? `New templates approved in ${providerLabel} appear here after a refresh.` : 'Add or edit templates in Settings → Messaging.' }}</p>
           </div>
 
           <!-- selected template -->
@@ -70,7 +78,7 @@
               <div v-for="v in selected.variables" :key="v.key" class="rounded-xl border border-gray-100 p-3 space-y-2.5">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <code class="text-xs font-semibold text-primary">{{ '{' }}{{ '{' }}{{ v.key }}}}</code>
-                  <span v-if="v.example" class="text-[11px] text-text-muted truncate max-w-[60%]">Example in Bird: “{{ v.example }}”</span>
+                  <span v-if="v.example" class="text-[11px] text-text-muted truncate max-w-[60%]">Example: “{{ v.example }}”</span>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <label class="block">
@@ -136,13 +144,13 @@
           </p>
 
           <SendPanel :preview="b.preview.value" :recipients="summary.recipients || 0" :sending="b.sending.value" :ready="ready"
-                     not-ready-text="Pick an approved template and fill every variable."
+:not-ready-text="options.whatsapp.can_send ? 'Pick an approved template and fill every variable.' : options.whatsapp.unavailable_reason"
                      channel-label="WhatsApp" :errors="b.errors.value"
                      blank-hint="add a fallback, or they’ll be skipped."
                      test-label="Send a test WhatsApp" test-type="tel" test-placeholder="+91 98765 43210"
                      :testing="b.testing.value" :test-result="b.testResult.value"
                      @test="b.sendTest" @send="b.send(onSent)" />
-          <p class="text-[11px] text-text-muted">Each message is billed by WhatsApp/Bird. Students without a verified mobile number are left out automatically.</p>
+          <p class="text-[11px] text-text-muted">Each message is billed by WhatsApp/{{ providerLabel }}. Students without a verified mobile number are left out automatically.</p>
         </div>
       </section>
     </aside>
@@ -151,6 +159,7 @@
 
 <script setup>
 import { computed, onMounted, ref, toRef, watch } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import { formatLocal } from '@/Services/localTime.service';
 import ExamContextSelect from './ExamContextSelect.vue';
 import PlaceholderMenu from './PlaceholderMenu.vue';
@@ -176,6 +185,10 @@ const selected = ref(null);
 const detailLoading = ref(false);
 const browsing = ref(false);
 const nowLabel = formatLocal(new Date(), { hour: '2-digit', minute: '2-digit' });
+const providerLabel = computed(() => props.options.whatsapp.provider?.label ?? 'WhatsApp');
+const live = computed(() => props.options.whatsapp.template_source !== 'registry');
+// Registry templates (MSG91) can be browsed and previewed before the provider is configured.
+const templatesAvailable = computed(() => props.options.whatsapp.configured || !live.value);
 
 const fieldGroups = computed(() => [
   { key: 'student', label: 'Student' },
@@ -201,7 +214,7 @@ const loadTemplates = async (refresh = false) => {
       if (t) loadDetail(t.id, false);
     }
   } catch (e) {
-    listError.value = errorText(e, 'Could not load templates from Bird.');
+    listError.value = errorText(e, `Could not load templates from ${providerLabel.value}.`);
   } finally {
     listLoading.value = false;
   }
@@ -222,7 +235,7 @@ const loadDetail = async (id, resetMapping = true) => {
     const current = resetMapping ? {} : { ...props.draft.variables };
     props.draft.variables = Object.fromEntries((data.template.variables ?? []).map((v) => [v.key, current[v.key] ?? { ...guess(v), fallback: '' }]));
   } catch (e) {
-    listError.value = errorText(e, 'Could not load the template from Bird.');
+    listError.value = errorText(e, `Could not load the template from ${providerLabel.value}.`);
     selected.value = null;
   } finally {
     detailLoading.value = false;
@@ -246,12 +259,18 @@ const setSource = (key, value) => {
     : { source: 'placeholder', value, fallback: map(key).fallback || '' };
 };
 
-const ready = computed(() => !!selected.value?.usable && !detailLoading.value
+// complete = template + every required variable (drives the preview, as before);
+// ready = complete and the active provider can actually send.
+const complete = computed(() => !!selected.value?.usable && !detailLoading.value
   && (selected.value.variables ?? []).every((v) => !v.required || (map(v.key).value || '').trim() !== ''));
+const ready = computed(() => complete.value && !!props.options.whatsapp.can_send);
 
 const b = useBroadcast({
   channel: 'whatsapp',
-  content: () => (ready.value ? { template_id: props.draft.template_id, variables: props.draft.variables } : null),
+  // `provider` lets the server refuse a draft made before someone switched providers.
+  content: () => (complete.value
+    ? { provider: props.options.whatsapp.provider?.key, template_id: props.draft.template_id, variables: props.draft.variables }
+    : null),
   audience: toRef(props, 'audience'),
   examId,
   summary: toRef(props, 'summary'),
@@ -272,7 +291,7 @@ const onSent = () => emit('sent');
 
 // a reset after sending clears the draft
 watch(() => props.draft.template_id, (id) => { if (!id) { selected.value = null; browsing.value = false; } });
-onMounted(() => { if (props.options.whatsapp.configured) loadTemplates(); });
+onMounted(() => { if (templatesAvailable.value) loadTemplates(); });
 </script>
 
 <style scoped>

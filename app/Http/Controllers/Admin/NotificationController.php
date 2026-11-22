@@ -9,14 +9,15 @@ use App\Models\NotificationDelivery;
 use App\Models\NotificationLog;
 use App\Models\Subject;
 use App\Models\User;
-use App\Services\Notifications\BirdWhatsAppGateway;
 use App\Services\Notifications\DuplicateBroadcastException;
 use App\Services\Notifications\NotificationAudienceService;
 use App\Services\Notifications\NotificationBroadcastService;
 use App\Services\Notifications\NotificationComposer;
 use App\Services\Notifications\NotificationPlaceholderService;
+use App\Services\Notifications\WhatsApp\WhatsAppProviderManager;
 use App\Services\Notifications\WhatsAppNotificationChannel;
 use App\Services\PhoneNumberService;
+use App\Support\AdminPermissions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -27,7 +28,8 @@ use Inertia\Response;
 /**
  * Admin → Notifications (workflow.md §13.2). Thin: every rule lives in
  * App\Services\Notifications\*. JSON helpers for the composer are in
- * NotificationComposerController, Bird templates in WhatsAppTemplateController.
+ * NotificationComposerController, WhatsApp templates in WhatsAppTemplateController.
+ * WhatsApp goes through the provider chosen in Settings → Messaging (§13.6).
  */
 class NotificationController extends Controller
 {
@@ -35,19 +37,22 @@ class NotificationController extends Controller
         private readonly NotificationBroadcastService $broadcasts,
         private readonly NotificationAudienceService $audience,
         private readonly NotificationComposer $composer,
+        private readonly WhatsAppProviderManager $providers,
     ) {}
 
-    public function index(Request $request, NotificationPlaceholderService $placeholders, BirdWhatsAppGateway $bird): Response
+    public function index(Request $request, NotificationPlaceholderService $placeholders): Response
     {
         $filters = $request->validate([
             'tab' => ['nullable', Rule::in(['email', 'in_app', 'whatsapp', 'history'])],
             'channel' => ['nullable', Rule::in(array_keys(NotificationLog::CHANNELS))],
+            'provider' => ['nullable', Rule::in($this->providers->keys())],
             'status' => ['nullable', Rule::in(array_keys(NotificationLog::STATUSES))],
             'q' => ['nullable', 'string', 'max:100'],
         ]);
 
         $logs = NotificationLog::with(['sentBy:id,name'])
             ->when($filters['channel'] ?? null, fn ($q, $c) => $q->where('channel', $c))
+            ->when($filters['provider'] ?? null, fn ($q, $p) => $q->where('channel', 'whatsapp')->where('provider', $p))
             ->when($filters['status'] ?? null, fn ($q, $s) => $s === 'completed' ? $q->whereIn('status', ['completed', 'sent']) : $q->where('status', $s))
             ->when($filters['q'] ?? null, fn ($q, $term) => $q->where('title', 'like', '%'.addcslashes($term, '%_\\').'%'))
             ->latest('id')
@@ -56,10 +61,11 @@ class NotificationController extends Controller
             ->through(fn (NotificationLog $log) => $this->logRow($log));
 
         $monthStart = now()->startOfMonth();
+        $whatsapp = $this->providers->active();
 
         return Inertia::render('Admin/Notifications/Index', [
             'tab' => $filters['tab'] ?? 'email',
-            'historyFilters' => array_intersect_key($filters, array_flip(['channel', 'status', 'q'])),
+            'historyFilters' => array_intersect_key($filters, array_flip(['channel', 'provider', 'status', 'q'])),
             'logs' => $logs,
             'stats' => [
                 'broadcasts' => NotificationLog::count(),
@@ -85,11 +91,17 @@ class NotificationController extends Controller
                 'placeholders' => $placeholders->catalogue(),
                 'linkPresets' => $this->linkPresets(),
                 'whatsapp' => [
-                    'configured' => $bird->isConfigured(),
-                    'sender' => $bird->isConfigured() && config('services.bird.whatsapp_from')
-                        ? app(PhoneNumberService::class)->mask((string) config('services.bird.whatsapp_from'))
+                    'provider' => ['key' => $whatsapp->key(), 'label' => $whatsapp->label()],
+                    'configured' => $whatsapp->isConfigured(),
+                    'can_send' => $whatsapp->canSend(),
+                    'unavailable_reason' => $whatsapp->unavailableReason(),
+                    'template_source' => $whatsapp->templateSource(),
+                    'sender' => $whatsapp->isConfigured() && $whatsapp->sender()
+                        ? app(PhoneNumberService::class)->mask($whatsapp->sender())
                         : null,
+                    'can_manage' => AdminPermissions::allows($request->user(), 'settings_messaging', 'read'),
                 ],
+                'providers' => collect($this->providers->keys())->map(fn ($k) => ['key' => $k, 'label' => $this->providers->label($k)])->values(),
                 'email' => [
                     'configured' => filled(config('services.brevo.api_key')),
                     'sender' => config('services.brevo.sender_email'),
@@ -154,6 +166,7 @@ class NotificationController extends Controller
             'filters' => $filters,
             'retryable' => $log->deliveries()->retryable()->count(),
             'canRetry' => in_array($log->channel, ['email', 'whatsapp'], true),
+            'canSyncStatus' => $log->channel === 'whatsapp' && ($p = $this->providers->forLog($log))->isConfigured() && $p->supportsStatusSync(),
         ]);
     }
 
@@ -224,15 +237,21 @@ class NotificationController extends Controller
             : 'This delivery can’t be retried.');
     }
 
-    public function refreshStatus(NotificationLog $log, WhatsAppNotificationChannel $whatsapp, BirdWhatsAppGateway $bird): RedirectResponse
+    public function refreshStatus(NotificationLog $log, WhatsAppNotificationChannel $whatsapp): RedirectResponse
     {
-        if ($log->channel !== 'whatsapp' || ! $bird->isConfigured()) {
+        if ($log->channel !== 'whatsapp') {
             return back()->with('info', 'Live status is only available for WhatsApp broadcasts.');
+        }
+
+        // Always the provider that sent this broadcast, whichever one is active now.
+        $provider = $this->providers->forLog($log);
+        if (! $provider->isConfigured() || ! $provider->supportsStatusSync()) {
+            return back()->with('info', $provider->label().' delivery status can’t be checked right now.');
         }
 
         $synced = $this->broadcasts->syncWhatsAppStatuses($whatsapp, $log, 200);
 
-        return back()->with('success', "Checked {$synced} message(s) with Bird.");
+        return back()->with('success', "Checked {$synced} message(s) with {$provider->label()}.");
     }
 
     public function destroy(NotificationLog $log): RedirectResponse
@@ -269,6 +288,8 @@ class NotificationController extends Controller
             'created_at' => $log->created_at,
             'completed_at' => $log->completed_at,
             'template_name' => $template['name'] ?? null,
+            'provider' => $log->channel === 'whatsapp' ? $this->providers->keyForLog($log) : null,
+            'provider_label' => $log->channel === 'whatsapp' ? $this->providers->label($this->providers->keyForLog($log)) : null,
         ];
 
         if ($full) {

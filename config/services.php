@@ -76,6 +76,20 @@ return [
         'max_rate_limit_retries' => (int) env('BIRD_WHATSAPP_MAX_RATE_LIMIT_RETRIES', 8),
     ],
 
+    // MSG91 (second WhatsApp provider, workflow.md §13.6). Values saved in
+    // Settings → Messaging override these; the endpoint base has no default on purpose
+    // (taken from MSG91's documentation, never assumed).
+    'msg91' => [
+        'auth_key' => env('MSG91_AUTH_KEY'),
+        'base_url' => env('MSG91_BASE_URL', 'https://control.msg91.com'),
+        'integrated_number' => env('MSG91_WHATSAPP_NUMBER'),
+        // Off until a real logs response has been checked: MSG91 doesn't document the log fields.
+        'status_polling' => (bool) env('MSG91_WHATSAPP_STATUS_POLLING', false),
+        'send_interval_ms' => (int) env('MSG91_WHATSAPP_SEND_INTERVAL_MS', 500),
+        'batch_size' => (int) env('MSG91_WHATSAPP_BATCH_SIZE', 40),
+        'max_rate_limit_retries' => (int) env('MSG91_WHATSAPP_MAX_RATE_LIMIT_RETRIES', 8),
+    ],
+
     'auth_otp' => [
         // Use a dedicated random production secret. APP_KEY is a safe fallback
         // for development and prevents an empty pepper from weakening hashes.

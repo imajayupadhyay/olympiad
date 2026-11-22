@@ -7,7 +7,7 @@
     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
       <Link :href="route('admin.notifications', { tab: 'history' })" class="text-sm font-semibold text-primary hover:underline">← All broadcasts</Link>
       <div class="flex flex-wrap gap-2">
-        <button v-if="log.channel === 'whatsapp'" type="button" class="btn-ghost" :disabled="busy" @click="refreshStatus">↻ Check delivery with Bird</button>
+        <button v-if="canSyncStatus" type="button" class="btn-ghost" :disabled="busy" @click="refreshStatus">↻ Check delivery with {{ log.provider_label }}</button>
         <button v-if="canRetry && retryable && canWrite" type="button" class="btn-primary" :disabled="busy" @click="retryAll">Retry {{ retryable }} failed</button>
         <button v-if="canDelete && !inProgress" type="button" class="btn-danger" :disabled="busy" @click="destroy">Delete</button>
       </div>
@@ -24,6 +24,7 @@
         <section class="card p-5">
           <div class="flex flex-wrap items-center gap-2 mb-3">
             <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="CHANNELS[log.channel]?.cls">{{ CHANNELS[log.channel]?.label }}</span>
+            <span v-if="log.provider_label" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-text-muted">via {{ log.provider_label }}</span>
             <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="LOG_STATUS[log.status]?.cls">{{ LOG_STATUS[log.status]?.label ?? log.status }}</span>
           </div>
           <div class="grid grid-cols-2 gap-3">
@@ -158,6 +159,7 @@ const props = defineProps({
   filters: { type: Object, default: () => ({}) },
   retryable: { type: Number, default: 0 },
   canRetry: { type: Boolean, default: false },
+  canSyncStatus: { type: Boolean, default: false },
 });
 
 const DATE_FMT = { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };

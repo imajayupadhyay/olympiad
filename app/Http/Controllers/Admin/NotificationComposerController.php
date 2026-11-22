@@ -6,11 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\User;
 use App\Services\ManagedEmailService;
-use App\Services\Notifications\BirdException;
-use App\Services\Notifications\BirdWhatsAppGateway;
 use App\Services\Notifications\NotificationAudienceService;
 use App\Services\Notifications\NotificationComposer;
 use App\Services\Notifications\NotificationPlaceholderService;
+use App\Services\Notifications\WhatsApp\WhatsAppProviderException;
+use App\Services\Notifications\WhatsApp\WhatsAppProviderManager;
 use App\Services\Notifications\WhatsAppNotificationChannel;
 use App\Services\PhoneNumberService;
 use Illuminate\Http\JsonResponse;
@@ -114,7 +114,7 @@ class NotificationComposerController extends Controller
     }
 
     /** Sends one rendered copy to an address/number the admin types. */
-    public function test(Request $request, ManagedEmailService $emails, BirdWhatsAppGateway $bird, WhatsAppNotificationChannel $whatsapp, PhoneNumberService $phones): JsonResponse
+    public function test(Request $request, ManagedEmailService $emails, WhatsAppProviderManager $providers, WhatsAppNotificationChannel $whatsapp, PhoneNumberService $phones): JsonResponse
     {
         $channel = $request->validate(['channel' => ['required', Rule::in(['email', 'whatsapp'])]])['channel'];
         $data = $request->validate($this->composer->rules($channel) + [
@@ -157,15 +157,17 @@ class NotificationComposerController extends Controller
             throw ValidationException::withMessages(['to' => 'The sample student has no value for '.implode(', ', $missing).'. Add a fallback first.']);
         }
 
+        $provider = $providers->provider($content['template']['provider']);
+
         try {
-            $message = $bird->send($to, $content['template']['slug'], $content['template']['language'], $variables);
-        } catch (BirdException $e) {
+            $message = $provider->send($to, $content['template'], $variables);
+        } catch (WhatsAppProviderException $e) {
             return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
         }
 
         return response()->json([
             'ok' => true,
-            'message' => 'Bird accepted the test message to '.$phones->mask($to).' (status: '.($message['status'] ?? 'accepted').').',
+            'message' => $provider->label().' accepted the test message to '.$phones->mask($to).' (status: '.($message['status'] ?? 'accepted').').',
             'message_id' => $message['id'] ?? null,
         ]);
     }

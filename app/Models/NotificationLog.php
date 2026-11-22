@@ -28,7 +28,7 @@ class NotificationLog extends Model
 
     protected $fillable = [
         'title', 'subject', 'message', 'body_html', 'link', 'whatsapp_template',
-        'channel', 'audience', 'exam_id', 'class_level_id', 'audience_filters',
+        'channel', 'provider', 'audience', 'exam_id', 'class_level_id', 'audience_filters',
         'recipient_count', 'pending_count', 'sent_count', 'delivered_count', 'read_count',
         'failed_count', 'skipped_count', 'status', 'sent_by', 'sent_at', 'completed_at',
         'idempotency_key', 'fingerprint', 'meta',

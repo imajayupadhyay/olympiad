@@ -8,7 +8,7 @@ import { reactive } from 'vue';
  *
  * Resolves true when confirmed, false when cancelled (button, Esc or backdrop).
  *
- * @param {{ title: string, message?: string, confirmText?: string, cancelText?: string, tone?: 'primary'|'danger'|'warning' }} options
+ * @param {{ title: string, message?: string, confirmText?: string, cancelText?: string|null, tone?: 'primary'|'danger'|'warning'|'success' }} options
  * @returns {Promise<boolean>}
  */
 const defaults = {
@@ -35,4 +35,12 @@ export function settleConfirm(result) {
   confirmState.open = false;
   confirmState.resolve = null;
   resolve?.(result);
+}
+
+/**
+ * A one-button success/info modal (no Cancel), e.g. after a save:
+ *   await noticeDialog({ title: 'Settings saved', message: '…' });
+ */
+export function noticeDialog({ title, message = '', confirmText = 'Done', tone = 'success' } = {}) {
+  return confirmDialog({ title, message, confirmText, cancelText: null, tone });
 }

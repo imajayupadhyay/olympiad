@@ -3,49 +3,54 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Services\Notifications\BirdException;
-use App\Services\Notifications\BirdTemplateCatalogue;
-use App\Services\Notifications\BirdWhatsAppGateway;
+use App\Services\Notifications\WhatsApp\WhatsAppProviderException;
+use App\Services\Notifications\WhatsApp\WhatsAppProviderManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-/** Bird WhatsApp templates for the composer, fetched live (cached briefly). */
+/**
+ * WhatsApp templates for the composer, from the ACTIVE provider (workflow.md §13.6):
+ * Bird's are fetched live (cached briefly), MSG91's come from the local registry.
+ */
 class WhatsAppTemplateController extends Controller
 {
-    public function __construct(
-        private readonly BirdTemplateCatalogue $catalogue,
-        private readonly BirdWhatsAppGateway $bird,
-    ) {}
+    public function __construct(private readonly WhatsAppProviderManager $providers) {}
 
     public function index(Request $request): JsonResponse
     {
-        if (! $this->bird->isConfigured()) {
-            return response()->json(['configured' => false, 'templates' => [], 'message' => 'Bird is not configured. Set BIRD_API_KEY and BIRD_BASE_URL in the server .env.'], 200);
+        $provider = $this->providers->active();
+        $meta = ['provider' => ['key' => $provider->key(), 'label' => $provider->label()], 'template_source' => $provider->templateSource()];
+
+        if ($provider->templateSource() === 'live' && ! $provider->isConfigured()) {
+            return response()->json($meta + ['configured' => false, 'templates' => [], 'message' => $provider->unavailableReason()], 200);
         }
 
         try {
-            return response()->json([
-                'configured' => true,
-                'templates' => $this->catalogue->list($request->boolean('refresh')),
+            return response()->json($meta + [
+                'configured' => $provider->isConfigured(),
+                'can_send' => $provider->canSend(),
+                'templates' => $provider->templates($request->boolean('refresh')),
                 'fetched_at' => now()->toIso8601String(),
+                'message' => $provider->canSend() ? null : $provider->unavailableReason(),
             ]);
-        } catch (BirdException $e) {
-            return response()->json(['configured' => true, 'templates' => [], 'message' => 'Could not load templates from Bird: '.$e->getMessage()], 502);
+        } catch (WhatsAppProviderException $e) {
+            return response()->json($meta + ['configured' => true, 'templates' => [], 'message' => 'Could not load templates from '.$provider->label().': '.$e->getMessage()], 502);
         }
     }
 
     public function show(Request $request, string $template): JsonResponse
     {
-        abort_unless($this->bird->isConfigured(), 422, 'Bird is not configured.');
+        $provider = $this->providers->active();
+        abort_if($provider->templateSource() === 'live' && ! $provider->isConfigured(), 422, $provider->label().' is not configured.');
 
         try {
-            $detail = $this->catalogue->find($template, $request->boolean('refresh'));
-        } catch (BirdException $e) {
-            return response()->json(['message' => 'Could not load the template from Bird: '.$e->getMessage()], 502);
+            $detail = $provider->template($template, $request->boolean('refresh'));
+        } catch (WhatsAppProviderException $e) {
+            return response()->json(['message' => 'Could not load the template from '.$provider->label().': '.$e->getMessage()], 502);
         }
 
-        abort_unless($detail, 404, 'Template not found in Bird.');
+        abort_unless($detail, 404, 'Template not found in '.$provider->label().'.');
 
-        return response()->json(['template' => $detail]);
+        return response()->json(['template' => $detail, 'provider' => $provider->key()]);
     }
 }
